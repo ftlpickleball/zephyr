@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "services",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LORAWAN_REMOTE_MULTICAST=true": [
+            "multicast.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_LORAWAN_SERVICES=true": [":services_config_lorawan_services_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "services_config_lorawan_services_deps",
+    srcs = [
+        "lorawan_services.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LORAWAN_APP_CLOCK_SYNC=true": [
+            "clock_sync.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LORAWAN_FRAG_TRANSPORT=true": [
+            "frag_flash.c",
+            "frag_transport.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LORAWAN_FRAG_TRANSPORT_DECODER_LOWMEM=true": [
+            "frag_decoder_lowmem.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_LORAWAN_FRAG_TRANSPORT_DECODER_SEMTECH=true": [":services_config_lorawan_services_deps_config_lorawan_frag_transport_decoder_semtech_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "services_config_lorawan_services_deps_config_lorawan_frag_transport_decoder_semtech_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

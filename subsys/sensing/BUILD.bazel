@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "sensing",
+    srcs = [
+        "dispatch.c",
+        "sensing.c",
+        "sensing_sensor.c",
+        "sensor_mgmt.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SENSING_SENSOR_PHY_3D_SENSOR=true": [
+            "//" + package_name() + "/sensor/phy_3d_sensor",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SENSING_SENSOR_HINGE_ANGLE=true": [
+            "//" + package_name() + "/sensor/hinge_angle",
+        ],
+        "//conditions:default": [],
+    }),
+)

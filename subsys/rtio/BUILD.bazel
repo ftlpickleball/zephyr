@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "rtio",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RTIO_WORKQ=true": [
+            "rtio_workq.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_RTIO=true": [":rtio_config_rtio_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "rtio_config_rtio_deps",
+    srcs = [
+        "rtio_executor.c",
+        "rtio_init.c",
+        "rtio_sched.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "rtio_syscalls.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/rtio/rtio.h",
+    ],
+)

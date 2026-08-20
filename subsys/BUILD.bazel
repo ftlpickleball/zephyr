@@ -1,0 +1,306 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//subsys/logging:syscall_client_files",
+        "//subsys/random:syscall_client_files",
+        "//subsys/rtio:syscall_client_files",
+        "//subsys/testsuite/ztest:syscall_client_files",
+    ],
+)
+
+cc_library(
+    name = "subsys",
+    deps = [
+        "//subsys/canbus",
+        "//subsys/debug",
+        "//subsys/fb",
+        "//subsys/fs",
+        "//subsys/ipc",
+        "//subsys/logging",
+        "//subsys/mem_mgmt",
+        "//subsys/mgmt",
+        "//subsys/modbus",
+        "//subsys/pm",
+        "//subsys/portability",
+        "//subsys/random",
+        "//subsys/rtio",
+        "//subsys/sd",
+        "//subsys/stats",
+        "//subsys/storage",
+        "//subsys/task_wdt",
+        "//subsys/testsuite",
+        "//subsys/tracing",
+        "//subsys/usb",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_LORAWAN=true": [
+            "//subsys/lorawan",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARM_SIP_SVC_SUBSYS=true": [
+            "//subsys/sip_svc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BINDESC=true": [
+            "//subsys/bindesc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT=true": [
+            "//subsys/bluetooth",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CONSOLE_SUBSYS=true": [
+            "//subsys/console",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CPU_FREQ=true": [
+            "//subsys/cpu_freq",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CRC=true": [
+            "//subsys/crc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAP=true": [
+            "//subsys/dap",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DEMAND_PAGING=true": [
+            "//subsys/demand_paging",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DISK_ACCESS=true": [
+            "//subsys/disk",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DSP=true": [
+            "//subsys/dsp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_EMUL=true": [
+            "//subsys/emul",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_IMG_MANAGER=true": [
+            "//subsys/dfu",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_INPUT=true": [
+            "//subsys/input",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_JWT=true": [
+            "//subsys/jwt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LLEXT=true": [
+            "//subsys/llext",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MODEM_MODULES=true": [
+            "//subsys/modem",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NETWORKING=true": [
+            "//subsys/net",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NVMEM=true": [
+            "//subsys/nvmem",
+        ],
+        "//conditions:default": [],
+
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RETENTION=true": [
+            "//subsys/retention",
+        ],
+        "//conditions:default": [],
+
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SENSING=true": [
+            "//subsys/sensing",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SETTINGS=true": [
+            "//subsys/settings",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SHELL=true": [
+            "//subsys/shell",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TIMING_FUNCTIONS=true": [
+            "//subsys/timing",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZBUS=true": [
+            "//subsys/zbus",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_BINDESC=true": [
+            "//subsys/bindesc:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + [
+        "//subsys/fb:linker_fragments",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ARM_SIP_SVC_SUBSYS=true": [
+            "//subsys/sip_svc:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_STACK_NEXT=true": [
+            "//subsys/usb/device_next:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_HOST_STACK=true": [
+            "//subsys/usb/host:linker_fragments",
+        ],
+        "//conditions:default": [],
+
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LWM2M=true": [
+            "//subsys/net/lib/lwm2m:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HTTP=true": [
+            "//subsys/net/lib/http:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_CONNECTION_MANAGER=true": [
+            "//subsys/net/conn_mgr:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_NM=true": [
+            "//subsys/net/l2/wifi:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_PKT_ALLOC_STATS=true": [
+            "//subsys/net/ip:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZBUS_PROXY_AGENT=true": [
+            "//subsys/zbus/proxy_agent:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": [
+            "//subsys/testsuite/coverage:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZTEST_BENCHMARK=true": [
+            "//subsys/testsuite/ztest/benchmark:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_BINDESC=true": [
+            "//subsys/bindesc:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + [
+        "//subsys/fb:linker_includes",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ARM_SIP_SVC_SUBSYS=true": [
+            "//subsys/sip_svc:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_STACK_NEXT=true": [
+            "//subsys/usb/device_next:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_HOST_STACK=true": [
+            "//subsys/usb/host:linker_includes",
+        ],
+        "//conditions:default": [],
+
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LWM2M=true": [
+            "//subsys/net/lib/lwm2m:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HTTP=true": [
+            "//subsys/net/lib/http:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_CONNECTION_MANAGER=true": [
+            "//subsys/net/conn_mgr:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_NM=true": [
+            "//subsys/net/l2/wifi:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_PKT_ALLOC_STATS=true": [
+            "//subsys/net/ip:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZBUS_PROXY_AGENT=true": [
+            "//subsys/zbus/proxy_agent:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": [
+            "//subsys/testsuite/coverage:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZTEST_BENCHMARK=true": [
+            "//subsys/testsuite/ztest/benchmark:linker_includes",
+        ],
+        "//conditions:default": [],
+    }),
+)

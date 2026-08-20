@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "net",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_HOSTNAME_ENABLE=true": [
+            "hostname.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/lib",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NETWORKING=true": [":net_config_networking_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_CONNECTION_MANAGER=true": [":net_config_net_connection_manager_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "net_config_networking_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/l2",
+        "//" + package_name() + "/pkt_filter",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NET_RAW_MODE=true": [":net_config_networking_deps_config_net_raw_mode_deps"],
+        "//conditions:default": [":net_config_networking_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "net_config_networking_deps_config_net_raw_mode_deps",
+    srcs = [
+        "//subsys/net/ip:net_pkt.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "net_config_networking_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "net_config_net_connection_manager_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

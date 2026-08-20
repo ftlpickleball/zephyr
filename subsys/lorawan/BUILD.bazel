@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "lorawan",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_LORAWAN=true": [":lorawan_config_lorawan_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "lorawan_config_lorawan_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/emul",
+        "//" + package_name() + "/services",
+        "//" + package_name() + "/nvm",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_LORA_MODULE_BACKEND_LORAMAC_NODE=true": [
+            "//" + package_name() + "/loramac-node",
+        ],
+        "//conditions:default": [],
+    }),
+)

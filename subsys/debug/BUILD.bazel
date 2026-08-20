@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "debug",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEBUG_THREAD_INFO=true": [
+            "thread_info.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ASAN=true": [
+            "asan_hacks.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MIPI_STP_DECODER=true": [
+            "mipi_stp_decoder.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CS_TRACE_DEFMT=true": [
+            "coresight/cs_trace_defmt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_LOAD=true": [
+            "cpu_load.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_THREAD_ANALYZER=true": [
+            "//" + package_name() + "/thread_analyzer",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP=true": [
+            "//" + package_name() + "/coredump",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GDBSTUB=true": [
+            "//" + package_name() + "/gdbstub",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SYMTAB=true": [
+            "//" + package_name() + "/symtab",
+        ],
+        "//conditions:default": [],
+    }),
+)

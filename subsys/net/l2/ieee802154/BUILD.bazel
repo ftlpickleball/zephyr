@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "ieee802154",
+    srcs = [
+        "ieee802154.c",
+        "ieee802154_frame.c",
+        "ieee802154_utils.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_6LO=true": [
+            "ieee802154_6lo.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_IEEE802154_FRAGMENT=true": [
+            "ieee802154_6lo_fragment.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_IEEE802154_MGMT=true": [
+            "ieee802154_mgmt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_IEEE802154_RADIO_ALOHA=true": [
+            "ieee802154_radio_aloha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_IEEE802154_RADIO_CSMA_CA=true": [
+            "ieee802154_radio_csma_ca.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_IEEE802154_SECURITY=true": [
+            "ieee802154_security.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_IEEE802154_SHELL=true": [
+            "ieee802154_shell.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "tls_credentials",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TLS_CREDENTIALS_BACKEND_VOLATILE=true": [
+            "tls_credentials.c",
+            "tls_credentials_digest_raw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TLS_CREDENTIALS_BACKEND_PROTECTED_STORAGE=true": [
+            "tls_credentials_trusted.c",
+            "tls_credentials_digest_raw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TLS_CREDENTIALS_SHELL=true": [
+            "tls_credentials_shell.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty=True),
+    deps = [
+    ] + select({
+        ":config_tls_credentials_backend_protected_storage_and_config_build_with_tfm": [":tls_credentials_config_tls_credentials_backend_protected_storage_and_config_build_with_tfm_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_tls_credentials_backend_protected_storage_and_config_build_with_tfm",
+    match_all = ['@zephyr_kconfig//:CONFIG_TLS_CREDENTIALS_BACKEND_PROTECTED_STORAGE=true', '@zephyr_kconfig//:CONFIG_BUILD_WITH_TFM=true'],
+)
+
+zephyr_cc_library(
+    name = "tls_credentials_config_tls_credentials_backend_protected_storage_and_config_build_with_tfm_deps",
+    srcs = [
+    ],
+    hdrs = glob(["*.h"], allow_empty=True),
+)

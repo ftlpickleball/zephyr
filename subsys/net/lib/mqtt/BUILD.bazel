@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "mqtt",
+    srcs = [
+        "mqtt_decoder.c",
+        "mqtt_encoder.c",
+        "mqtt_rx.c",
+        "mqtt_transport_socket_tcp.c",
+        "mqtt_transport.c",
+        "mqtt.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MQTT_LIB_TLS=true": [
+            "mqtt_transport_socket_tls.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MQTT_LIB_WEBSOCKET=true": [
+            "mqtt_transport_websocket.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty=True),
+)

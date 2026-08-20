@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "tracing",
+    srcs = [
+        "tracing_none.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_CORE=true": [
+            "tracing_buffer.c",
+            "tracing_core.c",
+            "tracing_format_common.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_OBJECT_TRACKING=true": [
+            "tracing_tracking.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_TRACING_CORE=true": [":tracing_config_tracing_core_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TRACING_CTF=true": [
+            "//" + package_name() + "/ctf",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SEGGER_SYSTEMVIEW=true": [
+            "//" + package_name() + "/sysview",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TRACING_TEST=true": [
+            "//" + package_name() + "/test",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TRACING_USER=true": [
+            "//" + package_name() + "/user",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "tracing_config_tracing_core_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_SYNC=true": [
+            "tracing_format_sync.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_ASYNC=true": [
+            "tracing_format_async.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_BACKEND_USB=true": [
+            "tracing_backend_usb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_BACKEND_SEMIHOST=true": [
+            "tracing_backend_semihosting.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_BACKEND_UART=true": [
+            "tracing_backend_uart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_BACKEND_RAM=true": [
+            "tracing_backend_ram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TRACING_BACKEND_ADSP_MEMORY_WINDOW=true": [
+            "tracing_backend_adsp_memory_window.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_TRACING_BACKEND_POSIX=true": [":tracing_config_tracing_core_deps_config_tracing_backend_posix_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "tracing_config_tracing_core_deps_config_tracing_backend_posix_deps",
+    srcs = [
+        "tracing_backend_posix.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

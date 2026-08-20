@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "settings_mgmt",
+    srcs = [
+        "src/settings_mgmt.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_mcumgr_grp_settings_and_not_config_mcumgr_grp_settings_access_hook": [":settings_mgmt_config_mcumgr_grp_settings_and_not_config_mcumgr_grp_settings_access_hook_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+config_setting(
+    name = "not_config_mcumgr_grp_settings_access_hook",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_SETTINGS_ACCESS_HOOK": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_mcumgr_grp_settings_and_not_config_mcumgr_grp_settings_access_hook",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_SETTINGS=true",
+        ":not_config_mcumgr_grp_settings_access_hook",
+    ],
+)
+
+zephyr_cc_library(
+    name = "settings_mgmt_config_mcumgr_grp_settings_and_not_config_mcumgr_grp_settings_access_hook_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

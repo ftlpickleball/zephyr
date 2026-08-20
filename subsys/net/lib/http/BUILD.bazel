@@ -1,0 +1,185 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "http",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HTTP_PARSER=true": [
+            "http_parser.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HTTP_PARSER_URL=true": [
+            "http_parser_url.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HTTP_CLIENT=true": [
+            "http_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER=true": [
+            "http_server_core.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER_VERSION_1=true": [
+            "http_server_http1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER_VERSION_2=true": [
+            "http_hpack.c",
+            "http_huffman.c",
+            "http_server_http2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER_COMPRESSION=true": [
+            "http_compression.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_HTTP_PARSER_STRICT=true": [":http_config_http_parser_strict_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_http_server_and_config_websocket": [":http_config_http_server_and_config_websocket_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_http_server_and_config_file_system": [":http_config_http_server_and_config_file_system_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_http_server_and_config_http_server_capture_headers": [":http_config_http_server_and_config_http_server_capture_headers_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "http_config_http_parser_strict_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_http_server_and_config_websocket",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER=true",
+        "@zephyr_kconfig//:CONFIG_WEBSOCKET=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "http_config_http_server_and_config_websocket_deps",
+    srcs = [
+        "http_server_ws.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_http_server_and_config_file_system",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER=true",
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "http_config_http_server_and_config_file_system_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_http_server_and_config_http_server_capture_headers",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER=true",
+        "@zephyr_kconfig//:CONFIG_HTTP_SERVER_CAPTURE_HEADERS=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "http_config_http_server_and_config_http_server_capture_headers_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+    ] + select({
+        ":config_http_server_and_config_file_system": [":linker_fragments_config_http_server_and_config_file_system_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_http_server_and_config_http_server_capture_headers": [":linker_fragments_config_http_server_and_config_http_server_capture_headers_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_http_server_and_config_file_system_deps",
+    deps = [
+        ":iterables_content_type.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "iterables_content_type.ld.target",
+    srcs = ["iterables_content_type.ld"],
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_http_server_and_config_http_server_capture_headers_deps",
+    deps = [
+        ":iterables_header_capture.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "iterables_header_capture.ld.target",
+    srcs = ["iterables_header_capture.ld"],
+    location = "SECTIONS",
+    sort_key = "default",
+)

@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "sip_svc",
+    srcs = [
+        "sip_svc_id_mgr.c",
+        "sip_svc_subsys.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ARM_SIP_SVC_SUBSYS_SHELL=true": [":sip_svc_config_arm_sip_svc_subsys_shell_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "sip_svc_config_arm_sip_svc_subsys_shell_deps",
+    srcs = [
+        "sip_svc_shell.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_SIP_SVC_HAS_INTEL_SDM_MAILBOX_FIFO=true": [
+            "sip_svc_agilex_mailbox_shell.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":sip_svc_data.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "sip_svc_data.ld.target",
+    srcs = ["sip_svc_data.ld"],
+    location = "DATA_SECTIONS",
+    sort_key = "default",
+)

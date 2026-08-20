@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "fb",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CHARACTER_FRAMEBUFFER=true": [
+            "cfb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CHARACTER_FRAMEBUFFER_USE_DEFAULT_FONTS=true": [
+            "cfb_fonts.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CHARACTER_FRAMEBUFFER_SHELL=true": [
+            "cfb_shell.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":check_cfb_fonts.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "check_cfb_fonts.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_CHARACTER_FRAMEBUFFER=true": ["check_cfb_fonts.ld"],
+        "//conditions:default": [],
+    }),
+    location = "DATA_SECTIONS",
+    sort_key = "default",
+)

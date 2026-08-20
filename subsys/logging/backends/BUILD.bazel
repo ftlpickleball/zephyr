@@ -1,0 +1,104 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "backends",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_ADSP=true": [
+            "log_backend_adsp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_ADSP_MTRACE=true": [
+            "log_backend_adsp_mtrace.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_BLE=true": [
+            "log_backend_ble.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_EFI_CONSOLE=true": [
+            "log_backend_efi_console.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_FS=true": [
+            "log_backend_fs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_MQTT=true": [
+            "log_backend_mqtt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_NATIVE_POSIX=true": [
+            "log_backend_native_posix.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_NET=true": [
+            "log_backend_net.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_WS=true": [
+            "log_backend_ws.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_RTT=true": [
+            "log_backend_rtt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_SPINEL=true": [
+            "log_backend_spinel.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_SWO=true": [
+            "log_backend_swo.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_UART=true": [
+            "log_backend_uart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_XTENSA_SIM=true": [
+            "log_backend_xtensa_sim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_MULTIDOMAIN_BACKEND=true": [
+            "log_multidomain_backend.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_IPC_SERVICE=true": [
+            "log_backend_ipc_service.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_BACKEND_SEMIHOST=true": [
+            "log_backend_semihost.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

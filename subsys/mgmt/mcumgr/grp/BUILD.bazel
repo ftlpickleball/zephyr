@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "grp",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS=true": [
+            "//" + package_name() + "/fs_mgmt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_IMG=true": [
+            "//" + package_name() + "/img_mgmt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_IMG_CLIENT=true": [
+            "//" + package_name() + "/img_mgmt_client",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_OS=true": [
+            "//" + package_name() + "/os_mgmt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_OS_CLIENT=true": [
+            "//" + package_name() + "/os_mgmt_client",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_STAT=true": [
+            "//" + package_name() + "/stat_mgmt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_SHELL=true": [
+            "//" + package_name() + "/shell_mgmt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_ZBASIC=true": [
+            "//" + package_name() + "/zephyr_basic",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_SETTINGS=true": [
+            "//" + package_name() + "/settings_mgmt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_ENUM=true": [
+            "//" + package_name() + "/enum_mgmt",
+        ],
+        "//conditions:default": [],
+    }),
+)

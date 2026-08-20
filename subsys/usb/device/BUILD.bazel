@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "device",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_BOS=true": [
+            "bos.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_OS_DESC=true": [
+            "os_desc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USB_WORKQUEUE=true": [
+            "usb_work_q.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = ".",
+    deps = [
+        ] + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_STACK=true": [":device_config_usb_device_stack_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "device_config_usb_device_stack_deps",
+    srcs = [
+        "usb_descriptor.c",
+        "usb_device.c",
+        "usb_transfer.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = ".",
+)

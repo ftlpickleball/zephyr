@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "shell",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHELL=true": [
+            "shell.c",
+            "shell_fprintf.c",
+            "shell_ops.c",
+            "shell_utils.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHELL_HELP=true": [
+            "shell_help.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHELL_CMDS=true": [
+            "shell_cmds.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHELL_HISTORY=true": [
+            "shell_history.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHELL_WILDCARD=true": [
+            "shell_wildcard.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/modules",
+        "//" + package_name() + "/backends",
+    ] + select({
+        "//conditions:default": [":shell_not_config_shell_log_backend_custom_deps"],
+        "@zephyr_kconfig//:CONFIG_SHELL_LOG_BACKEND_CUSTOM=true": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "shell_not_config_shell_log_backend_custom_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHELL_LOG_BACKEND=true": [
+            "shell_log_backend.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

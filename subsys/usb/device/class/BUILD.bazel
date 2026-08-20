@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "class",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USB_CDC_ACM=true": [
+            "cdc_acm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USB_MASS_STORAGE=true": [
+            "msc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_BLUETOOTH=true": [
+            "bluetooth.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_AUDIO=true": [
+            "//" + package_name() + "/audio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_NETWORK=true": [
+            "//" + package_name() + "/netusb",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_HID=true": [
+            "//" + package_name() + "/hid",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_DFU_CLASS=true": [
+            "//" + package_name() + "/dfu",
+        ],
+        "//conditions:default": [],
+    }),
+)

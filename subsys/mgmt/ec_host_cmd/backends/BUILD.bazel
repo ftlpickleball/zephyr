@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "backends",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EC_HOST_CMD_BACKEND_SIMULATOR=true": [
+            "ec_host_cmd_backend_simulator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EC_HOST_CMD_BACKEND_ESPI=true": [
+            "ec_host_cmd_backend_espi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EC_HOST_CMD_BACKEND_SHI_NPCX=true": [
+            "ec_host_cmd_backend_shi_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EC_HOST_CMD_BACKEND_SHI_ITE=true": [
+            "ec_host_cmd_backend_shi_ite.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EC_HOST_CMD_BACKEND_UART=true": [
+            "ec_host_cmd_backend_uart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EC_HOST_CMD_BACKEND_SPI_STM32=true": [
+            "ec_host_cmd_backend_spi_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EC_HOST_CMD_BACKEND_USB=true": [
+            "ec_host_cmd_backend_usb.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

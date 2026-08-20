@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "fs",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM_LIB_LINK=true": [":fs_config_file_system_lib_link_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FCB=true": [
+            "//" + package_name() + "/fcb",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FUSE_FS_ACCESS=true": [":fs_config_fuse_fs_access_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "fs_config_file_system_lib_link_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM=true": [":fs_config_file_system_lib_link_deps_config_file_system_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM_EXT2=true": [
+            "//" + package_name() + "/ext2",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FUSE_CLIENT=true": [
+            "//" + package_name() + "/fuse_client",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM_VIRTIOFS=true": [
+            "//" + package_name() + "/virtiofs",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "fs_config_file_system_lib_link_deps_config_file_system_deps",
+    srcs = [
+        "fs.c",
+        "fs_impl.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FAT_FILESYSTEM_ELM=true": [
+            "fat_fs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM_LITTLEFS=true": [
+            "littlefs_fs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM_SHELL=true": [
+            "shell.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "fs_config_fuse_fs_access_deps",
+    srcs = [
+        "fuse_fs_access.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_FUSE_LIBRARY_V3=true": [":fs_config_fuse_fs_access_deps_config_fuse_library_v3_deps"],
+        "//conditions:default": [":fs_config_fuse_fs_access_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "fs_config_fuse_fs_access_deps_config_fuse_library_v3_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "fs_config_fuse_fs_access_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+cc_library(
+    name = "fs_hdrs",
+    hdrs = ["fs_impl.h"],
+    includes = ["."],
+)

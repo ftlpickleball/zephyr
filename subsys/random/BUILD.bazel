@@ -1,0 +1,135 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "random",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TIMER_RANDOM_GENERATOR=true": [
+            "random_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XOSHIRO_RANDOM_GENERATOR=true": [
+            "random_xoshiro128.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TEST_CSPRNG_GENERATOR=true": [
+            "random_test_csprng.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_entropy_device_random_generator_or_config_timer_random_generator_or_config_xoshiro_random_generator": [":random_config_entropy_device_random_generator_or_config_timer_random_generator_or_config_xoshiro_random_generator_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_timer_random_generator_or_config_test_csprng_generator": [":random_config_timer_random_generator_or_config_test_csprng_generator_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_entropy_device_random_generator_or_config_hardware_device_cs_generator": [":random_config_entropy_device_random_generator_or_config_hardware_device_cs_generator_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_ctr_drbg_csprng_generator_or_config_psa_csprng_generator": [":random_config_ctr_drbg_csprng_generator_or_config_psa_csprng_generator_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_entropy_device_random_generator_or_config_timer_random_generator_or_config_xoshiro_random_generator",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_ENTROPY_DEVICE_RANDOM_GENERATOR=true",
+        "@zephyr_kconfig//:CONFIG_TIMER_RANDOM_GENERATOR=true",
+        "@zephyr_kconfig//:CONFIG_XOSHIRO_RANDOM_GENERATOR=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "random_config_entropy_device_random_generator_or_config_timer_random_generator_or_config_xoshiro_random_generator_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "random_handlers.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_timer_random_generator_or_config_test_csprng_generator",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_TIMER_RANDOM_GENERATOR=true",
+        "@zephyr_kconfig//:CONFIG_TEST_CSPRNG_GENERATOR=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "random_config_timer_random_generator_or_config_test_csprng_generator_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_entropy_device_random_generator_or_config_hardware_device_cs_generator",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_ENTROPY_DEVICE_RANDOM_GENERATOR=true",
+        "@zephyr_kconfig//:CONFIG_HARDWARE_DEVICE_CS_GENERATOR=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "random_config_entropy_device_random_generator_or_config_hardware_device_cs_generator_deps",
+    srcs = [
+        "random_entropy_device.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_ctr_drbg_csprng_generator_or_config_psa_csprng_generator",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_CTR_DRBG_CSPRNG_GENERATOR=true",
+        "@zephyr_kconfig//:CONFIG_PSA_CSPRNG_GENERATOR=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "random_config_ctr_drbg_csprng_generator_or_config_psa_csprng_generator_deps",
+    srcs = [
+        "random_psa.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/random/random.h",
+    ],
+)

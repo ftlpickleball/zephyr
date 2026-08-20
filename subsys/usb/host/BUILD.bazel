@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "host",
+    srcs = [
+        "usbh_api.c",
+        "usbh_ch9.c",
+        "usbh_class.c",
+        "usbh_core.c",
+        "usbh_desc.c",
+        "usbh_device.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBH_SHELL=true": [
+            "usbh_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBH_VIDEO_CLASS=true": [
+            "class/usbh_uvc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBIP=true": [
+            "usbip.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":usbh_data.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "usbh_data.ld.target",
+    srcs = ["usbh_data.ld"],
+    location = "DATA_SECTIONS",
+    sort_key = "default",
+)

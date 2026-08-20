@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "bluetooth",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/common",
+        "//" + package_name() + "/lib",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_HCI=true": [
+            "//" + package_name() + "/host",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true": [
+            "//" + package_name() + "/services",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_MESH=true": [
+            "//" + package_name() + "/mesh",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_AUDIO=true": [
+            "//" + package_name() + "/audio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CRYPTO=true": [
+            "//" + package_name() + "/crypto",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_LL_SW_SPLIT=true": [":bluetooth_config_bt_ll_sw_split_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "bluetooth_config_bt_ll_sw_split_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

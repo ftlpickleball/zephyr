@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "device_next",
+    srcs = [
+        "usbd_ch9.c",
+        "usbd_class.c",
+        "usbd_config.c",
+        "usbd_core.c",
+        "usbd_desc.c",
+        "usbd_device.c",
+        "usbd_endpoint.c",
+        "usbd_init.c",
+        "usbd_interface.c",
+        "usbd_msg.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_SHELL=true": [
+            "usbd_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_LOOPBACK_CLASS=true": [
+            "class/loopback.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_CDC_ACM_CLASS=true": [
+            "class/usbd_cdc_acm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_CDC_ECM_CLASS=true": [
+            "class/usbd_cdc_ecm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_CDC_NCM_CLASS=true": [
+            "class/usbd_cdc_ncm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_BT_HCI=true": [
+            "class/bt_hci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_MSC_CLASS=true": [
+            "class/usbd_msc.c",
+            "class/usbd_msc_scsi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_AUDIO2_CLASS=true": [
+            "class/usbd_uac2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_MIDI2_CLASS=true": [
+            "class/usbd_midi2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_VIDEO_CLASS=true": [
+            "class/usbd_uvc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_HID_SUPPORT=true": [
+            "class/usbd_hid.c",
+            "class/usbd_hid_api.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_DFU=true": [
+            "class/usbd_dfu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_DFU_FLASH=true": [
+            "class/usbd_dfu_flash.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = ".",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":class/usbd_dfu.ld.target",
+        ":class/usbd_msc.ld.target",
+        ":usbd_data.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "class/usbd_msc.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_USBD_MSC_CLASS=true": ["class/usbd_msc.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "class/usbd_dfu.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_USBD_DFU=true": ["class/usbd_dfu.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "usbd_data.ld.target",
+    srcs = ["usbd_data.ld"],
+    location = "DATA_SECTIONS",
+    sort_key = "default",
+)

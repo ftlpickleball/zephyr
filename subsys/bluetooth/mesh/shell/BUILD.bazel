@@ -1,0 +1,125 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "shell",
+    srcs = [
+        "shell.c",
+        "utils.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_HEALTH_CLI=true": [
+            "health.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_CFG_CLI=true": [
+            "cfg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_LARGE_COMP_DATA_CLI=true": [
+            "large_comp_data.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_OP_AGG_CLI=true": [
+            "op_agg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_PRIV_BEACON_CLI=true": [
+            "priv_beacon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_RPR_CLI=true": [
+            "rpr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_SAR_CFG_CLI=true": [
+            "sar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_DFD_SRV=true": [
+            "dfd.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_OD_PRIV_PROXY_CLI=true": [
+            "od_priv_proxy.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SOL_PDU_RPL_CLI=true": [
+            "sol_pdu_rpl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_BRG_CFG_CLI=true": [
+            "brg_cfg.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_bt_mesh_shell_blob_cli_or_config_bt_mesh_shell_blob_srv_or_config_bt_mesh_shell_blob_io_flash": [":shell_config_bt_mesh_shell_blob_cli_or_config_bt_mesh_shell_blob_srv_or_config_bt_mesh_shell_blob_io_flash_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_mesh_shell_dfu_slot_or_config_bt_mesh_shell_dfu_metadata_or_config_bt_mesh_shell_dfu_cli_or_config_bt_mesh_shell_dfu_srv": [":shell_config_bt_mesh_shell_dfu_slot_or_config_bt_mesh_shell_dfu_metadata_or_config_bt_mesh_shell_dfu_cli_or_config_bt_mesh_shell_dfu_srv_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_bt_mesh_shell_blob_cli_or_config_bt_mesh_shell_blob_srv_or_config_bt_mesh_shell_blob_io_flash",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_BLOB_CLI=true",
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_BLOB_SRV=true",
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_BLOB_IO_FLASH=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "shell_config_bt_mesh_shell_blob_cli_or_config_bt_mesh_shell_blob_srv_or_config_bt_mesh_shell_blob_io_flash_deps",
+    srcs = [
+        "blob.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_mesh_shell_dfu_slot_or_config_bt_mesh_shell_dfu_metadata_or_config_bt_mesh_shell_dfu_cli_or_config_bt_mesh_shell_dfu_srv",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_DFU_SLOT=true",
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_DFU_METADATA=true",
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_DFU_CLI=true",
+        "@zephyr_kconfig//:CONFIG_BT_MESH_SHELL_DFU_SRV=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "shell_config_bt_mesh_shell_dfu_slot_or_config_bt_mesh_shell_dfu_metadata_or_config_bt_mesh_shell_dfu_cli_or_config_bt_mesh_shell_dfu_srv_deps",
+    srcs = [
+        "dfu.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

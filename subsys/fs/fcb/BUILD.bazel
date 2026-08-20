@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "fcb",
+    srcs = [
+        "fcb.c",
+        "fcb_append.c",
+        "fcb_elem_info.c",
+        "fcb_getnext.c",
+        "fcb_rotate.c",
+        "fcb_walk.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

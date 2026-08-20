@@ -1,0 +1,121 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "wifi",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_WIFI_MGMT=true": [
+            "wifi_mgmt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WIFI_CERTIFICATE_LIB=true": [
+            "wifi_certs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_WIFI_SHELL=true": [
+            "wifi_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WIFI_NM=true": [
+            "wifi_nm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_L2_WIFI_UTILS=true": [
+            "wifi_utils.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_NM=true": [":wifi_config_wifi_nm_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_wifi_nm_wpa_supplicant_crypto_enterprise_and_config_net_l2_wifi_shell": [":wifi_config_wifi_nm_wpa_supplicant_crypto_enterprise_and_config_net_l2_wifi_shell_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "wifi_config_wifi_nm_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_wifi_nm_wpa_supplicant_crypto_enterprise_and_config_net_l2_wifi_shell",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_WIFI_NM_WPA_SUPPLICANT_CRYPTO_ENTERPRISE=true",
+        "@zephyr_kconfig//:CONFIG_NET_L2_WIFI_SHELL=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "wifi_config_wifi_nm_wpa_supplicant_crypto_enterprise_and_config_net_l2_wifi_shell_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "//conditions:default": [":wifi_config_wifi_nm_wpa_supplicant_crypto_enterprise_and_config_net_l2_wifi_shell_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "wifi_config_wifi_nm_wpa_supplicant_crypto_enterprise_and_config_net_l2_wifi_shell_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":wifi_nm.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "wifi_nm.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_WIFI_NM=true": ["wifi_nm.ld"],
+        "//conditions:default": [],
+    }),
+    location = "DATA_SECTIONS",
+    sort_key = "default",
+)

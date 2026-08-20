@@ -1,0 +1,163 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "shell",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CCP_CALL_CONTROL_SERVER=true": [
+            "ccp_call_control_server.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CCP_CALL_CONTROL_CLIENT=true": [
+            "ccp_call_control_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_VCP_VOL_REND=true": [
+            "vcp_vol_rend.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_VCP_VOL_CTLR=true": [
+            "vcp_vol_ctlr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MICP_MIC_DEV=true": [
+            "micp_mic_dev.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MICP_MIC_CTLR=true": [
+            "micp_mic_ctlr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CSIP_SET_MEMBER=true": [
+            "csip_set_member.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CSIP_SET_COORDINATOR=true": [
+            "csip_set_coordinator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TBS=true": [
+            "tbs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TBS_CLIENT=true": [
+            "tbs_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MPL=true": [
+            "mpl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MCC=true": [
+            "mcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MCS=true": [
+            "media_controller.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HAS_PRESET_SUPPORT=true": [
+            "has.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP_ACCEPTOR=true": [
+            "cap_acceptor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP_INITIATOR=true": [
+            "cap_initiator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP_COMMANDER=true": [
+            "cap_commander.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HAS_CLIENT=true": [
+            "has_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TMAP=true": [
+            "tmap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_GMAP=true": [
+            "gmap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_STREAM=true": [
+            "bap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_SCAN_DELEGATOR=true": [
+            "bap_scan_delegator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_BROADCAST_ASSISTANT=true": [
+            "bap_broadcast_assistant.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_PBP=true": [
+            "pbp.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_liblc3_and_config_usbd_audio2_class": [":shell_config_liblc3_and_config_usbd_audio2_class_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_liblc3_and_config_usbd_audio2_class",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_LIBLC3=true",
+        "@zephyr_kconfig//:CONFIG_USBD_AUDIO2_CLASS=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "shell_config_liblc3_and_config_usbd_audio2_class_deps",
+    srcs = [
+        "bap_usb.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

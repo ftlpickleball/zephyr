@@ -1,0 +1,312 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "audio",
+    srcs = [
+        "audio.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_VOCS_CLIENT=true": [
+            "vocs_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_AICS_CLIENT=true": [
+            "aics_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_VCP_VOL_REND=true": [
+            "vcp_vol_rend.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_VCP_VOL_CTLR=true": [
+            "vcp_vol_ctlr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MICP_MIC_CTLR=true": [
+            "micp_mic_ctlr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true": [
+            "ccid.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CSIP_SET_MEMBER=true": [
+            "csip_set_member.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CSIP_SET_COORDINATOR=true": [
+            "csip_set_coordinator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TBS=true": [
+            "tbs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TBS_CLIENT=true": [
+            "tbs_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MCC=true": [
+            "mcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MCS=true": [
+            "mcs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MPL=true": [
+            "mpl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCTL=true": [
+            "media_proxy.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ASCS=true": [
+            "ascs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_PACS=true": [
+            "pacs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_STREAM=true": [
+            "bap_iso.c",
+            "bap_stream.c",
+            "codec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_BASE=true": [
+            "bap_base.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_UNICAST_SERVER=true": [
+            "bap_unicast_server.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_UNICAST_CLIENT=true": [
+            "bap_unicast_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_BROADCAST_SOURCE=true": [
+            "bap_broadcast_source.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_BROADCAST_SINK=true": [
+            "bap_broadcast_sink.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_SCAN_DELEGATOR=true": [
+            "bap_scan_delegator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BAP_BROADCAST_ASSISTANT=true": [
+            "bap_broadcast_assistant.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CCP_CALL_CONTROL_CLIENT=true": [
+            "ccp_call_control_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CCP_CALL_CONTROL_SERVER=true": [
+            "ccp_call_control_server.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HAS=true": [
+            "has.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HAS_CLIENT=true": [
+            "has_client.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP=true": [
+            "cap_stream.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP_ACCEPTOR=true": [
+            "cap_acceptor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP_INITIATOR=true": [
+            "cap_initiator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP_COMMANDER=true": [
+            "cap_commander.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CAP_HANDOVER=true": [
+            "cap_handover.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TMAP=true": [
+            "tmap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_GMAP=true": [
+            "gmap_client.c",
+            "gmap_server.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_PBP=true": [
+            "pbp.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_SHELL=true": [
+            "//" + package_name() + "/shell",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_vocs_or_config_bt_vocs_client": [":audio_config_bt_vocs_or_config_bt_vocs_client_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_aics_or_config_bt_aics_client": [":audio_config_bt_aics_or_config_bt_aics_client_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_MICP_MIC_DEV=true": [":audio_config_bt_micp_mic_dev_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_csip_set_member_or_config_bt_csip_set_coordinator": [":audio_config_bt_csip_set_member_or_config_bt_csip_set_coordinator_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_cap_initiator_unicast_or_config_bt_cap_commander": [":audio_config_bt_cap_initiator_unicast_or_config_bt_cap_commander_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_bt_vocs_or_config_bt_vocs_client",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_VOCS=true",
+        "@zephyr_kconfig//:CONFIG_BT_VOCS_CLIENT=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "audio_config_bt_vocs_or_config_bt_vocs_client_deps",
+    srcs = [
+        "vocs.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_aics_or_config_bt_aics_client",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_AICS=true",
+        "@zephyr_kconfig//:CONFIG_BT_AICS_CLIENT=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "audio_config_bt_aics_or_config_bt_aics_client_deps",
+    srcs = [
+        "aics.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "audio_config_bt_micp_mic_dev_deps",
+    srcs = [
+        "micp_mic_dev.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_csip_set_member_or_config_bt_csip_set_coordinator",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_CSIP_SET_MEMBER=true",
+        "@zephyr_kconfig//:CONFIG_BT_CSIP_SET_COORDINATOR=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "audio_config_bt_csip_set_member_or_config_bt_csip_set_coordinator_deps",
+    srcs = [
+        "csip_crypto.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_cap_initiator_unicast_or_config_bt_cap_commander",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_CAP_INITIATOR_UNICAST=true",
+        "@zephyr_kconfig//:CONFIG_BT_CAP_COMMANDER=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "audio_config_bt_cap_initiator_unicast_or_config_bt_cap_commander_deps",
+    srcs = [
+        "cap_common.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

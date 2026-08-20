@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "services",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ANS=true": [
+            "ans.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_DIS=true": [
+            "dis.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_GAP_SVC=true": [
+            "gap_svc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTS=true": [
+            "cts.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ETS=true": [
+            "ets.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HRS=true": [
+            "hrs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TPS=true": [
+            "tps.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_BAS=true": [":services_config_bt_bas_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_ots_or_config_bt_ots_client": [":services_config_bt_ots_or_config_bt_ots_client_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_ias_or_config_bt_ias_client": [":services_config_bt_ias_or_config_bt_ias_client_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_ZEPHYR_NUS=true": [":services_config_bt_zephyr_nus_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "services_config_bt_bas_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_ots_or_config_bt_ots_client",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_OTS=true",
+        "@zephyr_kconfig//:CONFIG_BT_OTS_CLIENT=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "services_config_bt_ots_or_config_bt_ots_client_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_ias_or_config_bt_ias_client",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_IAS=true",
+        "@zephyr_kconfig//:CONFIG_BT_IAS_CLIENT=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "services_config_bt_ias_or_config_bt_ias_client_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "services_config_bt_zephyr_nus_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

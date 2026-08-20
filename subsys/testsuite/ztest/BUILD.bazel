@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "ztest",
+    srcs = [
+        "src/ztest.c",
+        "src/ztest_error_hook.c",
+        "src/ztest_rules.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ZTEST_MOCKING=true": [
+            "src/ztest_mock.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZTRESS=true": [
+            "src/ztress.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARCH_POSIX=true": [
+            "src/ztest_posix.c",
+        ],
+        "//conditions:default": [
+            "src/ztest_defaults.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        ":includes",
+    ],
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//subsys/testsuite/ztest:include/zephyr/ztest_error_hook.h",
+        "//subsys/testsuite/ztest:include/zephyr/ztest_test.h",
+    ],
+)
+
+cc_library(
+    name = "includes",
+    hdrs = glob(
+        ["include/**/*.h"],
+        exclude = ["include/zephyr/arch/**"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+)

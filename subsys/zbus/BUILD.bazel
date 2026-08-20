@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "zbus",
+    srcs = [
+        "zbus.c",
+        "zbus_iterable_sections.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ZBUS_RUNTIME_OBSERVERS=true": [":zbus_config_zbus_runtime_observers_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZBUS_PROXY_AGENT=true": [
+            "//" + package_name() + "/proxy_agent",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "zbus_config_zbus_runtime_observers_deps",
+    srcs = [
+        "zbus_runtime_observers.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

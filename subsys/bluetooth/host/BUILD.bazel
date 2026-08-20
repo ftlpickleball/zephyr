@@ -1,0 +1,277 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "host",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HCI_RAW=true": [
+            "hci_common.c",
+            "hci_raw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_MONITOR=true": [
+            "monitor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_SETTINGS=true": [
+            "settings.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HOST_CCM=true": [
+            "aes_ccm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_LONG_WQ=true": [
+            "long_wq.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_CLASSIC=true": [
+            "//" + package_name() + "/classic",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_SHELL=true": [
+            "//" + package_name() + "/shell",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_HCI_HOST=true": [":host_config_bt_hci_host_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info": [":host_config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_FIXED_PASSKEY=true": [":host_config_bt_fixed_passkey_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_OOB_DATA_FIXED=true": [":host_config_bt_oob_data_fixed_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_use_debug_keys_or_config_bt_store_debug_keys": [":host_config_bt_use_debug_keys_or_config_bt_store_debug_keys_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CONN_DISABLE_SECURITY=true": [":host_config_bt_conn_disable_security_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_mesh_and_config_bt_testing": [":host_config_bt_mesh_and_config_bt_testing_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_hci_host_deps",
+    srcs = [
+        "addr.c",
+        "buf.c",
+        "data.c",
+        "hci_common.c",
+        "hci_core.c",
+        "id.c",
+        "uuid.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BROADCASTER=true": [
+            "adv.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_OBSERVER=true": [
+            "scan.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HOST_CRYPTO=true": [
+            "crypto_psa.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ECC=true": [
+            "ecc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ISO=true": [
+            "conn.c",
+            "iso.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CHANNEL_SOUNDING=true": [
+            "cs.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true": [":host_config_bt_hci_host_deps_config_bt_conn_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_DF=true": [":host_config_bt_hci_host_deps_config_bt_df_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_hci_host_deps_config_bt_conn_deps",
+    srcs = [
+        "att.c",
+        "conn.c",
+        "gatt.c",
+        "l2cap.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_GATT_GAP_SVC_VALIDATE=true": [
+            "gatt_gap_svc_validate.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_SMP=true": [":host_config_bt_hci_host_deps_config_bt_conn_deps_config_bt_smp_deps"],
+        "//conditions:default": [":host_config_bt_hci_host_deps_config_bt_conn_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_hci_host_deps_config_bt_conn_deps_config_bt_smp_deps",
+    srcs = [
+        "keys.c",
+        "smp.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_hci_host_deps_config_bt_conn_deps_else_deps",
+    srcs = [
+        "smp_null.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_hci_host_deps_config_bt_df_deps",
+    srcs = [
+        "direction.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_SMP_LOG_LEVEL_DBG=true",
+        "@zephyr_kconfig//:CONFIG_BT_KEYS_LOG_LEVEL_DBG=true",
+        "@zephyr_kconfig//:CONFIG_BT_LOG_SNIFFER_INFO=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_fixed_passkey_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_oob_data_fixed_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_use_debug_keys_or_config_bt_store_debug_keys",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_USE_DEBUG_KEYS=true",
+        "@zephyr_kconfig//:CONFIG_BT_STORE_DEBUG_KEYS=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_use_debug_keys_or_config_bt_store_debug_keys_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_conn_disable_security_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_mesh_and_config_bt_testing",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_BT_MESH=true",
+        "@zephyr_kconfig//:CONFIG_BT_TESTING=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "host_config_bt_mesh_and_config_bt_testing_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

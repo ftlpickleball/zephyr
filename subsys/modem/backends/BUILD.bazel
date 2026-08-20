@@ -1,0 +1,68 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "backends",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_BACKEND_UART=true": [
+            "modem_backend_uart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_BACKEND_UART_ISR=true": [
+            "modem_backend_uart_isr.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MODEM_BACKEND_TTY=true": [":backends_config_modem_backend_tty_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MODEM_BACKEND_UART_ASYNC=true": [":backends_config_modem_backend_uart_async_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "backends_config_modem_backend_tty_deps",
+    srcs = [
+        "modem_backend_tty.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "backends_config_modem_backend_uart_async_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_BACKEND_UART_ASYNC_HWFC=true": [
+            "modem_backend_uart_async_hwfc.c",
+        ],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MODEM_BACKEND_UART_ASYNC_HWFC=true": [],
+        "//conditions:default": [
+            "modem_backend_uart_async.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

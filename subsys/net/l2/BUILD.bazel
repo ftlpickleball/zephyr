@@ -1,0 +1,154 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "l2",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_VIRTUAL=true": [":l2_config_net_l2_virtual_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_DUMMY=true": [":l2_config_net_l2_dummy_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_net_offload_or_config_net_sockets_offload": [":l2_config_net_offload_or_config_net_sockets_offload_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_ETHERNET=true": [":l2_config_net_l2_ethernet_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_PPP=true": [":l2_config_net_l2_ppp_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_IEEE802154=true": [":l2_config_net_l2_ieee802154_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_OPENTHREAD=true": [":l2_config_net_l2_openthread_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_net_l2_wifi_mgmt_or_config_net_l2_wifi_shell": [":l2_config_net_l2_wifi_mgmt_or_config_net_l2_wifi_shell_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_CANBUS_RAW=true": [":l2_config_net_l2_canbus_raw_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_virtual_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_dummy_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_net_offload_or_config_net_sockets_offload",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_NET_OFFLOAD=true",
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_OFFLOAD=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_offload_or_config_net_sockets_offload_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_ethernet_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_ppp_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_ieee802154_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_openthread_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_net_l2_wifi_mgmt_or_config_net_l2_wifi_shell",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_NET_L2_WIFI_MGMT=true",
+        "@zephyr_kconfig//:CONFIG_NET_L2_WIFI_SHELL=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_wifi_mgmt_or_config_net_l2_wifi_shell_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "l2_config_net_l2_canbus_raw_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

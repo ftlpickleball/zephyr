@@ -1,0 +1,171 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "shell",
+    srcs = [
+        "net_shell.c",
+        "conn.c",
+        "iface.c",
+        "mem.c",
+        "pkt.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_PKT_ALLOC_SUPPORTED=true": [
+            "allocs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_ETHERNET_SUPPORTED=true": [
+            "arp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_CAPTURE_SUPPORTED=true": [
+            "capture.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_DHCPV4_SUPPORTED=true": [
+            "dhcpv4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_DHCPV6_SUPPORTED=true": [
+            "dhcpv6.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_DNS_RESOLVER_SUPPORTED=true": [
+            "dns.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_EVENT_MONITOR_SUPPORTED=true": [
+            "events.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_FTP_SUPPORTED=true": [
+            "ftp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_GPTP_SUPPORTED=true": [
+            "gptp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_HTTP_SERVER_SUPPORTED=true": [
+            "http.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_CONNECTION_MANAGER_SUPPORTED=true": [
+            "cm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_IPV4_SUPPORTED=true": [
+            "ipv4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_IPV6_SUPPORTED=true": [
+            "ipv6.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_IPV6_SUPPORTED=true": [
+            "nbr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_IP_SUPPORTED=true": [
+            "ping.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_PKT_FILTER_SUPPORTED=true": [
+            "filter.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_PMTU_SUPPORTED=true": [
+            "pmtu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_PPP_SUPPORTED=true": [
+            "ppp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_POWER_MANAGEMENT_SUPPORTED=true": [
+            "resume.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_ROUTE_SUPPORTED=true": [
+            "route.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_SOCKETS_SERVICE_SUPPORTED=true": [
+            "sockets.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_STATISTICS_SUPPORTED=true": [
+            "stats.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_POWER_MANAGEMENT_SUPPORTED=true": [
+            "suspend.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_TCP_SUPPORTED=true": [
+            "tcp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_UDP_SUPPORTED=true": [
+            "udp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_VIRTUAL_SUPPORTED=true": [
+            "virtual.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_VLAN_SUPPORTED=true": [
+            "vlan.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_WEBSOCKET_SUPPORTED=true": [
+            "websocket.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_QBV_SUPPORTED=true": [
+            "qbv_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL_WIREGUARD_SUPPORTED=true": [
+            "wg_shell.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty=True),
+)

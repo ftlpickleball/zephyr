@@ -1,0 +1,132 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "coverage",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": [
+            "coverage.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_demand_paging_and_config_coverage": [":coverage_config_demand_paging_and_config_coverage_deps"],
+        "//conditions:default": [":coverage_else_deps"],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_demand_paging_and_config_coverage",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_DEMAND_PAGING=true",
+        "@zephyr_kconfig//:CONFIG_COVERAGE=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "coverage_config_demand_paging_and_config_coverage_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "coverage_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+    ] + select({
+        ":config_demand_paging_and_config_coverage": [":linker_fragments_config_demand_paging_and_config_coverage_deps"],
+        "//conditions:default": [":linker_fragments_else_deps"],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_demand_paging_and_config_coverage_deps",
+    deps = [
+        ":coverage_ram.ld.target",
+        ":coverage_rodata.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "coverage_ram.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": ["coverage_ram.ld"],
+        "//conditions:default": [],
+    }),
+    location = "PINNED_RAM_SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "coverage_rodata.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": ["coverage_rodata.ld"],
+        "//conditions:default": [],
+    }),
+    location = "PINNED_RODATA",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_else_deps",
+    deps = [
+        ":coverage_ram.ld.target#",
+        ":coverage_rodata.ld.target#",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "coverage_ram.ld.target#",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": ["coverage_ram.ld"],
+        "//conditions:default": [],
+    }),
+    location = "RAM_SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "coverage_rodata.ld.target#",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": ["coverage_rodata.ld"],
+        "//conditions:default": [],
+    }),
+    location = "RODATA",
+    sort_key = "default",
+)

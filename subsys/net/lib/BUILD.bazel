@@ -1,0 +1,198 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "lib",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/utils",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_COAP=true": [
+            "//" + package_name() + "/coap",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FTP_CLIENT=true": [
+            "//" + package_name() + "/ftp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LWM2M=true": [
+            "//" + package_name() + "/lwm2m",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOCKS=true": [
+            "//" + package_name() + "/socks",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SNTP=true": [
+            "//" + package_name() + "/sntp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MQTT_LIB=true": [
+            "//" + package_name() + "/mqtt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MQTT_SN_LIB=true": [
+            "//" + package_name() + "/mqtt_sn",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PTP=true": [
+            "//" + package_name() + "/ptp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_LATMON=true": [
+            "//" + package_name() + "/latmon",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TFTP_LIB=true": [
+            "//" + package_name() + "/tftp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_CONFIG_SETTINGS=true": [
+            "//" + package_name() + "/config",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS=true": [
+            "//" + package_name() + "/sockets",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TLS_CREDENTIALS=true": [
+            "//" + package_name() + "/tls_credentials",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_CAPTURE=true": [
+            "//" + package_name() + "/capture",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_ZPERF=true": [
+            "//" + package_name() + "/zperf",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_SHELL=true": [
+            "//" + package_name() + "/shell",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_TRICKLE=true": [
+            "//" + package_name() + "/trickle",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_DHCPV6=true": [
+            "//" + package_name() + "/dhcpv6",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PROMETHEUS=true": [
+            "//" + package_name() + "/prometheus",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_CREDENTIALS=true": [
+            "//" + package_name() + "/wifi_credentials",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_OCPP=true": [
+            "//" + package_name() + "/ocpp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NETMIDI2_HOST=true": [
+            "//" + package_name() + "/midi2",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIREGUARD=true": [
+            "//" + package_name() + "/wireguard",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        ":config_net_dhcpv4_or_config_net_dhcpv4_server": [":lib_config_net_dhcpv4_or_config_net_dhcpv4_server_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_dns_resolver_or_config_mdns_responder_or_config_llmnr_responder": [":lib_config_dns_resolver_or_config_mdns_responder_or_config_llmnr_responder_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HTTP=true": [":lib_config_http_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WEBSOCKET_CLIENT=true": [
+            "//" + package_name() + "/websocket",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_net_dhcpv4_or_config_net_dhcpv4_server",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_NET_DHCPV4=true",
+        "@zephyr_kconfig//:CONFIG_NET_DHCPV4_SERVER=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "lib_config_net_dhcpv4_or_config_net_dhcpv4_server_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_dns_resolver_or_config_mdns_responder_or_config_llmnr_responder",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_DNS_RESOLVER=true",
+        "@zephyr_kconfig//:CONFIG_MDNS_RESPONDER=true",
+        "@zephyr_kconfig//:CONFIG_LLMNR_RESPONDER=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "lib_config_dns_resolver_or_config_mdns_responder_or_config_llmnr_responder_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "lib_config_http_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

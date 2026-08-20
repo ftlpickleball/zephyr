@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "includes",
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    strip_include_prefix = "include",
+    visibility = ["//visibility:public"],
+)
+
+zephyr_cc_library(
+    name = "testsuite",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TEST_BUSY_SIM=true": [
+            "busy_sim/busy_sim.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        ":includes",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ZTEST=true": [
+            "//" + package_name() + "/ztest",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TEST=true": [":testsuite_config_test_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_COVERAGE_GCOV=true": [
+            "//" + package_name() + "/coverage",
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+)
+
+zephyr_cc_library(
+    name = "testsuite_config_test_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

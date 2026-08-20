@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "sockets",
+    srcs = [
+        "getaddrinfo.c",
+        "sockets.c",
+        "sockets_misc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_NATIVE=true": [
+            "sockets_inet.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_CAN=true": [
+            "sockets_can.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_PACKET=true": [
+            "sockets_packet.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_SOCKOPT_TLS=true": [
+            "sockets_tls.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_OFFLOAD=true": [
+            "socket_offload.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_OFFLOAD_DISPATCHER=true": [
+            "socket_dispatcher.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_OBJ_CORE=true": [
+            "socket_obj_core.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_SERVICE=true": [
+            "sockets_service.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETPAIR=true": [
+            "socketpair.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty=True),
+    deps = [
+    ] + select({
+        "//conditions:default": [":sockets_not_config_net_sockets_offload_deps"],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_OFFLOAD=true": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_NET_MGMT=true": [":sockets_config_net_sockets_net_mgmt_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOCKS=true": [":sockets_config_socks_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "sockets_not_config_net_sockets_offload_deps",
+    srcs = [
+        "getnameinfo.c",
+    ],
+    hdrs = glob(["*.h"], allow_empty=True),
+)
+
+zephyr_cc_library(
+    name = "sockets_config_net_sockets_net_mgmt_deps",
+    srcs = [
+        "sockets_net_mgmt.c",
+    ],
+    hdrs = glob(["*.h"], allow_empty=True),
+)
+
+zephyr_cc_library(
+    name = "sockets_config_socks_deps",
+    srcs = [
+    ],
+    hdrs = glob(["*.h"], allow_empty=True),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/net/socket.h",
+    ],
+)

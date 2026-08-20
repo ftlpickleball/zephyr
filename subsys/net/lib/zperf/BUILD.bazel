@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "zperf",
+    srcs = [
+        "zperf_common.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_UDP=true": [
+            "zperf_udp_uploader.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_TCP=true": [
+            "zperf_tcp_uploader.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_ZPERF_RAW_TX=true": [
+            "zperf_raw_uploader.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SHELL=true": [
+            "zperf_shell.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty=True),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NET_ZPERF_SERVER=true": [":zperf_config_net_zperf_server_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "zperf_config_net_zperf_server_deps",
+    srcs = [
+        "zperf_session.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_UDP=true": [
+            "zperf_udp_receiver.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_TCP=true": [
+            "zperf_tcp_receiver.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty=True),
+)

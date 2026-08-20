@@ -1,0 +1,89 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "transport",
+    srcs = [
+        "src/smp.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_REASSEMBLY=true": [
+            "src/smp_reassembly.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_BT=true": [
+            "src/smp_bt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_SHELL=true": [
+            "src/smp_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_UART=true": [
+            "src/smp_uart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_RAW_UART=true": [
+            "src/smp_raw_uart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_UDP=true": [
+            "src/smp_udp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_LORAWAN=true": [
+            "src/smp_lorawan.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_DUMMY=true": [
+            "src/smp_dummy.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_RAW_DUMMY=true": [
+            "src/smp_raw_dummy.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_mcumgr_transport_serial_has_smp_over_console_or_config_mcumgr_transport_serial_has_raw_binary_non_smp_over_console": [":transport_config_mcumgr_transport_serial_has_smp_over_console_or_config_mcumgr_transport_serial_has_raw_binary_non_smp_over_console_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_mcumgr_transport_serial_has_smp_over_console_or_config_mcumgr_transport_serial_has_raw_binary_non_smp_over_console",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_SERIAL_HAS_SMP_OVER_CONSOLE=true",
+        "@zephyr_kconfig//:CONFIG_MCUMGR_TRANSPORT_SERIAL_HAS_RAW_BINARY_NON_SMP_OVER_CONSOLE=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "transport_config_mcumgr_transport_serial_has_smp_over_console_or_config_mcumgr_transport_serial_has_raw_binary_non_smp_over_console_deps",
+    srcs = [
+        "src/serial_util.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

@@ -1,0 +1,129 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "logging",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "//conditions:default": [":logging_not_config_log_mode_minimal_deps"],
+        "@zephyr_kconfig//:CONFIG_LOG_MODE_MINIMAL=true": [":logging_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "logging_not_config_log_mode_minimal_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG=true": [
+            "log_cache.c",
+            "log_core.c",
+            "log_mgmt.c",
+            "log_msg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_OUTPUT=true": [
+            "log_output.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_CMDS=true": [
+            "log_cmds.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_DICTIONARY_SUPPORT=true": [
+            "log_output_dict.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_MIPI_SYST_ENABLE=true": [
+            "log_output_syst.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_MULTIDOMAIN_LINK=true": [
+            "log_multidomain_link.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_LINK_IPC_SERVICE=true": [
+            "log_link_ipc_service.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/backends",
+    ] + select({
+        "//conditions:default": [":logging_not_config_log_mode_minimal_deps_not_config_log_always_runtime_deps"],
+        "@zephyr_kconfig//:CONFIG_LOG_ALWAYS_RUNTIME=true": [],
+    }) + select({
+        ":config_log_custom_format_support_or_config_log_output_format_custom_timestamp": [":logging_not_config_log_mode_minimal_deps_config_log_custom_format_support_or_config_log_output_format_custom_timestamp_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "logging_not_config_log_mode_minimal_deps_not_config_log_always_runtime_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_log_custom_format_support_or_config_log_output_format_custom_timestamp",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_LOG_CUSTOM_FORMAT_SUPPORT=true",
+        "@zephyr_kconfig//:CONFIG_LOG_OUTPUT_FORMAT_CUSTOM_TIMESTAMP=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "logging_not_config_log_mode_minimal_deps_config_log_custom_format_support_or_config_log_output_format_custom_timestamp_deps",
+    srcs = [
+        "log_output_custom.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "logging_else_deps",
+    srcs = [
+        "log_minimal.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/logging/log_ctrl.h",
+        "//include:zephyr/logging/log_msg.h",
+    ],
+)

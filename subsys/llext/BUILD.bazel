@@ -1,0 +1,96 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "llext",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_LLEXT=true": [":llext_config_llext_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "llext_config_llext_deps",
+    srcs = [
+        "buf_loader.c",
+        "llext.c",
+        "llext_export.c",
+        "llext_handlers.c",
+        "llext_link.c",
+        "llext_load.c",
+        "llext_mem.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FILE_SYSTEM=true": [
+            "fs_loader.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT_SHELL=true": [
+            "shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT_EXPERIMENTAL=true": [
+            "llext_experimental.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT_HEAP_K_HEAP=true": [
+            "llext_kheap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT_HEAP_MEMBLK=true": [
+            "llext_memblk.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_riscv_and_config_userspace": [":llext_config_llext_deps_config_riscv_and_config_userspace_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_riscv_and_config_userspace",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_RISCV=true",
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "llext_config_llext_deps_config_riscv_and_config_userspace_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/llext/llext.h",
+    ],
+)

@@ -1,0 +1,306 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "controller",
+    srcs = [
+        "ll_sw/ll_addr.c",
+        "ll_sw/ll_feat.c",
+        "ll_sw/ll_tx_pwr.c",
+        "ll_sw/lll_common.c",
+        "ll_sw/ull.c",
+        "ticker/ticker.c",
+        "util/dbuf.c",
+        "util/mayfly.c",
+        "util/mem.c",
+        "util/memq.c",
+        "util/util.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_HCI=true": [
+            "hci/hci.c",
+            "hci/hci_driver.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SCHED_ADVANCED=true": [
+            "ll_sw/ull_sched.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_DF=true": [
+            "ll_sw/ull_df.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_CONN_ISO=true": [
+            "ll_sw/ull_conn_iso.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ISO=true": [
+            "ll_sw/isoal.c",
+            "ll_sw/ull_iso.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HCI_MESH_EXT=true": [
+            "ll_sw/ll_mesh.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SETTINGS=true": [
+            "ll_sw/ll_settings.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_CRYPTO=true": [
+            "crypto/crypto.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NRF_RADIO_SYNC_TICKER=true": [
+            "flash/soc_flash_nrf_ticker.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADVANCED_FEATURES=true": [":controller_config_bt_ctlr_advanced_features_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_shell_and_config_bt_ll_sw_split": [":controller_config_bt_shell_and_config_bt_ll_sw_split_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_BROADCASTER=true": [":controller_config_bt_broadcaster_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_OBSERVER=true": [":controller_config_bt_observer_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true": [":controller_config_bt_conn_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_ctlr_filter_accept_list_or_config_bt_ctlr_sync_periodic_adv_list": [":controller_config_bt_ctlr_filter_accept_list_or_config_bt_ctlr_sync_periodic_adv_list_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_COEX_DRIVERS=true": [
+            "//" + package_name() + "/coex",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_LLL_VENDOR_NORDIC=true": [
+            "//" + package_name() + "/ll_sw/nordic",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_LLL_VENDOR_OPENISA=true": [
+            "//" + package_name() + "/ll_sw/openisa",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_ctlr_advanced_features_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_shell_and_config_bt_ll_sw_split",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_BT_SHELL=true",
+        "@zephyr_kconfig//:CONFIG_BT_LL_SW_SPLIT=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_shell_and_config_bt_ll_sw_split_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_broadcaster_deps",
+    srcs = [
+        "ll_sw/ull_adv.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_EXT=true": [
+            "ll_sw/ull_adv_aux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_PERIODIC=true": [
+            "ll_sw/ull_adv_sync.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_ISO=true": [
+            "ll_sw/ull_adv_iso.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_observer_deps",
+    srcs = [
+        "ll_sw/ull_scan.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_EXT=true": [
+            "ll_sw/ull_scan_aux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_PERIODIC=true": [
+            "ll_sw/ull_sync.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_ISO=true": [
+            "ll_sw/ull_sync_iso.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_conn_deps",
+    srcs = [
+        "ll_sw/ull_conn.c",
+        "ll_sw/ull_llcp.c",
+        "ll_sw/ull_llcp_chmu.c",
+        "ll_sw/ull_llcp_common.c",
+        "ll_sw/ull_llcp_conn_upd.c",
+        "ll_sw/ull_llcp_local.c",
+        "ll_sw/ull_llcp_pdu.c",
+        "ll_sw/ull_llcp_remote.c",
+        "ll_sw/ull_tx_queue.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_LE_ENC=true": [
+            "ll_sw/ull_llcp_enc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_PHY=true": [
+            "ll_sw/ull_llcp_phy.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_PERIPHERAL=true": [
+            "ll_sw/ull_peripheral.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_PERIPHERAL_ISO=true": [
+            "ll_sw/ull_peripheral_iso.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CENTRAL=true": [
+            "ll_sw/ull_central.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_CENTRAL_ISO=true": [
+            "ll_sw/ull_central_iso.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_bt_ctlr_peripheral_iso_or_config_bt_ctlr_central_iso": [":controller_config_bt_conn_deps_config_bt_ctlr_peripheral_iso_or_config_bt_ctlr_central_iso_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_ctlr_sync_transfer_sender_or_config_bt_ctlr_sync_transfer_receiver": [":controller_config_bt_conn_deps_config_bt_ctlr_sync_transfer_sender_or_config_bt_ctlr_sync_transfer_receiver_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_bt_ctlr_peripheral_iso_or_config_bt_ctlr_central_iso",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_PERIPHERAL_ISO=true",
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_CENTRAL_ISO=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_conn_deps_config_bt_ctlr_peripheral_iso_or_config_bt_ctlr_central_iso_deps",
+    srcs = [
+        "ll_sw/ull_llcp_cc.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_ctlr_sync_transfer_sender_or_config_bt_ctlr_sync_transfer_receiver",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_TRANSFER_SENDER=true",
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_TRANSFER_RECEIVER=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_conn_deps_config_bt_ctlr_sync_transfer_sender_or_config_bt_ctlr_sync_transfer_receiver_deps",
+    srcs = [
+        "ll_sw/ull_llcp_past.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_bt_ctlr_filter_accept_list_or_config_bt_ctlr_sync_periodic_adv_list",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_FILTER_ACCEPT_LIST=true",
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_PERIODIC_ADV_LIST=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "controller_config_bt_ctlr_filter_accept_list_or_config_bt_ctlr_sync_periodic_adv_list_deps",
+    srcs = [
+        "ll_sw/ull_filter.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

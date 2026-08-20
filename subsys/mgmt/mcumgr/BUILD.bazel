@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "mcumgr",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/mgmt",
+        "//" + package_name() + "/smp",
+        "//" + package_name() + "/util",
+        "//" + package_name() + "/grp",
+        "//" + package_name() + "/transport",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SMP_CLIENT=true": [
+            "//" + package_name() + "/smp_client",
+        ],
+        "//conditions:default": [],
+    }),
+)

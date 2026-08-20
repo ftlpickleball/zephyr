@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "fs_mgmt",
+    srcs = [
+        "src/fs_mgmt.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS_CHECKSUM_HASH=true": [
+            "src/fs_mgmt_hash_checksum.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS_CHECKSUM_IEEE_CRC32=true": [
+            "src/fs_mgmt_hash_checksum_crc32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS_HASH_SHA256=true": [
+            "src/fs_mgmt_hash_checksum_sha256.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256": [":fs_mgmt_config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_mcumgr_grp_fs_and_not_config_mcumgr_grp_fs_file_access_hook": [":fs_mgmt_config_mcumgr_grp_fs_and_not_config_mcumgr_grp_fs_file_access_hook_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS_CHECKSUM_HASH=true",
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS_HASH_SHA256=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "fs_mgmt_config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [":fs_mgmt_config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256_deps_config_mbedtls_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "fs_mgmt_config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256_deps_config_mbedtls_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+config_setting(
+    name = "not_config_mcumgr_grp_fs_file_access_hook",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS_FILE_ACCESS_HOOK": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_mcumgr_grp_fs_and_not_config_mcumgr_grp_fs_file_access_hook",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_FS=true",
+        ":not_config_mcumgr_grp_fs_file_access_hook",
+    ],
+)
+
+zephyr_cc_library(
+    name = "fs_mgmt_config_mcumgr_grp_fs_and_not_config_mcumgr_grp_fs_file_access_hook_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

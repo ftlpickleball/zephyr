@@ -1,0 +1,200 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "bindesc",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BINDESC_READ=true": [
+            "bindesc_read.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_X86=true": [":bindesc_config_x86_deps"],
+        "//conditions:default": [":bindesc_else_deps"],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BINDESC_${def_name}=true": [":bindesc_config_bindesc___def_name__deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BINDESC_DEFINE_BUILD_TIME=true": [":bindesc_config_bindesc_define_build_time_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BINDESC_DEFINE_VERSION=true": [":bindesc_config_bindesc_define_version_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BINDESC_DEFINE_HOST_INFO=true": [":bindesc_config_bindesc_define_host_info_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_x86_deps",
+    srcs = [
+        "x86/bindesc_skip.S",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc___def_name__deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc_define_build_time_deps",
+    srcs = [
+        "bindesc_build_time.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BINDESC_BUILD_TIME_USE_LOCAL_TIME=true": [":bindesc_config_bindesc_define_build_time_deps_config_bindesc_build_time_use_local_time_deps"],
+        "//conditions:default": [":bindesc_config_bindesc_define_build_time_deps_else_deps"],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BINDESC_BUILD_TIME_ALWAYS_REBUILD=true": [":bindesc_config_bindesc_define_build_time_deps_config_bindesc_build_time_always_rebuild_deps"],
+        "//conditions:default": [":bindesc_config_bindesc_define_build_time_deps_else_deps_1"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc_define_build_time_deps_config_bindesc_build_time_use_local_time_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc_define_build_time_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc_define_build_time_deps_config_bindesc_build_time_always_rebuild_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc_define_build_time_deps_else_deps_1",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc_define_version_deps",
+    srcs = [
+        "bindesc_version.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "bindesc_config_bindesc_define_host_info_deps",
+    srcs = [
+        "bindesc_host_info.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_X86=true": [":linker_fragments_config_x86_deps"],
+        "//conditions:default": [":linker_fragments_else_deps"],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_x86_deps",
+    deps = [
+        ":bindesc_no_vt.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "bindesc_no_vt.ld.target",
+    srcs = ["bindesc_no_vt.ld"],
+    location = "ROM_START",
+    sort_key = "0x1bindesc",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_else_deps",
+    deps = [
+        ":bindesc.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "bindesc.ld.target",
+    srcs = ["bindesc.ld"],
+    location = "ROM_START",
+    sort_key = "0x1bindesc",
+)

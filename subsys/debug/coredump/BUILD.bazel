@@ -1,0 +1,75 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "coredump",
+    srcs = [
+        "coredump_core.c",
+        "coredump_memory_regions.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP_BACKEND_LOGGING=true": [
+            "coredump_backend_logging.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP_BACKEND_FLASH_PARTITION=true": [
+            "coredump_backend_flash_partition.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP_BACKEND_INTEL_ADSP_MEM_WINDOW=true": [
+            "coredump_backend_intel_adsp_mem_window.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP_SHELL=true": [
+            "coredump_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP_BACKEND_IN_MEMORY=true": [
+            "coredump_backend_in_memory.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_XTENSA=true": [":coredump_config_xtensa_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "coredump_config_xtensa_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "//conditions:default": [":coredump_config_xtensa_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "coredump_config_xtensa_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

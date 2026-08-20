@@ -1,0 +1,254 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "ip",
+    srcs = [
+        "net_core.c",
+        "net_if.c",
+        "net_timeout.c",
+        "utils.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_MGMT_EVENT=true": [
+            "net_mgmt.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NET_OFFLOAD=true": [":ip_config_net_offload_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_NATIVE=true": [":ip_config_net_native_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_PKT_ALLOC_STATS=true": [":ip_config_net_pkt_alloc_stats_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "ip_config_net_offload_deps",
+    srcs = [
+        "net_context.c",
+        "net_pkt.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "ip_config_net_native_deps",
+    srcs = [
+        "icmp.c",
+        "net_context.c",
+        "net_pkt.c",
+        "net_tc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IP=true": [
+            "connection.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_6LO=true": [
+            "6lo.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV4_AUTO=true": [
+            "ipv4_autoconf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV4=true": [
+            "icmpv4.c",
+            "ipv4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV4_ACD=true": [
+            "ipv4_acd.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV4_IGMP=true": [
+            "igmp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV6=true": [
+            "icmpv6.c",
+            "ipv6.c",
+            "ipv6_nbr.c",
+            "nbr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV6_MLD=true": [
+            "ipv6_mld.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV6_PE=true": [
+            "ipv6_pe.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV6_FRAGMENT=true": [
+            "ipv6_fragment.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_IPV4_FRAGMENT=true": [
+            "ipv4_fragment.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_MGMT_EVENT=true": [
+            "net_mgmt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_PMTU=true": [
+            "pmtu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_ROUTE=true": [
+            "route.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_STATISTICS=true": [
+            "net_stats.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_TCP=true": [
+            "tcp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_TEST_PROTOCOL=true": [
+            "tp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_UDP=true": [
+            "udp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_PROMISCUOUS_MODE=true": [
+            "promiscuous.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_CONNECTION_SOCKETS=true": [
+            "connection.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_PACKET=true": [
+            "packet_socket.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_CAN=true": [
+            "canbus_socket.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_net_tcp_isn_rfc6528_or_config_net_ipv6_pe_or_config_net_ipv6_iid_stable": [":ip_config_net_native_deps_config_net_tcp_isn_rfc6528_or_config_net_ipv6_pe_or_config_net_ipv6_iid_stable_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_net_tcp_isn_rfc6528_or_config_net_ipv6_pe_or_config_net_ipv6_iid_stable",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_NET_TCP_ISN_RFC6528=true",
+        "@zephyr_kconfig//:CONFIG_NET_IPV6_PE=true",
+        "@zephyr_kconfig//:CONFIG_NET_IPV6_IID_STABLE=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "ip_config_net_native_deps_config_net_tcp_isn_rfc6528_or_config_net_ipv6_pe_or_config_net_ipv6_iid_stable_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "ip_config_net_pkt_alloc_stats_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/net/net_if.h",
+        "//include:zephyr/net/net_ip.h",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NET_PKT_ALLOC_STATS=true": [":linker_fragments_config_net_pkt_alloc_stats_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_net_pkt_alloc_stats_deps",
+    deps = [
+        ":iterables_net_pkt_alloc_stats.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "iterables_net_pkt_alloc_stats.ld.target",
+    srcs = ["iterables_net_pkt_alloc_stats.ld"],
+    location = "DATA_SECTIONS",
+    sort_key = "default",
+)

@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "backends",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IPC_SERVICE_BACKEND_ICMSG=true": [
+            "ipc_icmsg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IPC_SERVICE_BACKEND_ICMSG_ME_INITIATOR=true": [
+            "ipc_icmsg_me_initiator.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IPC_SERVICE_BACKEND_ICMSG_ME_FOLLOWER=true": [
+            "ipc_icmsg_me_follower.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IPC_SERVICE_BACKEND_ICBMSG=true": [
+            "ipc_icbmsg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IPC_SERVICE_BACKEND_INTEL_ADSP_HOST_IPC=true": [
+            "ipc_intel_adsp_host_ipc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IPC_SERVICE_BACKEND_RPMSG=true": [
+            "ipc_rpmsg_static_vrings.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "usb_c",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBC_STACK=true": [
+            "usbc_pe_common.c",
+            "usbc_prl.c",
+            "usbc_stack.c",
+            "usbc_tc_common.c",
+            "usbc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBC_CSM_SINK_ONLY=true": [
+            "usbc_pe_snk_states.c",
+            "usbc_tc_snk_states.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBC_CSM_SOURCE_ONLY=true": [
+            "usbc_pe_src_states.c",
+            "usbc_tc_src_states.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBC_CSM_DRP=true": [
+            "usbc_pe_snk_states.c",
+            "usbc_pe_src_states.c",
+            "usbc_tc_snk_states.c",
+            "usbc_tc_src_states.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
