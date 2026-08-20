@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:defs.bzl", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "devicetree",
+    srcs = [
+        "src/devicetree/__init__.py",
+        "src/devicetree/_private.py",
+        "src/devicetree/dtlib.py",
+        "src/devicetree/edtlib.py",
+        "src/devicetree/grutils.py",
+    ],
+    deps = [
+        "@zephyr_bazel_pip_deps//pyyaml",
+    ],
+)

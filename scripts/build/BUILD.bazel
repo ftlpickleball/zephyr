@@ -1,0 +1,77 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:defs.bzl", "py_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+py_binary(
+    name = "parse_syscalls",
+    srcs = ["parse_syscalls.py"],
+)
+
+py_binary(
+    name = "gen_syscalls",
+    srcs = ["gen_syscalls.py"],
+)
+
+py_binary(
+    name = "gen_iter_sections",
+    srcs = ["gen_iter_sections.py"],
+)
+
+py_binary(
+    name = "gen_kobject_list",
+    srcs = ["gen_kobject_list.py"],
+    deps = [
+        "@zephyr_pip_deps//packaging",
+        "@zephyr_pip_deps//pyelftools",
+    ],
+)
+
+py_binary(
+    name = "gen_kobject_placeholders",
+    srcs = ["gen_kobject_placeholders.py"],
+    deps = [
+        "@zephyr_pip_deps//packaging",
+        "@zephyr_pip_deps//pyelftools",
+    ],
+)
+
+py_binary(
+    name = "process_gperf",
+    srcs = ["process_gperf.py"],
+    deps = [
+        "@zephyr_pip_deps//packaging",
+    ],
+)
+
+py_binary(
+    name = "gen_isr_tables",
+    srcs = [
+        "gen_isr_tables.py",
+        "gen_isr_tables_parser_carrays.py",
+        "gen_isr_tables_parser_local.py",
+    ],
+    imports = ["."],
+    deps = [
+        "@zephyr_pip_deps//pyelftools",
+    ],
+)
+
+py_binary(
+    name = "gen_offset_header",
+    srcs = ["gen_offset_header.py"],
+    deps = ["@zephyr_pip_deps//pyelftools"],
+)
+
+py_binary(
+    name = "gen_strerror_table",
+    srcs = ["gen_strerror_table.py"],
+)
+
+py_binary(
+    name = "gen_app_partitions",
+    srcs = ["gen_app_partitions.py"],
+    deps = ["@zephyr_pip_deps//pyelftools"],
+)

@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# Compiler flags are appended to "copts" of cc_libraries and can only have
+# one level of selects, so we have to create a config_setting_group for every
+# compiler flag we might need to add.
+
+selects.config_setting_group(
+    name = "is_arm_gcc",
+    match_all = [
+        "//:compiler_is_gcc",
+        "@zephyr_kconfig//:CONFIG_ARM=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_compiler_isa_thumb2",
+    match_all = [
+        ":is_arm_gcc",
+        "@zephyr_kconfig//:CONFIG_COMPILER_ISA_THUMB2=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_fp_hardabi",
+    match_all = [
+        ":is_arm_gcc",
+        "@zephyr_kconfig//:CONFIG_FP_HARDABI=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_fp_softabi",
+    match_all = [
+        ":is_arm_gcc",
+        "@zephyr_kconfig//:CONFIG_FP_SOFTABI=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_fp16_ieee",
+    match_all = [
+        ":is_arm_gcc",
+        "@zephyr_kconfig//:CONFIG_FP16_IEEE=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_fp16_alt",
+    match_all = [
+        ":is_arm_gcc",
+        "@zephyr_kconfig//:CONFIG_FP16_ALT=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_thread_local_storage",
+    match_all = [
+        ":is_arm_gcc",
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_secure_firmware",
+    match_all = [
+        ":is_arm_gcc",
+        "@zephyr_kconfig//:CONFIG_ARM_SECURE_FIRMWARE=true",
+    ],
+)

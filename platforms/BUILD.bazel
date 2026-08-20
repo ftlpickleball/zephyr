@@ -1,0 +1,157 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("//bazel:flags.bzl", "flags_from_dict")
+
+package(default_visibility = ["//visibility:public"])
+
+platform(
+    name = "cortex_m",
+    constraint_values = [
+        "@platforms//os:none",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/arm:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/arm:offsets_src",
+        "@zephyr//:soc_linkerscript_template": "@zephyr//include/zephyr/arch/arm/cortex_m/scripts:linker.ld",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "posix",
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/posix:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/posix:offsets_src",
+        "@zephyr//:soc_linkerscript_template": "@zephyr//include:zephyr/arch/posix/linker.ld",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//include:zephyr/arch/posix/linker.ld",
+    }),
+    parents = ["@platforms//host:host"],
+)
+
+platform(
+    name = "xtensa",
+    constraint_values = [
+        "@platforms//os:none",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/xtensa:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/xtensa:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "arc",
+    constraint_values = [
+        "@platforms//os:none",
+        "//constraints:arc",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/arc:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/arc:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "arm64",
+    constraint_values = [
+        "@platforms//os:none",
+        "@platforms//cpu:aarch64",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/arm64:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/arm64:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "mips",
+    constraint_values = [
+        "@platforms//os:none",
+        "//constraints:mips",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/mips:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/mips:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "riscv",
+    constraint_values = [
+        "@platforms//os:none",
+        "@platforms//cpu:riscv32",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/riscv:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/riscv:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "rx",
+    constraint_values = [
+        "@platforms//os:none",
+        "//constraints:rx",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/rx:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/rx:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "sparc",
+    constraint_values = [
+        "@platforms//os:none",
+        "//constraints:sparc",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/sparc:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/sparc:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+platform(
+    name = "x86",
+    constraint_values = [
+        "@platforms//os:none",
+        "@platforms//cpu:x86_64",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:offsets_lib": "@zephyr//arch/x86:offsets",
+        "@zephyr//:offsets_src": "@zephyr//arch/x86:offsets_src",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//:soc_linkerscript_template",
+    }),
+)
+
+string_flag(
+    name = "mode",
+    build_setting_default = "kernel",
+    values = [
+        "kernel",
+        "user",
+    ],
+)
+
+config_setting(
+    name = "kernel_mode",
+    flag_values = {
+        ":mode": "kernel",
+    },
+)
+
+config_setting(
+    name = "user_mode",
+    flag_values = {
+        ":mode": "user",
+    },
+)

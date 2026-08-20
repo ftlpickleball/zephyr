@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# Constraint values used in toolchain matching.
+
+constraint_setting(
+    name = "compatibility",
+    default_constraint_value = "non_zephyr",
+)
+
+constraint_value(
+    name = "non_zephyr",
+    constraint_setting = ":compatibility",
+)
+
+constraint_value(
+    name = "zephyr_autoconf_force_included",
+    constraint_setting = ":compatibility",
+)
+
+constraint_setting(
+    name = "arch",
+    default_constraint_value = "none",
+)
+
+constraint_value(
+    name = "none",
+    constraint_setting = ":arch",
+)
+
+constraint_value(
+    name = "xtensa",
+    constraint_setting = ":arch",
+)
+
+constraint_value(
+    name = "arc",
+    constraint_setting = ":arch",
+)
+
+constraint_value(
+    name = "mips",
+    constraint_setting = ":arch",
+)
+
+constraint_value(
+    name = "rx",
+    constraint_setting = ":arch",
+)
+
+constraint_value(
+    name = "sparc",
+    constraint_setting = ":arch",
+)
+
+constraint_setting(
+    name = "zephyr_toolchain_variant",
+    default_constraint_value = ":gcc",
+)
+
+constraint_value(
+    name = "gcc",
+    constraint_setting = ":zephyr_toolchain_variant",
+)
+
+constraint_value(
+    name = "llvm",
+    constraint_setting = ":zephyr_toolchain_variant",
+)

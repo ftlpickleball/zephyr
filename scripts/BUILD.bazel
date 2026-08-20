@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+exports_files(["requirements-base.txt"])
+
+filegroup(
+    name = "west_runners_scripts",
+    srcs = glob([
+        "west_commands/runners/**/*.py",
+    ], allow_empty = True),
+    visibility = ["//visibility:public"],
+)

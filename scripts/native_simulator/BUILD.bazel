@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["common/other/linker_script.pre.ld"])
+
+cc_library(
+    name = "native_simulator_headers",
+    hdrs = glob(["**/*.h"], allow_empty = True),
+    includes = [
+        "common/src",
+        "common/src/include",
+        "native/src",
+        "native/src/include",
+    ],
+)
+
+cc_library(
+    name = "native_simulator",
+    alwayslink = True,
+    srcs = glob([
+        "common/src/*.c",
+        "native/src/*.c",
+    ], allow_empty = True),
+    hdrs = glob(["**/*.h"], allow_empty = True),
+    copts = [
+        "-Wno-error",
+        "-Wno-cast-qual",
+        "-Wno-unused-parameter",
+        "-Wno-sign-compare",
+    ],
+    defines = [
+        "NSI_RUNNER_BUILD",
+        "_POSIX_C_SOURCE=200809L",
+        "_XOPEN_SOURCE=600",
+        "_XOPEN_SOURCE_EXTENDED",
+    ],
+    features = ["-zephyr_app_main"],
+    includes = [
+        "common/src",
+        "common/src/include",
+        "native/src",
+        "native/src/include",
+    ],
+    deps = [
+        ":native_simulator_headers",
+    ],
+)

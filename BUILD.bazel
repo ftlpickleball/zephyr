@@ -1,0 +1,408 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:runner.bzl", "zephyr_runner_config")
+load("//bazel:cc_toolchain_feature_is_enabled.bzl", "cc_toolchain_feature_is_enabled")
+load("//bazel:defs.bzl", "device_api_linker_files", "driver_validation_file", "kobj_types_enum_file", "syscall_library_files", "zephyr_offset_header")
+load("//bazel:linker_fragment.bzl", "generate_app_smem_unaligned_linker", "generate_linker_snippets", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["**"], allow_empty = True))
+
+cc_toolchain_feature_is_enabled(
+    name = "compiler_is_gcc",
+    feature_name = "compiler_is_gcc",
+)
+
+cc_toolchain_feature_is_enabled(
+    name = "compiler_is_clang",
+    feature_name = "compiler_is_clang",
+)
+
+cc_library(
+    name = "syscall_tracing",
+    hdrs = [
+        "//include:zephyr/llext/symbol.h",
+        "//include:zephyr/sys/__assert.h",
+        "//include:zephyr/sys/iterable_sections.h",
+        "//include:zephyr/toolchain.h",
+        "//include:zephyr/toolchain/common.h",
+        "//include:zephyr/toolchain/gcc.h",
+        "//include:zephyr/tracing/tracing_syscall.h",
+    ],
+    includes = ["include"],
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//arch:syscall_client_files",
+        "//drivers:syscall_client_files",
+        "//kernel:syscall_client_files",
+        "//lib/libc:syscall_client_files",
+        "//lib/os:syscall_client_files",
+        "//subsys:syscall_client_files",
+    ],
+)
+
+syscall_library_files(
+    name = "syscall_files",
+    client_files = [":syscall_client_files"],
+    # Files from drivers/ and subsys/net/ should be added here if needed.
+    scan_files = ["//include:all"],
+)
+
+cc_library(
+    name = "syscall_list",
+    hdrs = [":syscall_files"],
+    includes = [
+        "include/generated",
+        "include/generated/zephyr",
+    ],
+)
+
+device_api_linker_files(
+    name = "device_api_sections_ld",
+    dep = ":syscall_files",
+)
+
+driver_validation_file(
+    name = "driver_validation_h",
+    dep = ":syscall_files",
+)
+
+kobj_types_enum_file(
+    name = "kobj_types_enum_h",
+    dep = ":syscall_files",
+)
+
+# Sentinel target that is used as a default for label_flag that must be
+# overriden by consumers. Building this target fails with a clear error.
+cc_library(
+    name = "zephyr_unspecified_backend",
+    target_compatible_with = ["@platforms//:incompatible"],
+)
+
+zephyr_runner_config(
+    name = "no_runner",
+    args = [],
+    runner = "",
+)
+
+label_flag(
+    name = "board_runner_config",
+    build_setting_default = ":no_runner",
+)
+
+label_flag(
+    name = "dts_cc_library",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+label_flag(
+    name = "extra_dts_overlays",
+    build_setting_default = ":empty_overlays",
+)
+
+filegroup(
+    name = "empty_overlays",
+    srcs = ["empty.h"],
+)
+
+# Optional flag for clients to pass in any devicetree binding headers.
+label_flag(
+    name = "dt_binding_headers_library",
+    build_setting_default = "@rules_cc//:empty_lib",
+)
+
+# Optional flag for clients to pass in any headers provided by the HAL to build
+# the SoC directory.
+label_flag(
+    name = "hal_soc_headers_library",
+    build_setting_default = "@rules_cc//:empty_lib",
+)
+
+
+# Optional flag for clients to pass in cc_libraries for the board-specific
+# implementation.
+label_flag(
+    name = "board_deps",
+    build_setting_default = "@rules_cc//:empty_lib",
+)
+
+label_flag(
+    name = "autoconf_library",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+# Mandatory flag for clients to pass in a cc_library that contains C/assembly
+# symbols needed in the final linking.
+label_flag(
+    name = "autoconf_symbols_to_link",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+label_flag(
+    name = "autoconf_file",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+label_flag(
+    name = "autoconf_dir",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+label_flag(
+    name = "kconfig_config_file",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+label_flag(
+    name = "soc",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+label_flag(
+    name = "soc_linkerscript_template",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+# Only for native_sim, the prefinal template is different from the final
+# template. Maybe the right solution is that native_sim should go through
+# a transition for prefinal vs final linking, and we won't need this flag.
+label_flag(
+    name = "soc_linkerscript_template_prefinal",
+    build_setting_default = ":soc_linkerscript_template",
+)
+
+label_flag(
+    name = "offsets_lib",
+    build_setting_default = ":zephyr_unspecified_backend",
+)
+
+# Optional flag for clients to pass in extra linker snippets or headers,
+# e.g. from the HAL.
+label_flag(
+    name = "extra_linker_includes",
+    build_setting_default = "@rules_cc//:empty_lib",
+)
+
+
+
+label_flag(
+    name = "offsets_src",
+    build_setting_default = "//arch/arm:offsets_src",
+)
+
+zephyr_offset_header(
+    name = "offsets_header",
+    src = ":offsets_src",
+    lib = ":offsets_lib",
+    output = "zephyr/offsets.h",
+    tool = "//scripts/build:gen_offset_header",
+)
+
+cc_library(
+    name = "offsets_header_lib",
+    hdrs = [":offsets_header"],
+    includes = ["zephyr"],
+    deps = [":offsets_header"],
+)
+
+cc_library(
+    name = "heap_constants_base_lib",
+    hdrs = ["//lib/heap:heap.h"],
+    includes = ["lib/heap"],
+    deps = [
+        ":autoconf_library",
+        "//include:zephyr",
+        "//kernel:headers",
+    ],
+)
+
+zephyr_offset_header(
+    name = "heap_constants_header",
+    src = "//lib/heap:heap_constants.c",
+    hdrs = ["//lib/heap:heap.h"],
+    includes = ["lib/heap"],
+    lib = ":heap_constants_base_lib",
+    output = "zephyr/heap_constants.h",
+    tool = "//scripts/build:gen_offset_header",
+)
+
+cc_library(
+    name = "heap_constants_lib",
+    hdrs = [":heap_constants_header"],
+    includes = ["zephyr"],
+    deps = [":heap_constants_header"],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        "//arch/common:linker_fragments",
+        "//drivers:linker_fragments",
+        "//soc:linker_fragments",
+        "//subsys:linker_fragments",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM=true": [
+            "//arch/arm/core:linker_fragments",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RISCV=true": [
+            "//arch/riscv:linker_fragments",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCH_POSIX=true": [
+            "//arch/posix:linker_fragments",
+        ],
+    }),
+)
+
+generate_linker_snippets(
+    name = "generated_linker_snippets",
+    targets = [
+        ":linker_fragments",
+    ],
+)
+
+alias(
+    name = "app_smem_unaligned_ld",
+    actual = select({
+        "//conditions:default": "@rules_cc//:empty_lib",
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": "//:app_smem_unaligned_ld_generated",
+    }),
+)
+
+generate_app_smem_unaligned_linker(
+    name = "app_smem_unaligned_ld_generated",
+    # This should expand to all dependency cc_libraries.
+    cc_libs = [
+        "//kernel",
+        "//subsys/testsuite/ztest",
+        "//tests/kernel/common:main",
+    ],
+)
+
+cc_library(
+    name = "internal_zephyr_optional_deps",
+    deps = [
+        ":dt_binding_headers_library",
+    ],
+)
+
+cc_library(
+    name = "internal_zephyr_mandatory_deps",
+    deps = [
+        ":internal_zephyr_soc_mandatory_deps",
+        ":offsets_header_lib",
+        ":soc",
+    ],
+)
+
+cc_library(
+    name = "internal_zephyr_soc_mandatory_deps",
+    deps = [
+        ":autoconf_library",
+        ":driver_validation_h",
+        ":dts_cc_library",
+        ":heap_constants_lib",
+        ":kobj_types_enum_h",
+        ":syscall_list",
+        "//include:zephyr",
+        "//kernel:headers",
+    ],
+)
+
+# Headers from arch/. Useful in building SoC libraries.
+cc_library(
+    name = "arch_headers_library",
+    # TODO(yichengli): Add header libraries for other architectures.
+    deps = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M=true": [
+            "//arch/arm/core/cortex_m:headers",
+        ],
+        "@zephyr_kconfig//:CONFIG_ARCH_POSIX=true": [
+            "//arch/posix:headers",
+        ],
+    }),
+)
+
+# config_setting_group can only be evaluated in a BUILD.bazel or a macro.
+selects.config_setting_group(
+    name = "want_stdinc",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_NEWLIB_LIBC=true",
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_USE_TOOLCHAIN=true",
+        "@zephyr_kconfig//:CONFIG_HAS_ESPRESSIF_HAL=true",
+        "@zephyr_kconfig//:CONFIG_NATIVE_BUILD=true",
+    ],
+)
+
+
+cc_library(
+    name = "native_simulator",
+    target_compatible_with = select({
+        "@zephyr_kconfig//:CONFIG_ARCH_POSIX=true": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    deps = [
+        "//scripts/native_simulator:native_simulator_headers",
+    ],
+)
+
+cc_library(
+    name = "arch_specific_deps",
+    deps = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M=true": [
+            "//modules/cmsis_6",
+        ],
+        "@zephyr_kconfig//:CONFIG_CPU_AARCH32_CORTEX_A=true": [
+            "//modules/cmsis",
+        ],
+        "@zephyr_kconfig//:CONFIG_CPU_AARCH32_CORTEX_R=true": [
+            "//modules/cmsis",
+        ],
+        "@zephyr_kconfig//:CONFIG_XTENSA=true": [
+            "//arch/xtensa:xtensa_hal",
+            "//arch/xtensa/core:zsr_header_library",
+        ],
+        "@zephyr_kconfig//:CONFIG_ARC=true": [
+            "//arch/arc:headers",
+        ],
+        "@zephyr_kconfig//:CONFIG_ARM64=true": [
+            "//arch/arm64:headers",
+        ],
+        "@zephyr_kconfig//:CONFIG_RISCV=true": [
+            "//arch/riscv:headers",
+        ],
+        "@zephyr_kconfig//:CONFIG_RX=true": [
+            "//arch/rx:headers",
+        ],
+        "@zephyr_kconfig//:CONFIG_SPARC=true": [
+            "//arch/sparc:headers",
+        ],
+        "@zephyr_kconfig//:CONFIG_X86=true": [
+            "//arch/x86:headers",
+        ],
+    }),
+)
+
+cc_library(
+    name = "zephyr",
+    deps = [
+        ":arch_specific_deps",
+        ":hal_soc_headers_library",
+        ":internal_zephyr_mandatory_deps",
+        ":internal_zephyr_optional_deps",
+        "//include:zephyr",
+    ],
+)

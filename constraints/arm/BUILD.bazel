@@ -1,0 +1,81 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+constraint_setting(
+    name = "mcpu",
+    default_constraint_value = "none",
+)
+
+constraint_value(
+    name = "none",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-a32",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-a35",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m0",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m0plus",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m1",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m3",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m4",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m23",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m7",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m33",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m52",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m55",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "cortex-m85",
+    constraint_setting = ":mcpu",
+)

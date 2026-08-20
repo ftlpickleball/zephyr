@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:defs.bzl", "py_binary", "py_library")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "edtlib_logger",
+    srcs = ["edtlib_logger.py"],
+)
+
+py_binary(
+    name = "gen_edt",
+    srcs = ["gen_edt.py"],
+    imports = ["."],
+    deps = [
+        ":edtlib_logger",
+        "//scripts/dts/python-devicetree:devicetree",
+    ],
+)
+
+py_binary(
+    name = "gen_defines",
+    srcs = ["gen_defines.py"],
+    imports = ["."],
+    deps = [
+        ":edtlib_logger",
+        "//scripts/dts/python-devicetree:devicetree",
+    ],
+)

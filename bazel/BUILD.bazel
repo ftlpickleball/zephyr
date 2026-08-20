@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "defs.bzl",
+    "cc.bzl",
+    "cc_test.bzl",
+    "flags.bzl",
+    "linker_fragment.bzl",
+    "zephyr_linker_script.bzl",
+    "rename_kobject_hash_sections.bzl",
+    "errno.bzl",
+    "elf_to_hex.bzl",
+    "runner.bzl",
+    "runfiles.bzl",
+    "bootstrapper.py.tpl",
+    "openair_helpers.bzl",
+    "sysbuild.bzl",
+    "setup.bzl",
+    "naming.bzl",
+    "compatibility.bzl",
+    "cc_toolchain_feature_is_enabled.bzl",
+    "autoconf_deps.bzl",
+])
