@@ -1,0 +1,97 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "stm32n6x",
+    srcs = [
+        "soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32N6_NPU=true": [
+            "npu/npu_cache_stm32n6.c",
+            "npu/npu_stm32n6.c",
+        ],
+    }) + ["//soc/st/stm32"] + ["//soc/st/stm32/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/st/stm32:stm32_hdrs",
+        "//soc/st/stm32/common:common_hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_CUSTOM_FIXED_SOC_MPU_REGIONS=true": [":stm32n6x_config_cpu_has_custom_fixed_soc_mpu_regions_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "stm32n6x_config_cpu_has_custom_fixed_soc_mpu_regions_deps",
+    srcs = [
+        "mpu_regions.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":ram_check.ld.target",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_CUSTOM_FIXED_SOC_MPU_REGIONS=true": [":linker_fragments_config_cpu_has_custom_fixed_soc_mpu_regions_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_cpu_has_custom_fixed_soc_mpu_regions_deps",
+    deps = [
+        ":mpu_regions.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "mpu_regions.ld.target",
+    srcs = ["mpu_regions.ld"],
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "ram_check.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_BOOTLOADER_MCUBOOT=true": ["ram_check.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)

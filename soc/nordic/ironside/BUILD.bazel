@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_soc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "ironside",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_IRONSIDE_CALL=true": [
+            "call.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_IRONSIDE_BOOT_REPORT=true": [
+            "boot_report.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_IRONSIDE_CPUCONF_SERVICE=true": [
+            "cpuconf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_IRONSIDE_BOOTMODE_SERVICE=true": [
+            "bootmode.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_IRONSIDE_TDD_SERVICE=true": [
+            "tdd.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_IRONSIDE_UPDATE_SERVICE=true": [
+            "update.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_IRONSIDE_DVFS_SERVICE=true": [
+            "dvfs.c",
+        ],
+    }) + ["//soc/nordic"] + ["//soc/nordic/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [] + ["//soc/nordic:nordic_hdrs"] + ["//soc/nordic/common:common_hdrs"] + ["//soc/common:common_hdrs"],
+)

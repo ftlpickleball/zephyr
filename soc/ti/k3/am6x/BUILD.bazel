@@ -1,0 +1,104 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "am6x",
+    srcs = [
+        "common/ctrl_partitions.c",
+    ] + ["//soc/ti/k3"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/ti/k3:k3_hdrs",
+    ] + select({
+        ":config_soc_am6234_a53_or_config_soc_am6232_a53_or_config_soc_am6254_a53_or_config_soc_am62l3_a53": [":am6x_config_soc_am6234_a53_or_config_soc_am6232_a53_or_config_soc_am6254_a53_or_config_soc_am62l3_a53_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_AM6X_M4=true": [":am6x_config_soc_series_am6x_m4_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_AM6X_R5=true": [":am6x_config_soc_series_am6x_r5_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_soc_am6234_a53_or_config_soc_am6232_a53_or_config_soc_am6254_a53_or_config_soc_am62l3_a53",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_SOC_AM6234_A53=true",
+        "@zephyr_kconfig//:CONFIG_SOC_AM6232_A53=true",
+        "@zephyr_kconfig//:CONFIG_SOC_AM6254_A53=true",
+        "@zephyr_kconfig//:CONFIG_SOC_AM62L3_A53=true",
+    ],
+)
+
+zephyr_soc_library(
+    name = "am6x_config_soc_am6234_a53_or_config_soc_am6232_a53_or_config_soc_am6254_a53_or_config_soc_am62l3_a53_deps",
+    srcs = [
+        "a53/soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_MMU=true": [
+            "a53/mmu_regions.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "am6x_config_soc_series_am6x_m4_deps",
+    srcs = [
+        "m4/soc.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "am6x_config_soc_series_am6x_r5_deps",
+    srcs = [
+        "r5/soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_MPU=true": [
+            "r5/arm_mpu_regions.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

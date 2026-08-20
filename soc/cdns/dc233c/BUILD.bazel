@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+cc_library(
+    name = "backtrace_helpers",
+    hdrs = ["include/backtrace_helpers.h"],
+    strip_include_prefix = "include",
+)
+
+exports_files(["include/xtensa-dc233c.ld"])

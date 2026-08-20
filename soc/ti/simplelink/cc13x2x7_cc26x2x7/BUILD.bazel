@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "cc13x2x7_cc26x2x7",
+    srcs = [
+        "ccfg.c",
+        "soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM=true": [
+            "power.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM_DEVICE=true": [
+            "power.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWEROFF=true": [
+            "poweroff.c",
+        ],
+    }) + ["//soc/ti/simplelink"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/ti/simplelink:simplelink_hdrs",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":ccfg.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "ccfg.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_HAS_TI_CCFG=true": ["ccfg.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)

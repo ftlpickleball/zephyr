@@ -1,0 +1,123 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "mec172x",
+    srcs = [
+        "soc.c",
+    ] + ["//soc/microchip/mec"] + ["//soc/microchip/mec/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/microchip/mec:mec_hdrs",
+        "//soc/microchip/mec/common:common_hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_PM=true": [":mec172x_config_pm_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_soc_has_timing_functions_and_not_config_board_has_timing_functions": [":mec172x_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "mec172x_config_pm_deps",
+    srcs = [
+        "device_power.c",
+        "power.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+config_setting(
+    name = "not_config_board_has_timing_functions",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_BOARD_HAS_TIMING_FUNCTIONS": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_soc_has_timing_functions_and_not_config_board_has_timing_functions",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_SOC_HAS_TIMING_FUNCTIONS=true",
+        ":not_config_board_has_timing_functions",
+    ],
+)
+
+zephyr_soc_library(
+    name = "mec172x_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_TIMING_FUNCTIONS=true": [":mec172x_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "mec172x_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "//conditions:default": [":mec172x_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps_not_config_cortex_m_dwt_deps"],
+        "@zephyr_kconfig//:CONFIG_CORTEX_M_DWT=true": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "mec172x_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps_not_config_cortex_m_dwt_deps",
+    srcs = [
+        "timing.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

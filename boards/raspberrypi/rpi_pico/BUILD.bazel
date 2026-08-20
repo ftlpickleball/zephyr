@@ -1,0 +1,99 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+load("//bazel:runner.bzl", "zephyr_runner_config")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_runner_config(
+    name = "rp2040_runner",
+    args = [
+        "--cmd-pre-init",
+        "source [find interface/cmsis-dap.cfg]",
+        "--cmd-pre-init",
+        "transport select swd",
+        "--cmd-pre-init",
+        "source [find target/rp2040.cfg]",
+        "--cmd-pre-init",
+        "set_adapter_speed_if_not_set 2000",
+    ],
+    runner = "openocd",
+)
+
+constraint_value(
+    name = "raspberrypi_rpi_pico",
+    constraint_setting = "//boards:board_name",
+)
+
+dts_library(
+    name = "devicetree_lib",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "rpi_pico.dts",
+    references = [
+        "rpi_pico-common.dtsi",
+        "rpi_pico-pinctrl.dtsi",
+        "//boards/raspberrypi/common:rpi_pico-led.dtsi",
+        "//boards/raspberrypi/common:rpi_pico-pinctrl-common.dtsi",
+        "//dts/arm/raspberrypi/rpi_pico",
+        "//dts/vendor/raspberrypi/rpi_pico",
+        "//dts/common",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib",
+    target_compatible_with = [":raspberrypi_rpi_pico"],
+)
+
+cc_library(
+    name = "hal_soc_headers_library",
+    deps = [
+        "@hal_rpi_pico//:rp2040_headers",
+        "//modules/hal_rpi_pico:pico_zephyr_compat",
+    ],
+)
+
+zephyr_cc_library(
+    name = "hal_soc_library",
+    srcs = [
+        "@hal_rpi_pico//:rp2040_sources",
+        "@hal_rpi_pico//:rp2xxx_common_sources",
+    ],
+    copts = [
+        "-std=gnu11",
+        "-DNDEBUG",
+    ],
+    deps = [
+        "@hal_rpi_pico//:rp2040_headers",
+        "//modules/hal_rpi_pico:boot_stage2",
+        "//modules/hal_rpi_pico:pico_zephyr_compat",
+    ],
+)
+
+platform(
+    name = "rp2040",
+    constraint_values = [
+        ":raspberrypi_rpi_pico",
+        "@platforms//cpu:armv6-m",
+        "//constraints/arm:cortex-m0plus",
+    ],
+    flags = flags_from_dict({
+        "//:board_runner_config": "//boards/raspberrypi/rpi_pico:rp2040_runner",
+        "//:board_deps": "//boards/raspberrypi/rpi_pico:hal_soc_library",
+        "//:dts_cc_library": "//boards/raspberrypi/rpi_pico:devicetree_generated",
+        "//:hal_soc_headers_library": "//boards/raspberrypi/rpi_pico:hal_soc_headers_library",
+        "//:soc_linkerscript_template": "//soc/raspberrypi/rpi_pico/rp2040:linker.ld",
+        "//:soc": "//soc/raspberrypi/rpi_pico/rp2040:rp2040",
+    }),
+    parents = ["//platforms:cortex_m"],
+)

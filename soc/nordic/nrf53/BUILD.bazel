@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "nrf53",
+    srcs = [
+        "soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_NRF53_CPUNET_MGMT=true": [
+            "nrf53_cpunet_mgmt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF53_SYNC_RTC=true": [
+            "sync_rtc.c",
+        ],
+    }) + ["//soc/nordic"] + ["//soc/nordic/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/nordic:nordic_hdrs",
+        "//soc/nordic/common:common_hdrs",
+    ],
+)

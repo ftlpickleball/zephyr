@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "mcxe24x",
+    srcs = [
+        "soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCXE_FLASH_CONFIG=true": [
+            "flash_configuration.c",
+        ],
+    }) + ["//soc/nxp/mcx/mcxe"] + ["//soc/nxp/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/nxp/common:common_hdrs",
+        "//soc/nxp/mcx/mcxe:mcxe_hdrs",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":flash_config.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "flash_config.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_MCXE_FLASH_CONFIG=true": ["flash_config.ld"],
+        "//conditions:default": [],
+    }),
+    location = "ROM_START",
+    sort_key = "0x400",
+)

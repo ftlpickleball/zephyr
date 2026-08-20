@@ -1,0 +1,119 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "nrf54h",
+    srcs = [
+    ] + ["//soc/nordic"] + select({
+        "@zephyr_kconfig//:CONFIG_ARM=true": [":nrf54h_config_arm_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_nrfx_gppi_and_not_config_nrfx_gppi_v1": [":nrf54h_config_nrfx_gppi_and_not_config_nrfx_gppi_v1_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "nrf54h_config_arm_deps",
+    srcs = [
+        "soc.c",
+    ],
+)
+
+cc_library(
+    name = "nrf54h_config_arm_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+config_setting(
+    name = "not_config_nrfx_gppi_v1",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_NRFX_GPPI_V1": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_nrfx_gppi_and_not_config_nrfx_gppi_v1",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_NRFX_GPPI=true",
+        ":not_config_nrfx_gppi_v1",
+    ],
+)
+
+filegroup(
+    name = "nrf54h_config_nrfx_gppi_and_not_config_nrfx_gppi_v1_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_NRF54H20_CPURAD=true": [
+            "nrfx_gppi_cpurad.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_NRF54H20_CPUAPP=true": [
+            "nrfx_gppi_nrf54h_global.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "nrf54h_config_nrfx_gppi_and_not_config_nrfx_gppi_v1_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "nrf54h_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = ["//soc/nordic:nordic_hdrs"],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":align.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "align.ld.target",
+    srcs = ["align.ld"],
+    location = "SECTIONS",
+    sort_key = "zzz_place_align_at_end",
+)

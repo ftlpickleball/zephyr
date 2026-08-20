@@ -1,0 +1,88 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "bl70x",
+    srcs = [
+        "soc.c",
+    ] + ["//soc/bflb"] + ["//soc/bflb/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/bflb:bflb_hdrs",
+        "//soc/bflb/common:common_hdrs",
+        "//soc/common:common_hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_BFLB_BL70X=true": [":bl70x_config_bt_bflb_bl70x_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "bl70x_config_bt_bflb_bl70x_deps",
+    srcs = [
+        "bflb_platform_shim.c",
+        "rf_callbacks.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":bflb_noinit.ld.target",
+        ":bflb_rodata.ld.target",
+        ":bflb_rwdata.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "bflb_rwdata.ld.target",
+    srcs = ["bflb_rwdata.ld"],
+    location = "RWDATA",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "bflb_rodata.ld.target",
+    srcs = ["bflb_rodata.ld"],
+    location = "RODATA",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "bflb_noinit.ld.target",
+    srcs = ["bflb_noinit.ld"],
+    location = "NOINIT",
+    sort_key = "default",
+)

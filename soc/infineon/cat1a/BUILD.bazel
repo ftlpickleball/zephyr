@@ -1,0 +1,152 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "cat1a",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_PSOC6=true": [":cat1a_config_soc_family_psoc6_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_PSOC6_LEGACY=true": [":cat1a_config_soc_family_psoc6_legacy_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "cat1a_config_soc_family_psoc6_deps",
+    srcs = [
+        "common/soc.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "cat1a_config_soc_family_psoc6_legacy_deps",
+    srcs = [
+        "psoc6_legacy/soc.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_PSOC6=true": [":linker_fragments_config_soc_family_psoc6_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_PSOC6_LEGACY=true": [":linker_fragments_config_soc_family_psoc6_legacy_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_soc_family_psoc6_deps",
+    deps = [
+        ":common/noinit.ld.target",
+        ":common/ram_cm0image.ld.target",
+        ":common/ram_func.ld.target",
+        ":common/rom.ld.target",
+        ":common/rom_cm0image.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "common/noinit.ld.target",
+    srcs = ["common/noinit.ld"],
+    location = "NOINIT",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "common/rom_cm0image.ld.target",
+    srcs = ["common/rom_cm0image.ld"],
+    location = "ROM_START",
+    sort_key = "0x0cm0p",
+)
+
+zephyr_linker_fragment(
+    name = "common/ram_cm0image.ld.target",
+    srcs = ["common/ram_cm0image.ld"],
+    location = "RAM_SECTIONS",
+    sort_key = "0",
+)
+
+zephyr_linker_fragment(
+    name = "common/ram_func.ld.target",
+    srcs = ["common/ram_func.ld"],
+    location = "RAMFUNC_SECTION",
+    sort_key = "0",
+)
+
+zephyr_linker_fragment(
+    name = "common/rom.ld.target",
+    srcs = ["common/rom.ld"],
+    location = "RODATA",
+    sort_key = "0",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_soc_family_psoc6_legacy_deps",
+    deps = [
+        ":psoc6_legacy/noinit.ld.target",
+        ":psoc6_legacy/rwdata.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "psoc6_legacy/noinit.ld.target",
+    srcs = ["psoc6_legacy/noinit.ld"],
+    location = "NOINIT",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "psoc6_legacy/rwdata.ld.target",
+    srcs = ["psoc6_legacy/rwdata.ld"],
+    location = "RWDATA",
+    sort_key = "default",
+)

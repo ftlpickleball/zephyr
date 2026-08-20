@@ -1,0 +1,192 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "pse84",
+    srcs = [
+        "mpu_regions.c",
+        "security_config/pse84_boot.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM=true": [
+            "power.c",
+        ],
+    }) + ["//soc/infineon/edge"] + ["//soc/infineon/edge/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/infineon/edge:edge_hdrs",
+        "//soc/infineon/edge/common:common_hdrs",
+    ] + select({
+        ":config_cpu_cortex_m33_and_config_trusted_execution_secure": [":pse84_config_cpu_cortex_m33_and_config_trusted_execution_secure_deps"],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M33=true": [":pse84_config_cpu_cortex_m33_deps"],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M55=true": [":pse84_config_cpu_cortex_m55_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_cpu_cortex_m33_and_config_trusted_execution_secure",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M33=true",
+        "@zephyr_kconfig//:CONFIG_TRUSTED_EXECUTION_SECURE=true",
+    ],
+)
+
+zephyr_soc_library(
+    name = "pse84_config_cpu_cortex_m33_and_config_trusted_execution_secure_deps",
+    srcs = [
+        "security_config/pse84_s_mpc.c",
+        "security_config/pse84_s_protection.c",
+        "security_config/pse84_s_sau.c",
+        "security_config/pse84_s_system.c",
+        "soc_pse84_m33_s.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "pse84_config_cpu_cortex_m33_deps",
+    srcs = [
+        "soc_pse84_m33_ns.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "pse84_config_cpu_cortex_m55_deps",
+    srcs = [
+        "soc_pse84_m55.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":itcm_mem.ld.target",
+        ":ramfunc_mem.ld.target",
+        ":rwdata.ld.target",
+        ":rwdata.ld.target#",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M33=true": [":linker_fragments_config_cpu_cortex_m33_deps_1"],
+        "//conditions:default": [":linker_fragments_else_deps"],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_cpu_cortex_m33_deps_1",
+    deps = [
+        ":shared_mem_sec.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "shared_mem_sec.ld.target",
+    srcs = ["shared_mem_sec.ld"],
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_else_deps",
+    deps = [
+        ":shared_mem.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "shared_mem.ld.target",
+    srcs = ["shared_mem.ld"],
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "rwdata.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M33=true": ["rwdata.ld"],
+        "//conditions:default": [],
+    }),
+    location = "RWDATA",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "rwdata.ld.target#",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M55=true": ["rwdata.ld"],
+        "//conditions:default": [],
+    }),
+    location = "RWDATA",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "itcm_mem.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M55=true": ["itcm_mem.ld"],
+        "//conditions:default": [],
+    }),
+    location = "ITCM_SECTION",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "ramfunc_mem.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M33=true": ["ramfunc_mem.ld"],
+        "//conditions:default": [],
+    }),
+    location = "RAMFUNC_SECTION",
+    sort_key = "default",
+)

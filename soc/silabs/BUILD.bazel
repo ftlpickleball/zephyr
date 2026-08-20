@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "silabs",
+    srcs = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_SILABS_S2=true": [
+            "//" + package_name() + "/silabs_s2",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_SILABS_SIWX91X=true": [
+            "//" + package_name() + "/silabs_siwx91x",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_SIM3U=true": [
+            "//" + package_name() + "/silabs_sim3/sim3u",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "silabs_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)

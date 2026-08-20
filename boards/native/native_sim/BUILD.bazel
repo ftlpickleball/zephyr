@@ -1,0 +1,112 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+
+package(default_visibility = ["//visibility:public"])
+
+platform(
+    name = "native",
+    constraint_values = [
+        "@zephyr//boards:sim",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_deps": "@zephyr//boards/native/native_sim:board_support",
+        "@zephyr//:dt_binding_headers_library": "@rules_cc//:empty_lib",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/native/native_sim:devicetree_generated",
+        "@zephyr//:extra_linker_includes": "@rules_cc//:empty_lib",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//soc/native/inf_clock:soc_headers",
+        "@zephyr//:soc": "@zephyr//soc/native/inf_clock:soc_sources",
+    }),
+    parents = ["@zephyr//platforms:posix"],
+)
+
+platform(
+    name = "native_64",
+    constraint_values = [
+        "@zephyr//boards:sim",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_deps": "@zephyr//boards/native/native_sim:board_support",
+        "@zephyr//:dt_binding_headers_library": "@rules_cc//:empty_lib",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/native/native_sim:devicetree_generated",
+        "@zephyr//:extra_linker_includes": "@rules_cc//:empty_lib",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//soc/native/inf_clock:soc_headers",
+        "@zephyr//:soc": "@zephyr//soc/native/inf_clock:soc_sources",
+    }),
+    parents = ["@zephyr//platforms:posix"],
+)
+
+alias(
+    name = "native_sim",
+    actual = ":native",
+)
+
+alias(
+    name = "native_sim_64",
+    actual = ":native_64",
+)
+
+alias(
+    name = "native_sim_native",
+    actual = ":native",
+)
+
+alias(
+    name = "native_sim_native_64",
+    actual = ":native_64",
+)
+
+dts_library(
+    name = "native_sim_dts",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "native_sim.dts",
+    references = [
+        "//dts/posix",
+        "//dts/common",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":native_sim_dts",
+)
+
+cc_library(
+    name = "board_support_headers",
+    hdrs = glob(["*.h"], allow_empty=True),
+    includes = ["."],
+    deps = [
+        "//boards/native/common:common_headers",
+        "//scripts/native_simulator:native_simulator_headers",
+    ],
+)
+
+zephyr_cc_library(
+    name = "board_support",
+    srcs = [
+        "cmdline.c",
+        "cpu_wait.c",
+        "irq_handler.c",
+        "main_shim.cc",
+        "misc.c",
+        "nsi_if.c",
+        "posix_arch_if.c",
+    ],
+    local_defines = ["NO_POSIX_CHEATS"],
+    deps = [
+        ":board_support_headers",
+        "//:native_simulator",
+        "//arch/posix:headers",
+        "//kernel",
+        "//scripts/native_simulator",
+    ],
+)

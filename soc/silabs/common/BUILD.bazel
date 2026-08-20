@@ -1,0 +1,90 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "common",
+    srcs = [
+    ] + select({
+        ":config_soc_family_silabs_s0_or_config_soc_family_silabs_s1": [":common_config_soc_family_silabs_s0_or_config_soc_family_silabs_s1_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_SILABS_S2=true": [":common_config_soc_family_silabs_s2_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_soc_family_silabs_s0_or_config_soc_family_silabs_s1",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_SILABS_S0=true",
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_SILABS_S1=true",
+    ],
+)
+
+filegroup(
+    name = "common_config_soc_family_silabs_s0_or_config_soc_family_silabs_s1_deps",
+    srcs = [
+        "soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM=true": [
+            "soc_power.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "common_config_soc_family_silabs_s0_or_config_soc_family_silabs_s1_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+filegroup(
+    name = "common_config_soc_family_silabs_s2_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM=true": [
+            "soc_power_pmgr.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "common_config_soc_family_silabs_s2_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "common_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)

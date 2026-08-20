@@ -1,0 +1,146 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "imxrt",
+    srcs = [
+    ] + select({
+        ":config_soc_series_imxrt10xx_or_config_soc_series_imxrt11xx": [":imxrt_config_soc_series_imxrt10xx_or_config_soc_series_imxrt11xx_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_soc_series_imxrt10xx_or_config_soc_series_imxrt11xx",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_IMXRT10XX=true",
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_IMXRT11XX=true",
+    ],
+)
+
+filegroup(
+    name = "imxrt_config_soc_series_imxrt10xx_or_config_soc_series_imxrt11xx_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_MPU=true": [
+            "mpu_regions.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "imxrt_config_soc_series_imxrt10xx_or_config_soc_series_imxrt11xx_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "imxrt_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":boot_header.ld.target",
+    ] + select({
+        ":config_soc_series_imxrt6xx_or_config_soc_series_imxrt5xx": [":linker_fragments_config_soc_series_imxrt6xx_or_config_soc_series_imxrt5xx_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_IMXRT118X=true": [":linker_fragments_config_soc_series_imxrt118x_deps_1"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "boot_header.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_NXP_IMXRT_BOOT_HEADER=true": ["boot_header.ld"],
+        "//conditions:default": [],
+    }),
+    location = "ROM_START",
+    sort_key = "0",
+)
+
+selects.config_setting_group(
+    name = "config_soc_series_imxrt6xx_or_config_soc_series_imxrt5xx",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_IMXRT6XX=true",
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_IMXRT5XX=true",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_soc_series_imxrt6xx_or_config_soc_series_imxrt5xx_deps",
+    deps = [
+        ":usb.ld.target",
+        ":usb.ld.target#",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "usb.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_DRIVER=true": ["usb.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "usb.ld.target#",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_UDC_DRIVER=true": ["usb.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments_config_soc_series_imxrt118x_deps_1",
+    deps = [
+        ":container.ld.target",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "container.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_IMXRT118X=true": ["container.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)

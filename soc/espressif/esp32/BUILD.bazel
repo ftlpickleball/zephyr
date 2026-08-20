@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "esp32",
+    srcs = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BOOTLOADER_MCUBOOT=true": [],
+        "//conditions:default": [
+            "hw_init.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NEWLIB_LIBC=true": [
+            "newlib_fix.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GDBSTUB=true": [
+            "gdbstub.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM=true": [
+            "//soc/espressif/common:power.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWEROFF=true": [
+            "//soc/espressif/common:poweroff.c",
+        ],
+    }) + ["//soc/espressif"] + ["//soc/espressif/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/espressif:espressif_hdrs",
+        "//soc/espressif/common:common_hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_ESP32_APPCPU=true": [":esp32_config_soc_esp32_appcpu_deps"],
+        "//conditions:default": [":esp32_else_deps"],
+    }),
+)
+
+zephyr_soc_library(
+    name = "esp32_config_soc_esp32_appcpu_deps",
+    srcs = [
+        "soc_appcpu.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "esp32_else_deps",
+    srcs = [
+        "esp32-mp.c",
+        "soc.c",
+        "//soc/espressif/common:loader.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

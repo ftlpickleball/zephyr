@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+constraint_setting(name = "board_name")
+
+constraint_setting(name = "zephyr_board_type")
+
+constraint_value(
+    name = "hw",
+    constraint_setting = ":zephyr_board_type",
+)
+
+constraint_value(
+    name = "sim",
+    constraint_setting = ":zephyr_board_type",
+)

@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "common_headers",
+    hdrs = glob(["**/*.h"], allow_empty = True),
+    includes = ["."],
+)

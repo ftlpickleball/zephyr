@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "soc_headers",
+    hdrs = glob(["*.h"], allow_empty=True),
+    includes = ["."],
+    deps = ["//boards/native/native_sim:board_support_headers"],
+)
+
+zephyr_soc_library(
+    name = "soc_sources",
+    srcs = [
+        "native_tasks.c",
+        "soc.c",
+    ],
+    local_defines = ["NO_POSIX_CHEATS"],
+    deps = [
+        ":soc_headers",
+        "//arch/posix:headers",
+        "//scripts/native_simulator",
+    ],
+)

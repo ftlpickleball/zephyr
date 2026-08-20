@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+
+package(default_visibility = ["//visibility:public"])
+
+dts_library(
+    name = "devicetree_lib",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "qemu_cortex_m3.dts",
+    references = [
+        "//dts/arm",
+        "//dts/common",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib",
+)
+
+platform(
+    name = "qemu_cortex_m3",
+    constraint_values = [
+        "@zephyr//boards:sim",
+        "@zephyr//constraints/arm:cortex-m3",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_deps": "@rules_cc//:empty_lib",
+        "@zephyr//:dt_binding_headers_library": "@rules_cc//:empty_lib",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/qemu/cortex_m3:devicetree_generated",
+        "@zephyr//:extra_linker_includes": "@rules_cc//:empty_lib",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//soc/ti/lm3s6965:headers",
+        "@zephyr//:soc": "@zephyr//soc/ti/lm3s6965:lm3s6965",
+        "@zephyr//:soc_linkerscript_template": "@zephyr//include/zephyr/arch/arm/cortex_m/scripts:linker.ld",
+    }),
+    parents = ["@zephyr//platforms:cortex_m"],
+)
+
+alias(
+    name = "ti_lm3s6965",
+    actual = ":qemu_cortex_m3",
+)

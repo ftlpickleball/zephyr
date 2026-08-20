@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+
+package(default_visibility = ["//visibility:public"])
+
+dts_library(
+    name = "devicetree_lib",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "robokit1.dts",
+    references = [
+        "robokit1-common.dtsi",
+        "robokit1-pinctrl.dtsi",
+        "//dts/arm/atmel",
+        "//dts/common",
+        "//include:dt_bindings",
+        "@hal_atmel//:dt_bindings",
+    ],
+    deps = ["@hal_atmel//:dt_interface"],
+)
+
+dts_cc_library(
+    name = "devicetree_generated",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib",
+    target_compatible_with = ["//boards/tdk:robokit1"],
+)
+
+cc_library(
+    name = "dt_binding_headers_library",
+    deps = ["@hal_atmel//:dt_interface"],
+)
+
+cc_library(
+    name = "hal_soc_headers_library",
+    deps = ["@hal_atmel//:same70b"],
+)
+
+platform(
+    name = "same70q21b",
+    constraint_values = [
+        "//boards/tdk:robokit1",
+        "@platforms//cpu:armv7e-m",
+        "//constraints/arm:cortex-m7",
+    ],
+    flags = flags_from_dict({
+        "//:dt_binding_headers_library": "//boards/tdk/robokit1:dt_binding_headers_library",
+        "//:dts_cc_library": "//boards/tdk/robokit1:devicetree_generated",
+        "//:hal_soc_headers_library": "//boards/tdk/robokit1:hal_soc_headers_library",
+        "//:soc": "//soc/atmel/sam/samx7x",
+    }),
+    parents = ["//platforms:cortex_m"],
+)

@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "cm33",
+    srcs = [
+        "init.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MIPI_DSI=true": [
+            "display_if.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_PCA9422=true": [
+            "pmic_int.c",
+        ],
+    }) + ["//soc/nxp/imxrt/imxrt7xx"] + ["//soc/nxp/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/nxp/common:common_hdrs",
+        "//soc/nxp/imxrt/imxrt7xx:imxrt7xx_hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_FLASH_MCUX_XSPI_XIP=true": [":cm33_config_flash_mcux_xspi_xip_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "cm33_config_flash_mcux_xspi_xip_deps",
+    srcs = [
+        "flash_clock_setup.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

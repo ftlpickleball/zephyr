@@ -1,0 +1,105 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "board_deps",
+    srcs = [
+        ":board_init",
+    ],
+)
+
+zephyr_cc_library(
+    name = "board_init",
+    srcs = [
+        "board.c",
+    ],
+    hdrs = [
+        "board.h",
+    ],
+    deps = [
+        "@hal_nxp//:fsl_inputmux_hdrs",
+        "@hal_nxp//:mimxrt595s_cm33_driver_hdrs",
+    ],
+)
+
+dts_library(
+    name = "devicetree_lib",
+    includes = [
+        "@hal_nxp//:dts_includes",
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "mimxrt595_evk_mimxrt595s_cm33.dts",
+    references = [
+        "mimxrt595_evk_mimxrt595s_cm33-pinctrl.dtsi",
+        "//dts/arm/nxp",
+        "//dts/common",
+        "//include:dt_bindings",
+        "@hal_nxp//:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated",
+    bindings = [
+        "//dts:bindings",
+    ],
+    dts_lib = ":devicetree_lib",
+)
+
+constraint_value(
+    name = "mimxrt595_evk",
+    constraint_setting = "//boards:board_name",
+)
+
+platform(
+    name = "mimxrt595s_cm33",
+    constraint_values = [
+        ":mimxrt595_evk",
+        "@platforms//cpu:armv8-m",
+        "//constraints/arm:cortex-m33",
+    ],
+    flags = flags_from_dict({
+        "//:board_deps": "//boards/nxp/mimxrt595_evk:board_deps",
+        "//:dts_cc_library": "//boards/nxp/mimxrt595_evk:devicetree_generated",
+        "//:hal_soc_headers_library": "//boards/nxp/mimxrt595_evk:hal_nxp_headers",
+        "//:offsets_lib": "//arch/arm:offsets",
+        "//:offsets_src": "//arch/arm:offsets_src",
+        "//:soc": "//soc/nxp/imxrt/imxrt5xx/cm33:cm33",
+        "//:soc_linkerscript_template": "//include/zephyr/arch/arm/cortex_m/scripts:linker.ld",
+        "//:soc_linkerscript_template_prefinal": "//include/zephyr/arch/arm/cortex_m/scripts:linker.ld",
+    }),
+)
+
+cc_library(
+    name = "hal_nxp_headers",
+    defines = [
+        "CPU_MIMXRT595SFAWC_cm33",
+    ],
+    deps = [
+        "@hal_nxp//:fsl_cache_hdrs",
+        "@hal_nxp//:fsl_common_arm_hdrs",
+        "@hal_nxp//:fsl_dma_hdrs",
+        "@hal_nxp//:fsl_flexcomm_hdrs",
+        "@hal_nxp//:fsl_flexspi_hdrs",
+        "@hal_nxp//:fsl_gpio_hdrs",
+        "@hal_nxp//:fsl_inputmux_hdrs",
+        "@hal_nxp//:fsl_iopctl_hdrs",
+        "@hal_nxp//:fsl_os_abstraction_hdrs",
+        "@hal_nxp//:fsl_ostimer_hdrs",
+        "@hal_nxp//:fsl_pint_hdrs",
+        "@hal_nxp//:fsl_spi_hdrs",
+        "@hal_nxp//:fsl_usart_hdrs",
+        "@hal_nxp//:mimxrt595s_cm33_driver_hdrs",
+        "@hal_nxp//:mimxrt595s_cm33_hdrs",
+        "@hal_nxp//:mimxrt595s_usb_hdrs",
+        "@hal_nxp//:mimxrt595s_usb_phy_hdrs",
+    ],
+)

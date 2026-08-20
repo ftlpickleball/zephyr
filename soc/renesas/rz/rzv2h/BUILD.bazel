@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "rzv2h",
+    srcs = [
+    ] + ["//soc/renesas/rz"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/renesas/rz:rz_hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_R9A09G057H44GBG_CM33=true": [":rzv2h_config_soc_r9a09g057h44gbg_cm33_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_R9A09G057H44GBG_CR8=true": [":rzv2h_config_soc_r9a09g057h44gbg_cr8_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "rzv2h_config_soc_r9a09g057h44gbg_cm33_deps",
+    srcs = [
+        "cm33/soc.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "rzv2h_config_soc_r9a09g057h44gbg_cr8_deps",
+    srcs = [
+        "cr8/soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_MPU=true": [
+            "cr8/arm_mpu_regions.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+load("//bazel:runner.bzl", "zephyr_runner_config")
+
+package(default_visibility = ["//visibility:public"])
+
+dts_library(
+    name = "devicetree_lib",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "nrf52833dk_nrf52833.dts",
+    references = [
+        "nrf52833dk_nrf52833-pinctrl.dtsi",
+        "//dts/arm/nordic",
+        "//dts/common",
+        "//dts/vendor/nordic",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib",
+    target_compatible_with = [":nordic_nrf52833dk"],
+)
+
+constraint_value(
+    name = "nordic_nrf52833dk",
+    constraint_setting = "//boards:board_name",
+)
+
+cc_library(
+    name = "hal_soc_headers_library",
+    deps = [
+        "@hal_nordic//:dt_interface",
+        "//modules/hal_nordic/nrfx:nrfx_hdrs",
+    ],
+)
+
+zephyr_runner_config(
+    name = "nrf52833_runner",
+    args = [
+        "--device=nRF52833_xxAA",
+        "--speed=4000",
+    ],
+    runner = "jlink",
+)
+
+zephyr_runner_config(
+    name = "nrf52820_runner",
+    args = [
+        "--device=nRF52820_xxAA",
+        "--speed=4000",
+    ],
+    runner = "jlink",
+)
+
+platform(
+    name = "nrf52833",
+    constraint_values = [
+        ":nordic_nrf52833dk",
+        "@platforms//cpu:armv7e-m",
+        "//constraints/arm:cortex-m4",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "//:board_runner_config": "//boards/nordic/nrf52833dk:nrf52833_runner",
+        "//:dts_cc_library": "//boards/nordic/nrf52833dk:devicetree_generated",
+        "//:hal_soc_headers_library": "//boards/nordic/nrf52833dk:hal_soc_headers_library",
+        "//:soc": "//soc/nordic/nrf52",
+    }),
+    parents = ["//platforms:cortex_m"],
+)
+
+platform(
+    name = "nrf52820",
+    constraint_values = [
+        ":nordic_nrf52833dk",
+        "@platforms//cpu:armv7e-m",
+        "//constraints/arm:cortex-m4",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "//:board_runner_config": "//boards/nordic/nrf52833dk:nrf52820_runner",
+        "//:dts_cc_library": "//boards/nordic/nrf52833dk:devicetree_generated",
+        "//:hal_soc_headers_library": "//boards/nordic/nrf52833dk:hal_soc_headers_library",
+        "//:soc": "//soc/nordic/nrf52",
+    }),
+    parents = ["//platforms:cortex_m"],
+)
+
+alias(
+    name = "nrf52833dk",
+    actual = ":nrf52833",
+)

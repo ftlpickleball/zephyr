@@ -1,0 +1,112 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "nordic",
+    srcs = [
+        "validate_base_addresses.c",
+        "validate_binding_headers.c",
+        "validate_enabled_instances.c",
+    ] + select({
+        ":config_soc_has_timing_functions_and_not_config_board_has_timing_functions": [":nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+config_setting(
+    name = "not_config_board_has_timing_functions",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_BOARD_HAS_TIMING_FUNCTIONS": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_soc_has_timing_functions_and_not_config_board_has_timing_functions",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_SOC_HAS_TIMING_FUNCTIONS=true",
+        ":not_config_board_has_timing_functions",
+    ],
+)
+
+filegroup(
+    name = "nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps",
+    srcs = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_TIMING_FUNCTIONS=true": [":nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [":nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps_not_config_cortex_m_dwt_deps"],
+        "@zephyr_kconfig//:CONFIG_CORTEX_M_DWT=true": [],
+    }),
+)
+
+filegroup(
+    name = "nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps_not_config_cortex_m_dwt_deps",
+    srcs = [
+        "timing.c",
+    ],
+)
+
+cc_library(
+    name = "nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps_not_config_cortex_m_dwt_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_config_timing_functions_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "nordic_config_soc_has_timing_functions_and_not_config_board_has_timing_functions_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "nordic_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)

@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+constraint_value(
+    name = "robokit1",
+    constraint_setting = "//boards:board_name",
+)

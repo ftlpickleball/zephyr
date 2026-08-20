@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "imx93",
+    srcs = [
+    ] + ["//soc/nxp/imx/imx9"] + ["//soc/nxp/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/nxp/common:common_hdrs",
+        "//soc/nxp/imx/imx9:imx9_hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_MIMX9352_A55=true": [":imx93_config_soc_mimx9352_a55_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_MIMX9352_M33=true": [":imx93_config_soc_mimx9352_m33_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_soc_library(
+    name = "imx93_config_soc_mimx9352_a55_deps",
+    srcs = [
+        "a55/soc.c",
+        "common_clock_set.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_MMU=true": [
+            "a55/mmu_regions.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI=true": [
+            "a55/flexspi.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_soc_library(
+    name = "imx93_config_soc_mimx9352_m33_deps",
+    srcs = [
+        "common_clock_set.c",
+        "m33/soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_RESET_HOOK=true": [
+            "m33/imx93_m33_startup.S",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

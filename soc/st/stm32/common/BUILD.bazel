@@ -1,0 +1,147 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "common",
+    srcs = [
+        "soc_config.c",
+        "stm32cube_hal.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32_BACKUP_SRAM=true": [
+            "stm32_backup_sram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32_WKUP_PINS=true": [
+            "stm32_wkup_pins.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32_IOCELL=true": [
+            "stm32_iocell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32_XSPIM=true": [
+            "stm32_xspim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DCACHE=true": [
+            "stm32_cache.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWEROFF=true": [
+            "poweroff_common.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32_BACKUP_PROTECTION=true": [
+            "stm32_backup_domain.c",
+        ],
+    }) + select({
+        "//conditions:default": [":common_not_config_debug_and_config_pm_deps"],
+        "@zephyr_kconfig//:CONFIG_DEBUG=true": [],
+    }) + select({
+        ":config_pinctrl_stm32_or_config_gpio_stm32": [":common_config_pinctrl_stm32_or_config_gpio_stm32_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "common_not_config_debug_and_config_pm_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_SWJ_CONNECTOR_ENABLED=true": [
+            "pm_debug_swj.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "common_not_config_debug_and_config_pm_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+selects.config_setting_group(
+    name = "config_pinctrl_stm32_or_config_gpio_stm32",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_PINCTRL_STM32=true",
+        "@zephyr_kconfig//:CONFIG_GPIO_STM32=true",
+    ],
+)
+
+filegroup(
+    name = "common_config_pinctrl_stm32_or_config_gpio_stm32_deps",
+    srcs = [
+        "gpioport_mgr.c",
+    ],
+)
+
+cc_library(
+    name = "common_config_pinctrl_stm32_or_config_gpio_stm32_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "common_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":stm32_backup_sram.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "stm32_backup_sram.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_STM32_BACKUP_SRAM=true": ["stm32_backup_sram.ld"],
+        "//conditions:default": [],
+    }),
+    location = "SECTIONS",
+    sort_key = "default",
+)

@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "rw",
+    srcs = [
+        "flexspi_clock_setup.c",
+        "soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_NBU=true": [
+            "//soc/nxp/common:nxp_nbu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM=true": [
+            "power.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":boot_header.ld.target",
+        ":firmwares.ld.target",
+        ":sections.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "boot_header.ld.target",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_NXP_RW6XX_BOOT_HEADER=true": ["boot_header.ld"],
+        "//conditions:default": [],
+    }),
+    location = "ROM_START",
+    sort_key = "0",
+)
+
+zephyr_linker_fragment(
+    name = "firmwares.ld.target",
+    srcs = ["firmwares.ld"],
+    location = "RODATA",
+    sort_key = "default",
+)
+
+zephyr_linker_fragment(
+    name = "sections.ld.target",
+    srcs = ["sections.ld"],
+    location = "RAM_SECTIONS",
+    sort_key = "default",
+)

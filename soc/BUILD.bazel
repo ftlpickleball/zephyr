@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "linker_includes",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_NORDIC_NRF=true": [
+            "//soc/nordic/common:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_ATOM=true": [
+            "//soc/intel/atom",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_NXP_IMXRT=true": [
+            "//soc/nxp/imxrt:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_LEON3=true": [
+            "//soc/gaisler/leon3:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_RP2350A=true": [
+            "//soc/raspberrypi/rpi_pico/rp2350:linker_includes",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_NORDIC_NRF=true": [
+            "//soc/nordic/common:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_NXP_IMXRT=true": [
+            "//soc/nxp/imxrt:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_RP2350A=true": [
+            "//soc/raspberrypi/rpi_pico/rp2350:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }),
+)

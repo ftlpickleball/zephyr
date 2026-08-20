@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "imx9",
+    srcs = [
+    ] + ["//soc/nxp/imx"] + select({
+        ":config_cpu_cortex_a55_and_config_pm": [":imx9_config_cpu_cortex_a55_and_config_pm_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_cpu_cortex_a55_and_config_pm",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_A55=true",
+        "@zephyr_kconfig//:CONFIG_PM=true",
+    ],
+)
+
+filegroup(
+    name = "imx9_config_cpu_cortex_a55_and_config_pm_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM_CPU_OPS_PSCI=true": [
+            "pm_acore.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "imx9_config_cpu_cortex_a55_and_config_pm_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "imx9_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = ["//soc/nxp/imx:imx_hdrs"],
+)

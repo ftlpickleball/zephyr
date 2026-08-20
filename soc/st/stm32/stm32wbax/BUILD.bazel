@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_soc_library(
+    name = "stm32wbax",
+    srcs = [
+        "soc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM=true": [
+            "power.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWEROFF=true": [
+            "poweroff.c",
+        ],
+    }) + ["//soc/st/stm32"] + ["//soc/st/stm32/common"] + ["//soc/common"],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//soc/common:common_hdrs",
+        "//soc/st/stm32:stm32_hdrs",
+        "//soc/st/stm32/common:common_hdrs",
+    ] + select({
+        ":config_bt_stm32wba_or_config_ieee802154_stm32wba": [":stm32wbax_config_bt_stm32wba_or_config_ieee802154_stm32wba_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_bt_stm32wba_or_config_ieee802154_stm32wba",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_STM32WBA=true",
+        "@zephyr_kconfig//:CONFIG_IEEE802154_STM32WBA=true",
+    ],
+)
+
+zephyr_soc_library(
+    name = "stm32wbax_config_bt_stm32wba_or_config_ieee802154_stm32wba_deps",
+    srcs = [
+        "hci_if/host_stack_if.c",
+        "hci_if/linklayer_plat_adapt.c",
+        "hci_if/ll_sys_if_adapt.c",
+        "hci_if/stm32_timer.c",
+        "hci_if/sys_wireless_plat.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [],
+)

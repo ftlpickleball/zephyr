@@ -1,0 +1,228 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+filegroup(
+    name = "common",
+    srcs = [
+        "gpiote_nrfx.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWEROFF=true": [
+            "poweroff.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_SYS_EVENT=true": [
+            "nrf_sys_event.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_NRF_FORCE_CONSTLAT=true": [
+            "nrf_constlat.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MRAM_LATENCY=true": [
+            "mram_latency.c",
+        ],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RISCV_CORE_NORDIC_VPR=true": [
+            "//" + package_name() + "/vpr",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [":common_not_config_tfm_partition_platform_deps"],
+        "@zephyr_kconfig//:CONFIG_TFM_PARTITION_PLATFORM=true": [],
+    }) + select({
+        ":config_nrf_platform_haltium_and_config_arm": [":common_config_nrf_platform_haltium_and_config_arm_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HAS_NORDIC_DMM=true": [":common_config_has_nordic_dmm_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_nrfx_gppi_and_not_config_nrfx_gppi_v1": [":common_config_nrfx_gppi_and_not_config_nrfx_gppi_v1_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TFM_PARTITION_PLATFORM=true": [":common_config_tfm_partition_platform_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "common_not_config_tfm_partition_platform_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM=true": [
+            "reboot.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "common_not_config_tfm_partition_platform_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+selects.config_setting_group(
+    name = "config_nrf_platform_haltium_and_config_arm",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_NRF_PLATFORM_HALTIUM=true",
+        "@zephyr_kconfig//:CONFIG_ARM=true",
+    ],
+)
+
+filegroup(
+    name = "common_config_nrf_platform_haltium_and_config_arm_deps",
+    srcs = [
+        "haltium_power.c",
+        "soc_lrcconf.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PM_S2RAM=true": [
+            "haltium_pm_s2ram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_CUSTOM_FIXED_SOC_MPU_REGIONS=true": [
+            "nrf54hx_nrf92x_mpu_regions.c",
+        ],
+    }),
+)
+
+cc_library(
+    name = "common_config_nrf_platform_haltium_and_config_arm_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+filegroup(
+    name = "common_config_has_nordic_dmm_deps",
+    srcs = [
+        "dmm.c",
+    ],
+)
+
+cc_library(
+    name = "common_config_has_nordic_dmm_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+config_setting(
+    name = "not_config_nrfx_gppi_v1",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_NRFX_GPPI_V1": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_nrfx_gppi_and_not_config_nrfx_gppi_v1",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_NRFX_GPPI=true",
+        ":not_config_nrfx_gppi_v1",
+    ],
+)
+
+filegroup(
+    name = "common_config_nrfx_gppi_and_not_config_nrfx_gppi_v1_deps",
+    srcs = [
+        "gppi_init.c",
+    ],
+)
+
+cc_library(
+    name = "common_config_nrfx_gppi_and_not_config_nrfx_gppi_v1_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+filegroup(
+    name = "common_config_tfm_partition_platform_deps",
+    srcs = [
+        "soc_secure.c",
+    ],
+)
+
+cc_library(
+    name = "common_config_tfm_partition_platform_deps_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+cc_library(
+    name = "common_hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
+    # the SoC directories, and expects the SoC directories to be on the system
+    # include paths.
+    includes = ["."],
+    deps = [],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":platform_init.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "platform_init.ld.target",
+    srcs = ["platform_init.ld"],
+    location = "SECTIONS",
+    sort_key = "default",
+)
