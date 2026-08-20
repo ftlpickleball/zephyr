@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_linker_fragment(
+    name = "nsi_sections_ld",
+    srcs = ["nsi_sections.ld"],
+    location = "DATA_SECTIONS",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":nsi_sections_ld",
+    ],
+)
+
+cc_library(
+    name = "headers",
+    hdrs = glob([
+        "include/**/*.h",
+    ], allow_empty = True),
+    includes = ["include"],
+)
+
+filegroup(
+    name = "offsets_src",
+    srcs = ["//arch/posix/core:offsets/offsets.c"],
+)
+
+cc_library(
+    name = "offsets",
+    srcs = [
+        ":offsets_src",
+    ],
+    deps = [
+        ":headers",
+        "//:hal_soc_headers_library",
+        "//:internal_zephyr_soc_mandatory_deps",
+    ],
+)
+
+zephyr_cc_library(
+    name = "posix",
+    srcs = [
+        "//arch/posix/core:cpuhalt.c",
+        "//arch/posix/core:fatal.c",
+        "//arch/posix/core:irq.c",
+        "//arch/posix/core:posix_core_nsi.c",
+        "//arch/posix/core:swap.c",
+        "//arch/posix/core:thread.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCH_POSIX_TRAP_ON_FATAL=true": [
+            "//arch/posix/core:fatal_trap.c",
+        ],
+    }),
+    local_defines = ["NO_POSIX_CHEATS"],
+    deps = [
+        "//:autoconf_library",
+        "//kernel",
+        "//scripts/native_simulator",
+    ],
+)

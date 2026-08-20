@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "mips_include",
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "offsets_src",
+    srcs = ["core/offsets/offsets.c"],
+)
+
+cc_library(
+    name = "offsets",
+    srcs = [
+        "core/offsets/offsets.c",
+    ],
+    hdrs = glob(["include/**/*.h"], allow_empty = True) + ["//include/zephyr/arch/mips:mips_hdrs"],
+    includes = [
+        "core/offsets",
+        "include",
+    ],
+    deps = [
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//:heap_constants_lib",
+        "//:kobj_types_enum_h",
+        "//:syscall_list",
+        "//include:zephyr",
+        "//kernel:headers",
+    ],
+)
+
+zephyr_cc_library(
+    name = "core",
+    srcs = [
+        "core/cpu_idle.c",
+        "core/fatal.c",
+        "core/irq_manage.c",
+        "core/isr.S",
+        "core/prep_c.c",
+        "core/reset.S",
+        "core/swap.S",
+        "core/thread.c",
+        "//:kobj_types_enum_h",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IRQ_OFFLOAD=true": ["core/irq_offload.c"],
+    }),
+    includes = ["include"],
+    deps = [
+        "//:autoconf_library",
+        "//:offsets_header_lib",
+        "//:syscall_list",
+        "//include:zephyr",
+        "//kernel",
+    ],
+)

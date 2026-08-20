@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "riscv_hdrs",
+    hdrs = glob(["**/*.h"], allow_empty = True),
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = ["error.h"],
+    visibility = ["//visibility:public"],
+)
+
+exports_files(["common/linker.ld"])

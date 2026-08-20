@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated using scripts in zephyr-bazel.
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "broadcom",
+    srcs = glob(["*.dtsi"], allow_empty=True) + glob(["*.h"], allow_empty=True) + ["//dts/arm"],
+)

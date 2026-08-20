@@ -1,0 +1,168 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+# Note: The include/ directory is one Bazel package - no BUILD.bazel in child
+# directories EXCEPT where needed for specific rules (like linker scripts).
+# This is so that glob() can find files in all child directories
+# (glob does not cross package boundaries).
+#
+# If a subdirectory has a BUILD.bazel file, its headers must be explicitly
+# included in the 'zephyr' cc_library or another library it depends on.
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:compatibility.bzl", "zephyr")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "dt_bindings",
+    srcs = glob(["zephyr/dt-bindings/**"], allow_empty = True) + [
+        "zephyr/sys/util_internal.h",
+        "zephyr/sys/util_internal_is_eq.h",
+        "zephyr/sys/util_internal_util_dec.h",
+        "zephyr/sys/util_internal_util_inc.h",
+        "zephyr/sys/util_internal_util_x2.h",
+        "zephyr/sys/util_listify.h",
+        "zephyr/sys/util_loops.h",
+        "zephyr/sys/util_macro.h",
+    ],
+)
+
+filegroup(
+    name = "all",
+    srcs = glob(["**/*.h"], allow_empty = True),
+)
+
+filegroup(
+    name = "zephyr_stdint_hdr",
+    srcs = ["zephyr/toolchain/zephyr_stdint.h"],
+)
+
+cc_library(
+    name = "include_includes",
+    includes = ["."],
+)
+
+cc_library(
+    name = "zephyr_includes",
+    includes = ["zephyr"],
+)
+
+cc_library(
+    name = "arch_common_includes",
+    hdrs = ["zephyr/arch/common/app_data_alignment.ld"],
+    includes = ["zephyr/arch/common"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "zephyr",
+    hdrs = glob(
+        [
+            "zephyr/**/*.h",
+            "zephyr/**/*.inc",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        ".",
+        "../dts",
+        "../dts/common",
+    ],
+    target_compatible_with = zephyr(),
+    deps = select({
+        "@platforms//cpu:x86_64": [
+            "//include/zephyr/arch/x86:x86_hdrs",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//constraints:sparc": [
+            "//include/zephyr/arch/sparc:sparc_hdrs",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//constraints:rx": [
+            "//include/zephyr/arch/rx:rx_hdrs",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@platforms//cpu:riscv32": [
+            "//include/zephyr/arch/riscv:riscv_hdrs",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//constraints:mips": [
+            "//arch/mips:mips_include",
+            "//include/zephyr/arch/mips:mips_hdrs",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@platforms//cpu:armv7e-m": [
+            "//modules/cmsis_6",
+        ],
+        "@platforms//cpu:armv8-m": [
+            "//modules/cmsis_6",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZTEST=true": [
+            "//subsys/testsuite:includes",
+            "//subsys/testsuite/ztest:includes",
+        ],
+        "//conditions:default": [],
+    }) + [
+        "//:autoconf_library",
+        "@zephyr_version//:version",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    # The in-tree static app_smem_unaligned.ld is a placeholder that we do not
+    # need in Bazel builds. See ":app_smem_unaligned_ld" redirection in
+    # bazel_overlay/BUILD.bazel.
+    hdrs = glob(
+        ["zephyr/linker/**/*"],
+        exclude = ["zephyr/linker/app_smem_unaligned.ld"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = "zephyr/linker",
+    deps = [
+        ":arc_linker_includes",
+        ":arch_common_includes",
+        ":posix_linker_includes",
+        "//include/zephyr/arch/arm/cortex_m/scripts:linker_ld",
+        "//include/zephyr/arch/sparc:linker_ld",
+        "//include/zephyr/arch/x86:linker_lds",
+    ],
+)
+
+cc_library(
+    name = "arc_linker_includes",
+    hdrs = glob(["zephyr/arch/arc/**/*.ld"], allow_empty = True),
+)
+
+cc_library(
+    name = "posix_linker_includes",
+    hdrs = glob(["zephyr/arch/posix/*.ld"], allow_empty = True),
+)
+
+
+cc_library(
+    name = "posix",
+    hdrs = [
+        "zephyr/arch/posix/arch.h",
+        "zephyr/arch/posix/arch_inlines.h",
+        "zephyr/arch/posix/asm_inline.h",
+        "zephyr/arch/posix/asm_inline_gcc.h",
+        "zephyr/arch/posix/exception.h",
+        "zephyr/arch/posix/posix_soc_if.h",
+        "zephyr/arch/posix/posix_trace.h",
+        "zephyr/arch/posix/thread.h",
+    ],
+    includes = [
+        ".",
+        "../dts",
+        "../dts/common",
+    ],
+)

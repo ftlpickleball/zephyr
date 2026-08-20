@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "utils",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = [
+        ".",
+        "getopt",
+    ],
+    srcs = [
+        "dec.c",
+        "hex.c",
+        "rb.c",
+        "set.c",
+        "timeutil.c",
+        "bitarray.c",
+        "bitmask.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BASE64=true": ["base64.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GETOPT=true": ["getopt/getopt.c", "getopt/getopt_common.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GETOPT_LONG=true": ["getopt/getopt_long.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ONOFF=true": ["onoff.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NOTIFY=true": ["notify.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_JSON_LIBRARY=true": ["json.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RING_BUFFER=true": ["ring_buffer.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_UTF8=true": ["utf8.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WINSTREAM=true": ["winstream.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_COBS=true": ["cobs.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LINKER_LAST_SECTION_ID=true": ["last_section_id.c"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "//lib/libc",
+    ],
+)

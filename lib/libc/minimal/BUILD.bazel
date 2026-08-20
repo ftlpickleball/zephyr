@@ -1,0 +1,87 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_freestanding_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "stdbool",
+    hdrs = ["include/stdbool.h"],
+    includes = ["include"],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(["include/*.h"], allow_empty = True),
+    includes = ["include"],
+)
+
+filegroup(
+    name = "minimal_libc_headers",
+    srcs = glob(["include/**/*.h"], allow_empty = True),
+)
+
+# Minimum set of sys headers to bridge the gap between Zephyr's
+# usage of libc and external libc (such as LLVM's libc).
+# Used by builds on CONFIG_EXTERNAL_LIBC.
+filegroup(
+    name = "sys_headers_for_external_libc",
+    srcs = [
+        "include/sys/_types.h",
+        "include/sys/cdefs.h",
+        "include/sys/types.h",
+    ],
+)
+
+genrule(
+    name = "strerror_table_h",
+    srcs = [":include/errno.h"],
+    outs = ["libc/minimal/strerror_table.h"],
+    cmd = "$(location //scripts/build:gen_strerror_table) -i $(location :include/errno.h) -o $@",
+    tools = ["//scripts/build:gen_strerror_table"],
+)
+
+zephyr_freestanding_library(
+    name = "minimal",
+    srcs = [
+        "source/math/sqrt.c",
+        "source/math/sqrtf.c",
+        "source/stdlib/atoi.c",
+        "source/stdlib/bsearch.c",
+        "source/stdlib/exit.c",
+        "source/stdlib/qsort.c",
+        "source/stdlib/strtol.c",
+        "source/stdlib/strtoll.c",
+        "source/stdlib/strtoul.c",
+        "source/stdlib/strtoull.c",
+        "source/stdout/fprintf.c",
+        "source/stdout/sprintf.c",
+        "source/stdout/stdout_console.c",
+        "source/string/strerror.c",
+        "source/string/string.c",
+        "source/string/strncasecmp.c",
+        "source/string/strspn.c",
+        "source/string/strstr.c",
+    ],
+    hdrs = glob(["include/**/*.h"], allow_empty = True) + [
+        ":strerror_table_h",
+    ],
+    copts = [
+        # Flags used when compiling the minimal libc library.
+        # See the corresponding CMakeLists.txt in Zephyr.
+        "-fno-builtin",
+        "-fno-lto",
+    ],
+    includes = [
+        ".",
+        "include",
+        "//include",
+    ],
+    local_defines = [
+        # Workaround. This should come from include/zephyr/toolchain/gcc.h
+        # but we haven't figured out how to give that file to the compiler.
+        "ZRESTRICT=__restrict",
+    ],
+)

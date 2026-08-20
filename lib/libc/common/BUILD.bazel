@@ -1,0 +1,95 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "if_compiler_is_clang", "zephyr_freestanding_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_freestanding_library(
+    name = "common",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_ASCTIME=true": [
+            "source/time/asctime.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_GMTIME_R=true": [
+            "source/time/gmtime_r.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_LOCALTIME_R_UTC=true": [
+            "source/time/localtime_r_utc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_CTIME=true": [
+            "source/time/ctime.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_TIME=true": [
+            "source/time/time.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_MALLOC=true": [
+            "source/stdlib/malloc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_STRNLEN=true": [
+            "source/string/strnlen.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_THRD=true": [
+            "source/thrd/cnd.c",
+            "source/thrd/mtx.c",
+            "source/thrd/once.c",
+            "source/thrd/thrd.c",
+            "source/thrd/tss.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_REMOVE=true": [
+            "source/stdio/remove.c",
+        ],
+    }) + if_compiler_is_clang(
+        # Clang comes with abort, so only deal with libc abort src if not
+        # using Clang.
+        otherwise = [":common_libc_abort"],
+        then = [],
+    ),
+    hdrs = glob(["**/*.h"], allow_empty = True),
+    copts = [
+        # Prevent compiler from optimizing calloc into an infinite recursive call.
+        # See corresponding CMakeLists.txt in Zephyr.
+        "-fno-builtin-malloc",
+    ],
+    includes = ["include"],
+    # Now that we build more sources in common, some sources require headers
+    # from the libc impl.
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_MINIMAL_LIBC=true": ["//lib/libc/minimal"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NEWLIB_LIBC=true": ["//lib/libc/newlib"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PICOLIBC=true": ["//lib/libc/picolibc"],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "common_libc_abort",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMMON_LIBC_ABORT=true": [
+            "source/stdlib/abort.c",
+        ],
+    }),
+)

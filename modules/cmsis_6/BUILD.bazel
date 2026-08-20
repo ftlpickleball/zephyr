@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["external.BUILD"])
+
+cc_library(
+    name = "cmsis_6",
+    hdrs = glob(["*.h"], allow_empty = True),
+    includes = ["."],
+    deps = [
+        "@cmsis_6//:core",
+    ],
+)

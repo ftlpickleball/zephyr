@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "offsets_src",
+    srcs = ["//arch/arm/core:offsets/offsets.c"],
+)
+
+cc_library(
+    name = "offsets",
+    srcs = [
+        "//arch/arm/core:offsets/offsets.c",
+    ],
+    hdrs = [
+        "//arch/arm/core:offsets/offsets_aarch32.c",
+    ],
+    includes = [
+        "core/offsets",
+    ],
+    deps = [
+        "//:autoconf_library",
+        "//:driver_validation_h",
+        "//:dts_cc_library",
+        "//:hal_soc_headers_library",
+        "//:heap_constants_lib",
+        "//:kobj_types_enum_h",
+        "//:syscall_list",
+        "//include:zephyr",
+        "//kernel:headers",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M=true": [
+            "//arch/arm/core/cortex_m:headers",
+            "//modules/cmsis_6",
+        ],
+    }),
+)
+
+filegroup(
+    name = "cortex_m",
+    srcs = [
+        "include/kernel_arch_data.h",
+        "include/kernel_arch_func.h",
+        "include/offsets_short_arch.h",
+    ] + glob(["include/cortex_m/**/*.h"], allow_empty = True),
+)

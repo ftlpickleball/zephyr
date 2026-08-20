@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "heap_constants.c",
+    "heap.h",
+])
+
+zephyr_cc_library(
+    name = "heap",
+    hdrs = [
+        "heap.h",
+    ],
+    srcs = [
+        "heap.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SYS_HEAP_RUNTIME_STATS=true": ["heap_stats.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SYS_HEAP_INFO=true": ["heap_info.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SYS_HEAP_VALIDATE=true": ["heap_validate.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SYS_HEAP_STRESS=true": ["heap_stress.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SHARED_MULTI_HEAP=true": ["shared_multi_heap.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MULTI_HEAP=true": ["multi_heap.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HEAP_LISTENER=true": ["heap_listener.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SYS_HEAP_ARRAY_SIZE=0": [],
+        "//conditions:default": ["heap_array.c"],
+    }),
+    deps = [
+        "//lib/libc",
+    ],
+)

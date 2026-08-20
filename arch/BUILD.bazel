@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "arch",
+    deps = [
+        "//arch/common",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM=true": [
+            "//arch/arm/core",
+        ],
+        "@zephyr_kconfig//:CONFIG_ARC=true": [
+            "//arch/arc:core",
+        ],
+        "@zephyr_kconfig//:CONFIG_ARM64=true": [
+            "//arch/arm64:core",
+        ],
+        "@zephyr_kconfig//:CONFIG_RISCV=true": [
+            "//arch/riscv:core",
+        ],
+        "@zephyr_kconfig//:CONFIG_RX=true": [
+            "//arch/rx:core",
+        ],
+        "@zephyr_kconfig//:CONFIG_SPARC=true": [
+            "//arch/sparc:core",
+        ],
+        "@zephyr_kconfig//:CONFIG_X86=true": [
+            "//arch/x86:core",
+        ],
+        "//constraints:mips": [
+            "//arch/mips:core",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCH_POSIX=true": [
+            "//arch/posix",
+        ],
+        "@zephyr_kconfig//:CONFIG_XTENSA=true": [
+            "//arch/xtensa/core",
+        ],
+    }),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA=true": [
+            "//arch/xtensa:syscall_client_files",
+        ],
+        "@zephyr_kconfig//:CONFIG_RISCV=true": [
+            "//arch/riscv:syscall_client_files",
+        ],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    deps = [
+        "//arch/common:linker_includes",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM=true": [
+            "//arch/arm/core:linker_includes",
+        ],
+        "@zephyr_kconfig//:CONFIG_RISCV=true": [
+            "//arch/riscv:linker_includes",
+        ],
+        "@zephyr_kconfig//:CONFIG_XTENSA=true": [
+            "//arch/xtensa/core:zsr_header_library",
+        ],
+    }),
+)

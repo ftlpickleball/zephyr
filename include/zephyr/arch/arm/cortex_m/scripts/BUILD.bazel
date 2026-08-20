@@ -1,0 +1,13 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["linker.ld"])
+
+cc_library(
+    name = "linker_ld",
+    hdrs = ["linker.ld"],
+)

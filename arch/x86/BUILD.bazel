@@ -1,0 +1,167 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "headers",
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "offsets_src",
+    srcs = ["core/offsets/offsets.c"],
+)
+
+cc_library(
+    name = "offsets",
+    srcs = [
+        "core/offsets/offsets.c",
+    ],
+    hdrs = glob(["include/**/*.h"], allow_empty = True) + ["//include/zephyr/arch/x86:x86_hdrs"],
+    includes = [
+        "core/offsets",
+        "include",
+    ],
+    textual_hdrs = [
+        "core/offsets/intel64_offsets.c",
+        "core/offsets/ia32_offsets.c",
+    ],
+    deps = [
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//:heap_constants_lib",
+        "//:kobj_types_enum_h",
+        "//:syscall_list",
+        "//include:zephyr",
+        "//kernel:headers",
+    ],
+)
+
+selects.config_setting_group(
+    name = "irq_offload_x86_64",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_IRQ_OFFLOAD=true",
+        "@zephyr_kconfig//:CONFIG_X86_64=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "userspace_x86_64",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true",
+        "@zephyr_kconfig//:CONFIG_X86_64=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "tls_x86_64",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true",
+        "@zephyr_kconfig//:CONFIG_X86_64=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "coredump_x86_64",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP=true",
+        "@zephyr_kconfig//:CONFIG_X86_64=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "core",
+    srcs = [
+        # Common core
+        "core/cpuhalt.c",
+        "core/prep_c.c",
+        "core/fatal.c",
+        "core/cpuid.c",
+        "core/spec_ctrl.c",
+        "//:kobj_types_enum_h",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_X86_64=true": [
+            # Intel64 core
+            "core/intel64/locore.S",
+            "core/intel64/cpu.c",
+            "core/intel64/irq.c",
+            "core/intel64/thread.c",
+            "core/intel64/fatal.c",
+        ],
+        "//conditions:default": [],  # We don't support ia32 yet
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SMP=true": ["core/intel64/smp.c"],
+    }) + select({
+        ":irq_offload_x86_64": ["core/intel64/irq_offload.c"],
+        "//conditions:default": [],
+    }) + select({
+        ":userspace_x86_64": ["core/intel64/userspace.S"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true": ["core/tls.c"],
+        "//conditions:default": [],
+    }) + select({
+        ":tls_x86_64": ["core/intel64/tls.c"],
+        "//conditions:default": [],
+    }) + select({
+        ":coredump_x86_64": ["core/intel64/coredump.c"],
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_X86_MEMMAP=true": ["core/memmap.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PCIE=true": ["core/pcie.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REBOOT_RST_CNT=true": ["core/reboot_rst_cnt.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MULTIBOOT_INFO=true": ["core/multiboot.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_X86_EFI=true": ["core/efi.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ACPI=true": [
+            "core/legacy_bios.c",
+            "core/x86_acpi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_X86_MMU=true": ["core/x86_mmu.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCH_CACHE=true": ["core/cache.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DYNAMIC_BOOTARGS=true": ["core/bootargs.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_X86_VERY_EARLY_CONSOLE=true": ["core/early_serial.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT=true": ["core/elf.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_X86_CET=true": ["core/cet.c"],
+    }),
+    includes = ["include"],
+    textual_hdrs = [
+        "core/common.S",
+    ],
+    deps = [
+        "//:autoconf_library",
+        "//:syscall_list",
+        "//include:zephyr",
+        "//kernel",
+    ],
+)

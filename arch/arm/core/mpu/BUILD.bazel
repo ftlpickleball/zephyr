@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "mpu",
+    srcs = [
+        "arm_core_mpu.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_ARM_MPU=true": [
+            "arm_mpu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_NXP_SYSMPU=true": [
+            "nxp_mpu.c",
+        ],
+    }),
+    hdrs = [
+        "arm_core_mpu_dev.h",
+        "arm_mpu_v7_internal.h",
+        "arm_mpu_v8_internal.h",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M=true": [
+            "cortex_m/arm_mpu_internal.h",
+        ],
+    }),
+    includes = [
+        ".",
+        "cortex_m",
+    ],
+    deps = [
+        "//subsys/mem_mgmt",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M=true": [
+            ":deps_CPU_CORTEX_M",
+        ],
+    }),
+)
+
+zephyr_cc_library(
+    name = "deps_CPU_CORTEX_M",
+    visibility = ["//visibility:private"],
+    deps = select({
+        "//conditions:default": [
+            ":deps_not_CPU_HAS_CUSTOM_FIXED_SOC_MPU_REGIONS",
+        ],
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_CUSTOM_FIXED_SOC_MPU_REGIONS=true": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "deps_not_CPU_HAS_CUSTOM_FIXED_SOC_MPU_REGIONS",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_ARM_MPU=true": [
+            "arm_mpu_regions.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_HAS_NXP_SYSMPU=true": [
+            "nxp_mpu_regions.c",
+        ],
+    }),
+    visibility = ["//visibility:private"],
+)

@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "bindings",
+    srcs = glob(["bindings/**/*.yaml"], allow_empty = True),
+)
+
+cc_library(
+    name = "dts_includes",
+    includes = [
+        ".",
+        "arm",
+        "common",
+        "riscv",
+        "rx",
+        "sparc",
+        "vendor",
+        "x86",
+        "xtensa",
+    ],
+)

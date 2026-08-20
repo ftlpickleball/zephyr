@@ -1,0 +1,231 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+_APPEND_ASM_CMD = """
+        srcs_array=($(SRCS))
+        outs_array=($(OUTS))
+        for i in $$(seq 0 $$(( $${#srcs_array[@]} - 1 )) ); do
+            input_file=$${srcs_array[$${i}]}
+            output_file=$${outs_array[$${i}]}
+            echo "#define _ASMLANGUAGE" > $${output_file}
+            cat $${input_file} >> $${output_file}
+        done
+    """
+
+genrule(
+    name = "prepend_asm",
+    srcs = [
+        "fault_s.S",
+        "reset.S",
+        "svc.S",
+        "vector_table.S",
+    ],
+    outs = [
+        "fault_s.out.S",
+        "reset.out.S",
+        "svc.out.S",
+        "vector_table.out.S",
+    ],
+    cmd = _APPEND_ASM_CMD,
+)
+
+genrule(
+    name = "prepend_asm_swap_helper",
+    srcs = ["swap_helper.S"],
+    outs = ["swap_helper.out.S"],
+    cmd = _APPEND_ASM_CMD,
+)
+
+genrule(
+    name = "prepend_asm_tls",
+    srcs = ["__aeabi_read_tp.S"],
+    outs = ["__aeabi_read_tp.out.S"],
+    cmd = _APPEND_ASM_CMD,
+)
+
+genrule(
+    name = "prepend_asm_irq_relay",
+    srcs = ["irq_relay.S"],
+    outs = ["irq_relay.out.S"],
+    cmd = _APPEND_ASM_CMD,
+)
+
+genrule(
+    name = "prepend_asm_pm_s2ram",
+    srcs = ["pm_s2ram.S"],
+    outs = ["pm_s2ram.out.S"],
+    cmd = _APPEND_ASM_CMD,
+)
+
+cc_library(
+    name = "headers",
+    hdrs = [
+        "//arch/arm:cortex_m",
+        "//include:zephyr/arch/arm/mpu/arm_mpu_mem_cfg.h",
+        "//include:zephyr/arch/arm/cortex_m/cpu.h",
+        "//include:zephyr/arch/arm/cortex_m/fpu.h",
+        "//include:zephyr/arch/arm/cortex_m/memory_map.h",
+        "//include:zephyr/arch/arm/cortex_m/nvic.h",
+        "//include:zephyr/arch/arm/mpu/arm_mpu.h",
+        "//include:zephyr/arch/arm/mpu/arm_mpu_v7m.h",
+    ],
+    includes = [
+        "../../../../arch/arm/include",
+        "../../../../include",
+    ],
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//modules/cmsis_6",
+    ],
+)
+
+selects.config_setting_group(
+    name = "cortex_m_timing_functions_enabled",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_CORTEX_M_DWT=true",
+        "@zephyr_kconfig//:CONFIG_TIMING_FUNCTIONS=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "cortex_m",
+    srcs = [
+        "cpu_idle.c",
+        "fault.c",
+        "fpu.c",
+        "irq_manage.c",
+        "prep_c.c",
+        "scb.c",
+        "thread.c",
+        ":prepend_asm",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_USE_SWITCH=true": ["arm-m-switch.c"],
+        "//conditions:default": [
+            ":prepend_asm_swap_helper",
+            "exc_exit.c",
+            "thread_abort.c",
+        ],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true": [":prepend_asm_tls"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARM_CUSTOM_INTERRUPT_CONTROLLER=true": [],
+        "//conditions:default": ["irq_init.c"],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GEN_SW_ISR_TABLE=true": ["isr_wrapper.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP=true": ["coredump.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SEMIHOST=true": ["semihost.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PM_S2RAM=true": [
+            ":prepend_asm_pm_s2ram",
+            "pm_s2ram.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARCH_CACHE=true": ["cache.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SW_VECTOR_RELAY=true": [":prepend_asm_irq_relay"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NULL_POINTER_EXCEPTION_DETECTION_DWT=true": ["debug.c"],
+        "//conditions:default": [],
+    }) + select({
+        ":cortex_m_timing_functions_enabled": ["timing.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M_HAS_CMSE=true": ["cmse/arm_core_cmse.c"],
+        "//conditions:default": [],
+    }),
+    hdrs = ["vector_table.h"],
+    includes = ["."],
+    deps = [
+        ":headers",
+        "//kernel",
+        "//lib/os",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(["**/*.ld"], allow_empty = True),
+)
+
+zephyr_linker_fragment(
+    name = "relay_vector_table_with_VTOR",
+    srcs = ["relay_vector_table.ld"],
+    location = "ROM_START",
+    sort_key = "relay_vectors",
+)
+
+zephyr_linker_fragment(
+    name = "relay_vector_table_without_VTOR",
+    srcs = ["relay_vector_table.ld"],
+    location = "ROM_START",
+    sort_key = "0x0relay_vectors",
+)
+
+zephyr_linker_fragment(
+    name = "relay_vector_table",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M_HAS_VTOR=true": [":relay_vector_table_with_VTOR"],
+        "//conditions:default": [":relay_vector_table_without_VTOR"],
+    }),
+)
+
+zephyr_linker_fragment(
+    name = "vt_pointer_section",
+    srcs = ["vt_pointer_section.ld"],
+    location = "RAM_SECTIONS",
+)
+
+selects.config_setting_group(
+    name = "need_vt_pointer_section",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_SW_VECTOR_RELAY=true",
+        "@zephyr_kconfig//:CONFIG_SW_VECTOR_RELAY_CLIENT=true",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "ram_vector_table",
+    srcs = ["ram_vector_table.ld"],
+    location = "RAM_SECTIONS",
+    sort_key = "0",
+)
+
+selects.config_setting_group(
+    name = "need_ram_vector_table",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M_HAS_VTOR=true",
+        "@zephyr_kconfig//:CONFIG_SRAM_VECTOR_TABLE=true",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_SW_VECTOR_RELAY=true": [":relay_vector_table"],
+        "//conditions:default": [],
+    }) + select({
+        ":need_vt_pointer_section": [":vt_pointer_section"],
+        "//conditions:default": [],
+    }) + select({
+        ":need_ram_vector_table": [":ram_vector_table"],
+        "//conditions:default": [],
+    }),
+)

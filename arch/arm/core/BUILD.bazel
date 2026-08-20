@@ -1,0 +1,161 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "core_asm",
+    srcs = [
+        "nmi_on_reset.S",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "userspace.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_ZIMAGE_HEADER=true": [
+            "header.S",
+        ],
+    }),
+    local_defines = [
+        "_ASMLANGUAGE",
+    ],
+)
+
+zephyr_cc_library(
+    name = "core",
+    srcs = [
+        "fatal.c",
+        "nmi.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPP=true": [
+            "__aeabi_atexit.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IRQ_OFFLOAD=true": [
+            "irq_offload.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true": [
+            "tls.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT=true": [
+            "elf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GDBSTUB=true": [
+            "gdbstub.c",
+        ],
+    }),
+    deps = [
+        ":core_asm",
+        "//kernel",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_MPU=true": [
+            "//arch/arm/core/mpu",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M=true": [
+            "//arch/arm/core/cortex_m",
+        ],
+    }),
+)
+
+exports_files([
+    "offsets/offsets_aarch32.c",
+    "offsets/offsets.c",
+])
+
+# We ignore kconfig conditions for linker includes, because linker includes
+# are similar to headers in that they need to exist when some other file
+# includes them, but there's no harm if they are present but not used (unless
+# there is a naming collision). If this turns out to be a problem, we should
+# add kconfig conditions on these.
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(["*.ld"], allow_empty = True),
+    deps = [
+        "//arch/arm/core/cortex_m:linker_includes",
+    ],
+)
+
+# The targets "rom_start_<0,1,2>" below are translated manually from the
+# following CMake snippets in the corresponding CMakeLists.txt in zephyr.
+# Because there are 3 different sort keys, and each sort key's content
+# depends on the value of CONFIG_ARM_ZIMAGE_HEADER, the Bazel rules are
+# broken into 3 different rules.
+#
+#  if(CONFIG_ARM_ZIMAGE_HEADER)
+#  zephyr_linker_sources(ROM_START SORT_KEY 0x0vectors zimage_header.ld)
+#  zephyr_linker_sources(ROM_START SORT_KEY 0x1vectors vector_table.ld)
+#  zephyr_linker_sources(ROM_START SORT_KEY 0x2vectors cortex_m/vector_table_pad.ld)
+#  else()
+#  zephyr_linker_sources(ROM_START SORT_KEY 0x0vectors vector_table.ld)
+#  zephyr_linker_sources(ROM_START SORT_KEY 0x1vectors cortex_m/vector_table_pad.ld)
+#  endif()
+zephyr_linker_fragment(
+    name = "rom_start_0",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_ARM_ZIMAGE_HEADER=true": [
+            "zimage_header.ld",
+        ],
+        "//conditions:default": [
+            "vector_table.ld",
+        ],
+    }),
+    location = "ROM_START",
+    sort_key = "0x0vectors",
+)
+
+zephyr_linker_fragment(
+    name = "rom_start_1",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_ARM_ZIMAGE_HEADER=true": [
+            "vector_table.ld",
+        ],
+        "//conditions:default": [
+            "//arch/arm/core/cortex_m:vector_table_pad.ld",
+        ],
+    }),
+    location = "ROM_START",
+    sort_key = "0x1vectors",
+)
+
+zephyr_linker_fragment(
+    name = "rom_start_2",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_ARM_ZIMAGE_HEADER=true": [
+            "//arch/arm/core/cortex_m:vector_table_pad.ld",
+        ],
+        "//conditions:default": [],
+    }),
+    location = "ROM_START",
+    sort_key = "0x2vectors",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":rom_start_0",
+        ":rom_start_1",
+        ":rom_start_2",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M=true": [
+            "//arch/arm/core/cortex_m:linker_fragments",
+        ],
+    }),
+)

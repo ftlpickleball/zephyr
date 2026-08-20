@@ -1,0 +1,96 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "headers",
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "offsets_src",
+    srcs = ["core/offsets/offsets.c"],
+)
+
+cc_library(
+    name = "offsets",
+    srcs = [
+        "core/offsets/offsets.c",
+    ],
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    includes = [
+        "core/offsets",
+        "include",
+    ],
+    deps = [
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//:heap_constants_lib",
+        "//:kobj_types_enum_h",
+        "//:syscall_list",
+        "//include:zephyr",
+        "//kernel:headers",
+    ],
+)
+
+zephyr_cc_library(
+    name = "core_asm",
+    srcs = [
+        "core/cpu_idle.S",
+        "core/dsp/swap_dsp_macros.h",
+        "core/fast_irq.S",
+        "core/fault_s.S",
+        "core/isr_wrapper.S",
+        "core/regular_irq.S",
+        "core/reset.S",
+        "core/switch.S",
+        "core/thread_entry_wrapper.S",
+        "core/userspace.S",
+    ],
+    local_defines = [
+        "_ASMLANGUAGE",
+    ],
+)
+
+zephyr_cc_library(
+    name = "core",
+    srcs = [
+        "core/cache.c",
+        "core/fatal.c",
+        "core/fault.c",
+        "core/irq_manage.c",
+        "core/prep_c.c",
+        "core/thread.c",
+        "core/vector_table.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true": ["core/tls.c"],
+    }),
+    deps = [
+        ":core_asm",
+        ":mpu",
+        "//kernel",
+    ],
+)
+
+zephyr_cc_library(
+    name = "mpu",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARC_CORE_MPU=true": ["core/mpu/arc_core_mpu.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARC_MPU=true": ["core/mpu/arc_mpu.c"],
+    }),
+    hdrs = glob(["core/mpu/*.h"], allow_empty = True),
+    includes = ["core/mpu"],
+    deps = [
+        "//kernel",
+    ],
+)

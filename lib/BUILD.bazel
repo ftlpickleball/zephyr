@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "lib",
+    deps = [
+        "//lib/heap",
+        "//lib/libc",
+        "//lib/mem_blocks",
+        "//lib/os",
+        "//lib/utils",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CPP=true": [
+            "//lib/cpp",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_BUF=true": [
+            "//lib/net_buf",
+        ],
+    }),
+)

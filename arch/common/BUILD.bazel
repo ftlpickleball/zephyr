@@ -1,0 +1,156 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "interface",
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    includes = ["include"],
+)
+
+zephyr_cc_library(
+    name = "common",
+    srcs = [
+        "init.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_XIP=true": ["xip.c"],
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true": [
+            "sw_isr_common.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DYNAMIC_INTERRUPTS=true": ["dynamic_isr.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MULTI_LEVEL_INTERRUPTS=true": ["multilevel_irq.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHARED_INTERRUPTS=true": ["shared_irq.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SEMIHOST=true": ["semihost.c"],
+    }),
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    copts = [
+        "-ffunction-sections",
+        "-fdata-sections",
+    ],
+    deps = [
+        ":interface",
+    ],
+)
+
+zephyr_cc_library(
+    name = "isr_tables",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true": ["isr_tables.c"],
+    }),
+    copts = ["-includezephyr/autoconf.h"],
+    deps = [
+        "//:autoconf_library",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(["**/*.ld"], allow_empty = True),
+)
+
+zephyr_linker_fragment(
+    name = "intlist_ld",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true": [
+            "//include:zephyr/linker/intlist.ld",
+        ],
+    }),
+    location = "SECTIONS",
+)
+
+zephyr_linker_fragment(
+    name = "isr_local_drop_ld",
+    srcs = [],
+    location = "SECTIONS",
+)
+
+zephyr_linker_fragment(
+    name = "irq_vector_table_section_ld",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GEN_IRQ_VECTOR_TABLE=true": [
+            "//include:zephyr/linker/irq-vector-table-section.ld",
+        ],
+    }),
+    location = "ROM_START",
+    sort_key = "0x0vectors",
+)
+
+zephyr_linker_fragment(
+    name = "ramfunc_ld",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCH_HAS_RAMFUNC_SUPPORT=true": [
+            "ramfunc.ld",
+        ],
+    }),
+    location = "RAM_SECTIONS",
+)
+
+zephyr_linker_fragment(
+    name = "nocache_ld",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NOCACHE_MEMORY=true": [
+            "nocache.ld",
+        ],
+    }),
+    location = "RAM_SECTIONS",
+)
+
+zephyr_linker_fragment(
+    name = "rom_start_address_ld",
+    srcs = ["rom_start_address.ld"],
+    location = "ROM_START",
+    sort_key = "!",
+)
+
+zephyr_linker_fragment(
+    name = "fill_with_zeros_ld",
+    srcs = ["fill_with_zeros.ld"],
+    location = "ROM_START",
+    sort_key = "$",
+)
+
+zephyr_linker_fragment(
+    name = "rom_start_offset_ld",
+    srcs = ["rom_start_offset.ld"],
+    location = "ROM_START",
+    sort_key = "0x0",
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":intlist_ld",
+        ":irq_vector_table_section_ld",
+        ":isr_local_drop_ld",
+        ":nocache_ld",
+        ":ramfunc_ld",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCH_SUPPORTS_ROM_OFFSET=true": [
+            ":fill_with_zeros_ld",
+            ":rom_start_address_ld",
+            ":rom_start_offset_ld",
+        ],
+    }),
+)

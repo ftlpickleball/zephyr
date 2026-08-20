@@ -1,0 +1,79 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "offsets",
+    srcs = [
+        "//arch/xtensa/core:offsets/offsets.c",
+    ],
+    copts = ["-include generated/zephyr/autoconf.h"],
+    includes = [
+        "core/offsets",
+    ],
+    deps = [
+        ":headers",
+        ":xtensa_hal",
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//:soc",
+        "//arch/xtensa/core:zsr_header_library",
+        "//include:zephyr",
+        "//kernel:headers",
+    ],
+)
+
+cc_library(
+    name = "xtensa_hal",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_HAL=true": [
+            "@hal_xtensa//:srcs",
+        ],
+    }),
+    deps = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_HAL=true": [
+            "@hal_xtensa//:hdrs",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_XTENSA_DC233C=true": [
+            "@hal_xtensa//:dc233c_hdrs",
+        ],
+    }),
+)
+
+filegroup(
+    name = "offsets_src",
+    srcs = ["//arch/xtensa/core:offsets/offsets.c"],
+)
+
+filegroup(
+    name = "arch_xtensa_includes",
+    srcs = glob(["include/*.h"], allow_empty = True) + glob(["include/*.S"], allow_empty = True),
+)
+
+cc_library(
+    name = "headers",
+    hdrs = [
+        ":arch_xtensa_includes",
+    ],
+    strip_include_prefix = "include",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//include:zephyr",
+    ],
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/arch/xtensa/arch.h",
+    ],
+)

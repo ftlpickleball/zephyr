@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "abi",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STATIC_INIT_GNU=true": [
+            "cpp_dtors.c",
+        ],
+    }),
+)

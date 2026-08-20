@@ -1,0 +1,87 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_freestanding_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_freestanding_library(
+    name = "picolibc",
+    hdrs = glob(
+        [
+            "*.h",
+            "include/**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    srcs = [
+        "assert.c",
+        "cbprintf.c",
+        "chk_fail.c",
+        "errno_wrap.c",
+        "exit.c",
+        "locks.c",
+        "stdio.c",
+    ],
+    copts = ["-fno-lto"],
+    defines = ["__LINUX_ERRNO_EXTENSIONS__"],
+    includes = [
+        ".",
+        "include",
+    ],
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_USE_MODULE=true": [],
+        "//conditions:default": [":toolchain_picolibc_deps"],
+    }),
+)
+
+# These are extra Cmake rules explicitly written for picolibc, and this file is
+# doing a manual translation of those cmake rules. See this file from zephyr:
+#
+# https://github.com/zephyrproject-rtos/zephyr/blob/main/lib/libc/picolibc/CMakeLists.txt
+cc_library(
+    name = "toolchain_picolibc_deps",
+    defines = select({
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_FLOAT=true": [
+            "PICOLIBC_DOUBLE_PRINTF_SCANF",
+        ],
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_MINIMAL=true": [
+            "PICOLIBC_MINIMAL_PRINTF_SCANF",
+        ],
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_LONG_LONG=true": [
+            "PICOLIBC_LONG_LONG_PRINTF_SCANF",
+        ],
+        "//conditions:default": ["PICOLIBC_INTEGER_PRINTF_SCANF"],
+    }),
+    linkopts = select({
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_FLOAT=true": [
+            "-DPICOLIBC_DOUBLE_PRINTF_SCANF",
+        ],
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_MINIMAL=true": [
+            "-DPICOLIBC_MINIMAL_PRINTF_SCANF",
+        ],
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_LONG_LONG=true": [
+            "-DPICOLIBC_LONG_LONG_PRINTF_SCANF",
+        ],
+        "//conditions:default": ["-DPICOLIBC_INTEGER_PRINTF_SCANF"],
+    }),
+)
+
+# Picolibc can come from either the picolibc module in Zephyr or the toolchain.
+selects.config_setting_group(
+    name = "use_toolchain_picolibc",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_PICOLIBC=true",
+        "@zephyr_kconfig//:CONFIG_PICOLIBC_USE_TOOLCHAIN=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_gcc_and_use_toolchain_picolibc",
+    match_all = [
+        "//:compiler_is_gcc",
+        ":use_toolchain_picolibc",
+    ],
+)

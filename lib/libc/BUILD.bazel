@@ -1,0 +1,76 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "if_compiler_is_clang", "zephyr_freestanding_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_freestanding_library(
+    name = "libc",
+    srcs = [],
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_EXTERNAL_LIBC=true": [":external_libc_deps"],
+        "//conditions:default": [":libc_not_config_external_libc_deps"],
+    }),
+)
+
+cc_library(
+    name = "external_libc_deps",
+    deps = if_compiler_is_clang(
+        otherwise = [],
+        then = [":external_libc_clang_deps"],
+    ),
+)
+
+cc_library(
+    name = "external_libc_clang_deps",
+    deps = select({
+        "@platforms//cpu:armv7-m": [":external_libc_arm_clang_deps"],
+        "@platforms//cpu:armv7e-m": [":external_libc_arm_clang_deps"],
+        "@platforms//cpu:armv8-m": [":external_libc_arm_clang_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "external_libc_arm_clang_deps",
+    hdrs = ["//lib/libc/minimal:sys_headers_for_external_libc"],
+    defines = [
+        # The libc inside llvm's toolchain has time_t and susecond_t defined.
+        # If we need to support yet another different external libc in the
+        # future, we just create another cc_library that builds the same
+        # "sys_headers_for_external_libc" with different defines.
+        "__time_t_defined",
+        "__suseconds_t_defined",
+    ],
+    includes = ["minimal/include"],
+)
+
+zephyr_freestanding_library(
+    name = "libc_not_config_external_libc_deps",
+    deps = ["//lib/libc/common"] + select({
+        "@zephyr_kconfig//:CONFIG_MINIMAL_LIBC=true": ["//lib/libc/minimal"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NEWLIB_LIBC=true": ["//lib/libc/newlib"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PICOLIBC=true": ["//lib/libc/picolibc"],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = select({
+        "//conditions:default": [
+            # TODO(yichengli): Conditionalize this on CONFIG_EXTERNAL_LIBC.
+            # The CMake version only includes this if not CONFIG_EXTERNAL_LIBC,
+            # however drivers use this syscall header unconditionally. This may
+            # be a bug in Zephyr or we are missing generating this file from
+            # external libc.
+            "//include:zephyr/sys/libc-hooks.h",
+        ],
+    }),
+)

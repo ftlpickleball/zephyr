@@ -1,0 +1,89 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# TODO: Build zvfs subdirectory.
+
+zephyr_cc_library(
+    name = "os",
+    srcs = [
+        "cbprintf_packaged.c",
+        "clock.c",
+        "printk.c",
+        "sem.c",
+        "thread_entry.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_CBPRINTF_COMPLETE=true": [
+            "cbprintf_complete.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CBPRINTF_NANO=true": [
+            "cbprintf_nano.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PICOLIBC=true": [],
+        "//conditions:default": [
+            "cbprintf.c",
+        ],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ASSERT=true": [
+            "assert.c",
+        ],
+        "@zephyr_kconfig//:CONFIG_ASSERT_VERBOSE=true": [
+            "assert.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "mutex.c",
+            "user_work.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MPSC_PBUF=true": [
+            "mpsc_pbuf.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SPSC_PBUF=true": [
+            "spsc_pbuf.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SCHED_DEADLINE=true": [
+            "p4wq.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_REBOOT=true": [
+            "reboot.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_POWEROFF=true": [
+            "poweroff.c",
+        ],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "//lib/libc",
+    ],
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/sys_clock.h",
+        "//include:zephyr/sys/mutex.h",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ZVFS_FDTABLE=true": [
+            "//include:zephyr/sys/fdtable.h",
+        ],
+    }),
+)

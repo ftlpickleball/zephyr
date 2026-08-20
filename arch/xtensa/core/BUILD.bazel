@@ -1,0 +1,193 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_python//python:defs.bzl", "py_binary")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//arch/xtensa:xtensa.bzl", "xtensa_zsr_header")
+
+package(default_visibility = ["//visibility:public"])
+
+py_binary(
+    name = "gen_zsr",
+    srcs = ["gen_zsr.py"],
+)
+
+py_binary(
+    name = "gen_vectors",
+    srcs = ["gen_vectors.py"],
+)
+
+# Mandatory for Xtensa. A filegroup containing files specific to the xtensa
+# core. These files usually come with the toolchain for that core.
+label_flag(
+    name = "core_filegroup",
+    build_setting_default = "//:zephyr_unspecified_backend",
+)
+
+xtensa_zsr_header(
+    name = "zsr_header",
+    core_files = ":core_filegroup",
+)
+
+cc_library(
+    name = "zsr_header_library",
+    hdrs = [":zsr_header"],
+    includes = ["include/generated"],
+)
+
+zephyr_cc_library(
+    name = "startup",
+    srcs = [
+        "startup/memctl_default.S",
+        "startup/memerror_vector.S",
+        "startup/reset_vector.S",
+    ],
+    copts = [
+        "-c",
+        "-mtext-section-literals",
+        "-mlongcalls",
+    ],
+    local_defines = [
+        "_ASMLANGUAGE",
+    ],
+)
+
+zephyr_cc_library(
+    name = "core_asm",
+    srcs = [
+        "window_vectors.S",
+        "xtensa_asm2_util.S",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_USE_CORE_CRT1=true": [
+            "crt1.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_ENABLE_BACKTRACE=true": [
+            "debug_helpers_asm.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "userspace.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_HIFI_SHARING=true": [
+            "xtensa_hifi.S",
+        ],
+    }),
+    copts = [
+        "-mlongcalls",
+    ],
+    local_defines = [
+        "_ASMLANGUAGE",
+    ],
+    deps = [
+        "//arch/xtensa:headers",
+        "//kernel:headers",
+    ],
+)
+
+zephyr_cc_library(
+    name = "core",
+    # TODO(yichengli): Add xcc_stubs.c if ZEPHYR_TOOLCHAIN_VARIANT is xcc.
+    srcs = [
+        "cpu_idle.c",
+        "fatal.c",
+        "irq_manage.c",
+        "prep_c.c",
+        "thread.c",
+        "vector_handlers.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IRQ_OFFLOAD=true": [
+            "irq_offload.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true": [
+            "tls.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_ENABLE_BACKTRACE=true": [
+            "xtensa_backtrace.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEBUG_COREDUMP=true": [
+            "coredump.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TIMING_FUNCTIONS=true": [
+            "timing.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GDBSTUB=true": [
+            "gdbstub.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SEMIHOST=true": [
+            "semihost.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_MMU=true": [
+            "mmu.c",
+            "ptables.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_MPU=true": [
+            "mpu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "syscall_helper.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT=true": [
+            "elf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SMP=true": [
+            "smp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_VM_USE_CUSTOM_MEM_RANGE_CHECK=true": [
+            "mem_manage.c",
+        ],
+    }),
+    copts = [
+        "-mlongcalls",
+    ],
+    deps = [
+        ":core_asm",
+        "//arch/xtensa:headers",
+        "//kernel",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_XTENSA_RESET_VECTOR=true": [":startup"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_XTENSA_DC233C=true": [
+            "//soc/cdns/dc233c:backtrace_helpers",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+# TODO(yichengli): Deal with XTENSA_CONFIG_HAL_INCLUDE_DIR.
+
+exports_files([
+    "offsets/offsets.c",
+])

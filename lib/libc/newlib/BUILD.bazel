@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_freestanding_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_freestanding_library(
+    name = "newlib",
+    srcs = [
+        "libc-hooks.c",
+    ],
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    copts = ["-fno-lto"],
+    defines = [
+        "_ANSI_SOURCE",
+        "__LINUX_ERRNO_EXTENSIONS__",
+    ],
+    includes = ["include"],
+)

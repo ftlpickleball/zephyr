@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# TODO(yichengli): This modules/hal_nordic/ directory inside Zephyr duplicates
+# logic in the out-of-tree Nordic HAL. We should aim to use cmake directives here
+# as much as possible.
+
+cc_library(
+    name = "nrfx_hdrs",
+    hdrs = glob(["*.h"], allow_empty = True),
+    includes = ["."],
+)
+
+filegroup(
+    name = "nrfx_srcs",
+    srcs = [
+        "nrfx_glue.c",
+    ],
+)

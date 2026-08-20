@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "mem_blocks",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SYS_MEM_BLOCKS=true": [
+            "mem_blocks.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty = True),
+)

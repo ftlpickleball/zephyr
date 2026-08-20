@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+# This library must appear BEFORE the pico-sdk headers in the include search
+# order so that the Zephyr compatibility layer takes precedence.
+cc_library(
+    name = "pico_zephyr_compat",
+    hdrs = glob(["pico/*.h"], allow_empty = True),
+    # Skip startup hooks in runtime_init.c that reference symbols
+    # provided only by Pico SDK's bare-metal runtime (crt0.S, runtime_init_clocks.c).
+    # Without these defines, ld.lld retains unmapped .preinit_array.* orphan
+    # sections containing __attribute__((used)) pointers and fails to link.
+    defines = [
+        "PICO_RUNTIME_SKIP_INIT_CLOCKS=1",
+        "PICO_RUNTIME_SKIP_INIT_INSTALL_RAM_VECTOR_TABLE=1",
+    ],
+    includes = ["."],
+)
+
+alias(
+    name = "boot_stage2",
+    actual = "@hal_rpi_pico//:boot_stage2",
+)

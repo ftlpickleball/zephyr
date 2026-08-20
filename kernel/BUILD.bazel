@@ -1,0 +1,215 @@
+# SPDX-FileCopyrightText: Copyright 2024 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "headers",
+    hdrs = glob(["include/**/*.h"], allow_empty = True),
+    defines = [
+        "K_HEAP_MEM_POOL_SIZE=CONFIG_HEAP_MEM_POOL_SIZE",
+    ],
+    includes = ["include"],
+    deps = [
+        "//:autoconf_library",
+        "//include:zephyr",
+    ],
+)
+
+cc_library(
+    name = "kernel",
+    features = ["zephyr_warning_suppressions"],
+    srcs = [
+        "banner.c",
+        "busy_wait.c",
+        "device.c",
+        "errno.c",
+        "fatal.c",
+        "init.c",
+        "kheap.c",
+        "main_weak.c",
+        "mem_slab.c",
+        "thread.c",
+        "version.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MULTITHREADING=true": [
+            "condvar.c",
+            "idle.c",
+            "mailbox.c",
+            "msg_q.c",
+            "mutex.c",
+            "pipe.c",
+            "queue.c",
+            "sched.c",
+            "sem.c",
+            "stack.c",
+            "system_work_q.c",
+            "work.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SMP=true": [
+            "smp.c",
+            "ipi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SCHED_CPU_MASK=true": [
+            "cpu_mask.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SCHED_SCALABLE=true": [
+            "priority_queues.c",
+        ],
+        "@zephyr_kconfig//:CONFIG_WAITQ_SCALABLE=true": [
+            "priority_queues.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TIMER_READS_ITS_FREQUENCY_AT_RUNTIME=true": [
+            "sys_clock_hw_cycles.c",
+        ],
+        "@zephyr_kconfig//:CONFIG_SYSTEM_CLOCK_HW_CYCLES_PER_SEC_RUNTIME_UPDATE=true": [
+            "sys_clock_hw_cycles.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SYS_CLOCK_EXISTS=true": [
+            "timeout.c",
+            "timer.c",
+        ],
+    }) + select({
+        "//conditions:default": ["dynamic_disabled.c"],
+        "@zephyr_kconfig//:CONFIG_DYNAMIC_THREAD=true": [],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_MEM_POOL=true": ["mempool.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POLL=true": ["poll.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EVENTS=true": ["events.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SCHED_THREAD_USAGE=true": ["usage.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TIMESLICING=true": ["timeslicing.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPIN_VALIDATE=true": ["spinlock_validate.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IRQ_OFFLOAD=true": ["irq_offload.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BOOTARGS=true": ["boot_args.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_THREAD_MONITOR=true": ["thread_monitor.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STACK_CANARIES=true": [
+            "compiler_stack_protect.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ATOMIC_OPERATIONS_C=true": [
+            "atomic_c.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_OBJ_CORE=true": [
+            "obj_core.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MMU=true": ["mmu.c"],
+        # buildifier: do not sort
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "futex.c",
+            "mem_domain.c",
+            # According to Zephyr:
+            # The last 2 files inside the target_sources_ifdef should be
+            # userspace_handler.c and userspace.c. If not the linker would complain.
+            # This order has to be maintained. Any new file should be placed
+            # above these 2 files.
+            "userspace_handler.c",
+            "userspace.c",
+        ],
+    }),
+    hdrs = glob(["include/*.h"], allow_empty = True),
+    defines = [
+        "K_HEAP_MEM_POOL_SIZE=CONFIG_HEAP_MEM_POOL_SIZE",
+    ],
+    includes = ["include"],
+    local_defines = ["__ZEPHYR_SUPERVISOR__"],
+    deps = [
+        "//:arch_headers_library",
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//:offsets_header_lib",
+        "//:soc",
+        "//:syscall_list",
+        "//include:zephyr",
+        "//lib",
+        "@zephyr_version//:version",
+    ]
+ + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MULTITHREADING=true": [
+            ":multithreading_extra_deps",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA=true": [
+            # Needs kernel_arch_func.h
+            "//arch/xtensa:headers",
+        ],
+    }),
+)
+
+zephyr_cc_library(
+    name = "multithreading_extra_deps",
+    srcs = [],
+)
+
+selects.config_setting_group(
+    name = "no_errno_private_h",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_ERRNO_IN_TLS=true",
+        "@zephyr_kconfig//:CONFIG_LIBC_ERRNO=true",
+    ],
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/device.h",
+        "//include:zephyr/kernel.h",
+        "//include:zephyr/sys/kobject.h",
+        "//include:zephyr/sys/time_units.h",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ATOMIC_OPERATIONS_C=true": [
+            "//include:zephyr/sys/atomic_c.h",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DEMAND_PAGING=true": [
+            "//include:zephyr/kernel/mm/demand_paging.h",
+        ],
+    }) + select({
+        "//conditions:default": [
+            "//include:zephyr/sys/errno_private.h",
+        ],
+        ":no_errno_private_h": [],
+    }),
+)
