@@ -1,0 +1,588 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "serial",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SERIAL_TEST=true": [
+            "serial_test.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ASYNC_RX_HELPER=true": [
+            "uart_async_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ASYNC_TO_INT_DRIVEN_API=true": [
+            "uart_async_to_irq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SHELL=true": [
+            "uart_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USBD_CDC_ACM_CLASS=true": [
+            "//:misc/empty_file.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USB_CDC_ACM=true": [
+            "//:misc/empty_file.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LEUART_GECKO=true": [
+            "leuart_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LPUART_ESP32=true": [
+            "lpuart_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SERIAL_ESP32_USB=true": [
+            "serial_esp32_usb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_AESC=true": [
+            "uart_aesc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ALTERA=true": [
+            "uart_altera.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ALTERA_JTAG=true": [
+            "uart_altera_jtag.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_AMBIQ=true": [
+            "uart_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_AMEBA_LOGUART=true": [
+            "uart_ameba_loguart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_APBUART=true": [
+            "uart_apbuart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_BCM2711_MU=true": [
+            "uart_bcm2711.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_BEE=true": [
+            "uart_bee.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_BFLB=true": [
+            "uart_bflb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_BITBANG=true": [
+            "uart_bitbang.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_BRIDGE=true": [
+            "uart_bridge.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_BT=true": [
+            "uart_bt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_CC13XX_CC26XX=true": [
+            "uart_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_CC23X0=true": [
+            "uart_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_CC32XX=true": [
+            "uart_cc32xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_CDNS=true": [
+            "uart_cdns.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_CMSDK_APB=true": [
+            "uart_cmsdk_apb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_EFINIX_SAPPIHIRE=true": [
+            "uart_efinix_sapphire.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_EMUL=true": [
+            "uart_emul.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ENE_KB106X=true": [
+            "uart_ene_kb106x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ENE_KB1200=true": [
+            "uart_ene_kb1200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ESP32=true": [
+            "uart_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_FOCALTECH=true": [
+            "uart_ft9001.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_GECKO=true": [
+            "uart_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_HOSTLINK=true": [
+            "uart_hostlink.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_IMX=true": [
+            "uart_imx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_INFINEON_CAT1_HAL=true": [
+            "uart_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_INFINEON_CAT1_PDL=true": [
+            "uart_infineon_pdl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_INTEL_LW=true": [
+            "uart_intel_lw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ITE_IT51XXX=true": [
+            "uart_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_ITE_IT8XXX2=true": [
+            "uart_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_LITEX=true": [
+            "uart_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_LPC11U6X=true": [
+            "uart_lpc11u6x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MAX32=true": [
+            "uart_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MCHP_DBGU_G1=true": [
+            "uart_mchp_dbgu_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MCHP_SERCOM_G1=true": [
+            "uart_mchp_sercom_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MCUX=true": [
+            "uart_mcux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MCUX_FLEXCOMM=true": [
+            "uart_mcux_flexcomm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MCUX_IUART=true": [
+            "uart_mcux_iuart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MCUX_LPSCI=true": [
+            "uart_mcux_lpsci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MCUX_LPUART=true": [
+            "uart_mcux_lpuart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MIV=true": [
+            "uart_miv.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MSP432P4XX=true": [
+            "uart_msp432p4xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_MSPM0=true": [
+            "uart_mspm0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NEORV32=true": [
+            "uart_neorv32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NPCX=true": [
+            "uart_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NRFX_UART=true": [
+            "uart_nrfx_uart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NRFX_UARTE=true": [
+            "uart_nrfx_uarte.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NS16550=true": [
+            "uart_ns16550.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NUMAKER=true": [
+            "uart_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NUMICRO=true": [
+            "uart_numicro.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_NXP_S32_LINFLEXD=true": [
+            "uart_nxp_s32_linflexd.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_OPENTITAN=true": [
+            "uart_opentitan.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_PIPE=true": [
+            "uart_pipe.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_PL011=true": [
+            "uart_pl011.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_PSOC6=true": [
+            "uart_psoc6.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_QUICKLOGIC_USBSERIALPORT_S3B=true": [
+            "uart_ql_usbserialport_s3b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RA8_SCI_B=true": [
+            "uart_renesas_ra8_sci_b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RCAR=true": [
+            "uart_rcar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RENESAS_RA_SAU=true": [
+            "uart_renesas_ra_sau.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RENESAS_RX=true": [
+            "uart_renesas_rx_sci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RENESAS_RX_QEMU=true": [
+            "uart_renesas_rx_sci_qemu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RENESAS_RZA2M_SCIF=true": [
+            "uart_renesas_rza2m_scif.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RENESAS_RZ_SCI=true": [
+            "uart_renesas_rz_sci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RENESAS_RZ_SCIF=true": [
+            "uart_renesas_rz_scif.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RENESAS_RZ_SCI_B=true": [
+            "uart_renesas_rz_sci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RPI_PICO_PIO=true": [
+            "uart_rpi_pico_pio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RPMSG=true": [
+            "uart_rpmsg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RTS5912=true": [
+            "uart_realtek_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RTT_DRIVER=true": [
+            "uart_rtt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RV32M1_LPUART=true": [
+            "uart_rv32m1_lpuart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_RZT2M=true": [
+            "uart_rzt2m.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SAM=true": [
+            "uart_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SAM0=true": [
+            "uart_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SCI_RA=true": [
+            "uart_renesas_ra_sci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SEDI=true": [
+            "uart_sedi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SF32LB=true": [
+            "uart_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SI32_USART=true": [
+            "uart_si32_usart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SIFIVE=true": [
+            "uart_sifive.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SILABS_EUSART=true": [
+            "uart_silabs_eusart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SILABS_USART=true": [
+            "uart_silabs_usart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SMARTBOND=true": [
+            "uart_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_STELLARIS=true": [
+            "uart_stellaris.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_STM32=true": [
+            "uart_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_SY1XX=true": [
+            "uart_sy1xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_TELINK_B91=true": [
+            "uart_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_VIRTIO_CONSOLE=true": [
+            "uart_virtio_console.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_WCH_USART=true": [
+            "uart_wch_usart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_XEC=true": [
+            "uart_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_XEN_HVC=true": [
+            "uart_hvc_xen.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_XEN_HVC_CONSOLEIO=true": [
+            "uart_hvc_xen_consoleio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_XLNX_PS=true": [
+            "uart_xlnx_ps.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_XLNX_UARTLITE=true": [
+            "uart_xlnx_uartlite.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UART_XMC4XXX=true": [
+            "uart_xmc4xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USART_GD32=true": [
+            "usart_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USART_SAM=true": [
+            "usart_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "uart_handlers.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_UART_NATIVE_PTY=true": [":serial_config_uart_native_pty_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_UART_NATIVE_TTY=true": [":serial_config_uart_native_tty_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "serial_config_uart_native_pty_deps",
+    srcs = [
+        "uart_native_pty.c",
+        "uart_native_pty_bottom.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "serial_config_uart_native_tty_deps",
+    srcs = [
+        "uart_native_tty.c",
+        "uart_native_tty_bottom.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/uart.h",
+    ],
+)

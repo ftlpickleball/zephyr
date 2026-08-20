@@ -1,0 +1,164 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "mfd",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_AD559X=true": [
+            "mfd_ad559x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_AD559X_BUS_I2C=true": [
+            "mfd_ad559x_i2c.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_AD559X_BUS_SPI=true": [
+            "mfd_ad559x_spi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_ADP5585=true": [
+            "mfd_adp5585.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_AW9523B=true": [
+            "mfd_aw9523b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_AXP192=true": [
+            "mfd_axp192.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_AXP2101=true": [
+            "mfd_axp2101.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_BD8LB600FS=true": [
+            "mfd_bd8lb600fs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_DS3231=true": [
+            "mfd_ds3231.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_ITE_IT8801=true": [
+            "mfd_ite_it8801.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_ITE_IT8801_ALTCTRL=true": [
+            "mfd_it8801_altctrl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_MAX20335=true": [
+            "mfd_max20335.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_MAX22017=true": [
+            "mfd_max22017.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_MAX2221X=true": [
+            "mfd_max2221x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_MAX31790=true": [
+            "mfd_max31790.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_MAXQ10XX=true": [
+            "mfd_maxq10xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_MCHP_SAM_FLEXCOM=true": [
+            "mfd_mchp_sam_flexcom.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_MOTOROLA_MC146818=true": [
+            "mfd_mc146818.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_NCT38XX=true": [
+            "mfd_nct38xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_NPM10XX=true": [
+            "mfd_npm10xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_NPM13XX=true": [
+            "mfd_npm13xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_NPM2100=true": [
+            "mfd_npm2100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_NPM6001=true": [
+            "mfd_npm6001.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_PCA9422=true": [
+            "mfd_pca9422.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_PF1550=true": [
+            "mfd_pf1550.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_RV3032=true": [
+            "mfd_rv3032.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_SC18IS606=true": [
+            "mfd_sc18is606.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MFD_TLE9104=true": [
+            "mfd_tle9104.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_LP_FLEXCOMM=true": [
+            "mfd_nxp_lp_flexcomm.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

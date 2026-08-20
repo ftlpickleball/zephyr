@@ -1,0 +1,144 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "memc",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_BFLB_BL61X=true": [
+            "memc_bflb_bl61x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_HIFIVE_UNMATCHED_DRAM=true": [
+            "sifive_ddr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MAX32_HPB=true": [
+            "memc_max32_hpb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI=true": [
+            "memc_mcux_flexspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI_APS6404L=true": [
+            "memc_mcux_flexspi_aps6404l.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI_APS6408L=true": [
+            "memc_mcux_flexspi_aps6408l.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI_IS66WVQ8M4=true": [
+            "memc_mcux_flexspi_is66wvq8m4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI_IS66WVS8M8=true": [
+            "memc_mcux_flexspi_is66wvs8m8.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI_S27KS0641=true": [
+            "memc_mcux_flexspi_s27ks0641.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_FLEXSPI_W956A8MBYA=true": [
+            "memc_mcux_flexspi_w956a8mbya.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_XSPI=true": [
+            "memc_mcux_xspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MCUX_XSPI_PSRAM=true": [
+            "memc_mcux_xspi_psram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MSPI_APS6404L=true": [
+            "memc_mspi_aps6404l.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_MSPI_APS_Z8=true": [
+            "memc_mspi_aps_z8.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_NXP_S32_QSPI=true": [
+            "memc_nxp_s32_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_NXP_S32_XSPI=true": [
+            "memc_nxp_s32_xspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_RENESAS_RA_SDRAM=true": [
+            "memc_renesas_ra_sdram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_SAM_SMC=true": [
+            "memc_sam_smc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_SILABS_SIWX91X_QSPI=true": [
+            "memc_silabs_siwx91x_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_SMARTBOND=true": [
+            "memc_smartbond_nor_psram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_STM32=true": [
+            "memc_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_STM32_NOR_PSRAM=true": [
+            "memc_stm32_nor_psram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_STM32_OSPI_PSRAM=true": [
+            "memc_stm32_ospi_psram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_STM32_SDRAM=true": [
+            "memc_stm32_sdram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MEMC_STM32_XSPI_PSRAM=true": [
+            "memc_stm32_xspi_psram.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

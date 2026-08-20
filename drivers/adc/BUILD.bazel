@@ -1,0 +1,443 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "adc",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC=true": [
+            "adc_common.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SHELL=true": [
+            "adc_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_EMUL_SHELL=true": [
+            "adc_emul_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "adc_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_AD405X=true": [
+            "adc_ad405x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_AD4114=true": [
+            "adc_ad4114.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_AD4130=true": [
+            "adc_ad4130.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_AD4170=true": [
+            "adc_ad4170.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_AD559X=true": [
+            "adc_ad559x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_AD7124=true": [
+            "adc_ad7124.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ADS1112=true": [
+            "adc_ads1112.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ADS1119=true": [
+            "adc_ads1119.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ADS131M02=true": [
+            "adc_ads131m02.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ADS1X1X=true": [
+            "adc_ads1x1x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ADS1X4S0X=true": [
+            "adc_ads1x4s0x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ADS7052=true": [
+            "adc_ads7052.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ADS79XX=true": [
+            "adc_ads79xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_AMBIQ=true": [
+            "adc_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_BFLB=true": [
+            "adc_bflb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_CC13XX_CC26XX=true": [
+            "adc_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_CC23X0=true": [
+            "adc_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_CC32XX=true": [
+            "adc_cc32xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_CH32V00X=true": [
+            "adc_ch32v00x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_EMUL=true": [
+            "adc_emul.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ENE_KB106X=true": [
+            "adc_ene_kb106x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ENE_KB1200=true": [
+            "adc_ene_kb1200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ESP32=true": [
+            "adc_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ESP32_DMA=true": [
+            "adc_esp32_dma.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_GD32=true": [
+            "adc_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_GECKO_ADC=true": [
+            "adc_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_INFINEON_AUTANALOG_SAR=true": [
+            "adc_infineon_autanalog_sar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_INFINEON_CAT1=true": [
+            "adc_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_INFINEON_HPPASS_SAR=true": [
+            "adc_infineon_hppass_sar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_INFINEON_SAR=true": [
+            "adc_infineon_sar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ITE_IT51XXX=true": [
+            "adc_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_ITE_IT8XXX2=true": [
+            "adc_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_LMP90XXX=true": [
+            "adc_lmp90xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_LTC2451=true": [
+            "adc_ltc2451.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MAX11102_17=true": [
+            "adc_max11102_17.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MAX1125X=true": [
+            "adc_max1125x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MAX2253X=true": [
+            "adc_max2253x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MAX32=true": [
+            "adc_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCHP_G1=true": [
+            "adc_mchp_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCP320X=true": [
+            "adc_mcp320x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCP3221=true": [
+            "adc_mcp3221.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCP356XR=true": [
+            "adc_mcp356xr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCUX_12B1MSPS_SAR=true": [
+            "adc_mcux_12b1msps_sar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCUX_ADC12=true": [
+            "adc_mcux_adc12.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCUX_ADC16=true": [
+            "adc_mcux_adc16.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCUX_GAU=true": [
+            "adc_mcux_gau_adc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_MCUX_LPADC=true": [
+            "adc_mcux_lpadc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_NPCX=true": [
+            "adc_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_NRFX_ADC=true": [
+            "adc_nrfx_adc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_NRFX_SAADC=true": [
+            "adc_nrfx_saadc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_NUMAKER=true": [
+            "adc_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_NXP_S32_ADC_SAR=true": [
+            "adc_nxp_s32_adc_sar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_NXP_SAR_ADC=true": [
+            "adc_nxp_sar_adc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_REALTEK_RTS5912=true": [
+            "adc_realtek_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_RENESAS_RA=true": [
+            "adc_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_RENESAS_RX=true": [
+            "adc_renesas_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_RENESAS_RZ=true": [
+            "adc_renesas_rz.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_RENESAS_RZA2M=true": [
+            "adc_renesas_rza2m.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_RENESAS_RZ_ADC_C=true": [
+            "adc_renesas_rz.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_RENESAS_RZ_ADC_E=true": [
+            "adc_renesas_rz.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_RPI_PICO=true": [
+            "adc_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SAM=true": [
+            "adc_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SAM0=true": [
+            "adc_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SAM_AFEC=true": [
+            "adc_sam_afec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SF32LB=true": [
+            "adc_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SILABS_IADC=true": [
+            "adc_silabs_iadc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SILABS_SIWX91X=true": [
+            "adc_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SMARTBOND_GPADC=true": [
+            "adc_smartbond_gpadc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_SMARTBOND_SDADC=true": [
+            "adc_smartbond_sdadc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_STM32=true": [
+            "adc_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_STM32WB0=true": [
+            "adc_stm32wb0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_STREAM=true": [
+            "default_rtio_adc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_TELINK_B91=true": [
+            "adc_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_TEST=true": [
+            "adc_test.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_TI_AM335X=true": [
+            "adc_ti_am335x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_TLA202X=true": [
+            "adc_tla202x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_VF610=true": [
+            "adc_vf610.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_XEC=true": [
+            "adc_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ADC_XMC4XXX=true": [
+            "adc_xmc4xxx.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/adc.h",
+    ],
+)
+
+exports_files(["adc_context.h"], visibility = ["//visibility:public"])

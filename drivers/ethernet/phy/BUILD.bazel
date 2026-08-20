@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "phy",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_GENERIC_MII=true": [
+            "phy_mii.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_GENERIC_FIXED_LINK=true": [
+            "phy_fixed_link.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_ADIN2111=true": [
+            "phy_adin2111.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_DM8806=true": [
+            "phy_dm8806.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_MAXLINEAR_GPY111=true": [
+            "phy_maxlinear_gpy111.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_MICROCHIP_KSZ8081=true": [
+            "phy_microchip_ksz8081.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_MICROCHIP_KSZ9131=true": [
+            "phy_microchip_ksz9131.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_MICROCHIP_LAN8742=true": [
+            "phy_microchip_lan8742.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_MICROCHIP_T1S=true": [
+            "phy_microchip_t1s.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_MICROCHIP_VSC8541=true": [
+            "phy_microchip_vsc8541.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_MOTORCOMM_YT8521=true": [
+            "phy_motorcomm_yt8521.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_NXP_T1S=true": [
+            "phy_nxp_t1s.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_OA_TC14_PLCA_LIB=true": [
+            "phy_oa_tc14_plca.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_QUALCOMM_AR8031=true": [
+            "phy_qualcomm_ar8031.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_REALTEK_RTL8211F=true": [
+            "phy_realtek_rtl8211f.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_TI_DP83825=true": [
+            "phy_ti_dp83825.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_TI_DP83867=true": [
+            "phy_ti_dp83867.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_TJA1103=true": [
+            "phy_tja1103.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PHY_TJA11XX=true": [
+            "phy_tja11xx.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

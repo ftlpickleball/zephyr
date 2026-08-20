@@ -1,0 +1,287 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "timer",
+    srcs = [
+        "sys_clock_init.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AMBIQ_STIMER_TIMER=true": [
+            "ambiq_stimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_APIC_TIMER=true": [
+            "apic_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_APIC_TIMER_TSC=true": [
+            "apic_tsc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_APIC_TSC_DEADLINE_TIMER=true": [
+            "apic_tsc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCV2_TIMER=true": [
+            "arcv2_timer0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARM_ARCH_TIMER=true": [
+            "arm_arch_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CC13XX_CC26XX_RTC_TIMER=true": [
+            "cc13xx_cc26xx_rtc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CC23X0_RTC_TIMER=true": [
+            "cc23x0_rtc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CC23X0_SYSTIM_TIMER=true": [
+            "cc23x0_systim_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CH32V00X_SYSTICK=true": [
+            "wch_systick_ch32v00x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CORTEX_M_SYSTICK=true": [
+            "cortex_m_systick.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ESP32_SYS_TIMER=true": [
+            "esp32_sys_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GECKO_BURTC_TIMER=true": [
+            "gecko_burtc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HPET_TIMER=true": [
+            "hpet.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INFINEON_LP_TIMER_HAL=true": [
+            "infineon_lp_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INFINEON_LP_TIMER_PDL=true": [
+            "infineon_lp_timer_pdl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INTEL_ADSP_TIMER=true": [
+            "intel_adsp_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ITE_IT51XXX_TIMER=true": [
+            "ite_it51xxx_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ITE_IT8XXX2_TIMER=true": [
+            "ite_it8xxx2_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LEON_GPTIMER=true": [
+            "leon_gptimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LITEX_TIMER=true": [
+            "litex_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LLEXT=true": [
+            "export.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MAX32_RV32_SYS_TIMER=true": [
+            "max32_rv32_sys_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MAX32_WUT_TIMER=true": [
+            "max32_wut_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCHP_SAM_PIT64B_TIMER=true": [
+            "mchp_sam_pit64b_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCHP_XEC_RTOS_TIMER=true": [
+            "mchp_xec_rtos_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUX_GPT_TIMER=true": [
+            "mcux_gpt_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUX_LPTMR_TIMER=true": [
+            "mcux_lptmr_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUX_OS_TIMER=true": [
+            "mcux_os_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MIPS_CP0_TIMER=true": [
+            "mips_cp0_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MTK_ADSP_TIMER=true": [
+            "mtk_adsp_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NATIVE_SIM_TIMER=true": [
+            "native_sim_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NPCX_ITIM_TIMER=true": [
+            "npcx_itim_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_GRTC_TIMER=true": [
+            "nrf_grtc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRF_RTC_TIMER=true": [
+            "nrf_rtc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_OPENRISC_TICK_TIMER=true": [
+            "openrisc_tick_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RCAR_CMT_TIMER=true": [
+            "rcar_cmt_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REALTEK_RTS5912_RTMR=true": [
+            "realtek_rts5912_rtmr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RENESAS_RA_ULPT_TIMER=true": [
+            "renesas_ra_ulpt_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RENESAS_RX_TIMER_CMT=true": [
+            "renesas_rx_cmt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RISCV_MACHINE_TIMER=true": [
+            "riscv_machine_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RV32M1_LPTMR_TIMER=true": [
+            "rv32m1_lptmr_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RZA2M_OSTM_TIMER=true": [
+            "renesas_rza2m_os_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RZ_OS_TIMER=true": [
+            "renesas_rz_gtm_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SAM0_RTC_TIMER=true": [
+            "sam0_rtc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SILABS_SLEEPTIMER_TIMER=true": [
+            "silabs_sleeptimer_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SMARTBOND_TIMER=true": [
+            "smartbond_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32WB0_RADIO_TIMER=true": [
+            "stm32wb0_radio_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_STM32_LPTIM_TIMER=true": [
+            "stm32_lptim_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SY1XX_SYS_TIMER=true": [
+            "sy1xx_sys_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TI_DM_TIMER=true": [
+            "ti_dmtimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XLNX_PSTTC_TIMER=true": [
+            "xlnx_psttc_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XTENSA_TIMER=true": [
+            "xtensa_sys_timer.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    deps = ["//drivers/counter"],
+)

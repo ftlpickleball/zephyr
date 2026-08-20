@@ -1,0 +1,709 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "gpio",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_AD559X=true": [
+            "gpio_ad559x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ADP5585=true": [
+            "gpio_adp5585.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ADS1X4S0X=true": [
+            "gpio_ads1x4s0x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_AESC=true": [
+            "gpio_aesc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ALTERA_PIO=true": [
+            "gpio_altera_pio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_AMBIQ=true": [
+            "gpio_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_AMEBA=true": [
+            "gpio_ameba.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ANDES_ATCGPIO100=true": [
+            "gpio_andes_atcgpio100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_AW9523B=true": [
+            "gpio_aw9523b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_AXP192=true": [
+            "gpio_axp192.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_BCM2711=true": [
+            "gpio_bcm2711.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_BD8LB600FS=true": [
+            "gpio_bd8lb600fs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_BEE=true": [
+            "gpio_bee.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_BFLB_BL60X_70X=true": [
+            "gpio_bflb_bl60x_70x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_BFLB_BL61X=true": [
+            "gpio_bflb_bl61x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_BRCMSTB=true": [
+            "gpio_brcmstb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_CC13XX_CC26XX=true": [
+            "gpio_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_CC23X0=true": [
+            "gpio_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_CC32XX=true": [
+            "gpio_cc32xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_CMSDK_AHB=true": [
+            "gpio_cmsdk_ahb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_CY8C95XX=true": [
+            "gpio_cy8c95xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_CYW43=true": [
+            "gpio_cyw43.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_DAVINCI=true": [
+            "gpio_davinci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_DW=true": [
+            "gpio_dw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_EFINIX_SAPPHIRE=true": [
+            "gpio_efinix_sapphire.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_EMUL=true": [
+            "gpio_emul.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ENE_KB106X=true": [
+            "gpio_ene_kb106x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ENE_KB1200=true": [
+            "gpio_ene_kb1200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_EOS_S3=true": [
+            "gpio_eos_s3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ESP32=true": [
+            "gpio_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_FXL6408=true": [
+            "gpio_fxl6408.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_GD32=true": [
+            "gpio_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_GECKO=true": [
+            "gpio_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_GRGPIO2=true": [
+            "gpio_grgpio2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_IMX=true": [
+            "gpio_imx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_INFINEON=true": [
+            "gpio_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_INTEL=true": [
+            "gpio_intel.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_IPROC=true": [
+            "gpio_iproc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ITE_IT51XXX=true": [
+            "gpio_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ITE_IT8801=true": [
+            "gpio_ite_it8801.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ITE_IT8XXX2=true": [
+            "gpio_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_ITE_IT8XXX2_V2=true": [
+            "gpio_ite_it8xxx2_v2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_KSCAN_ITE_IT8XXX2=true": [
+            "gpio_kscan_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_LITEX=true": [
+            "gpio_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_LMP90XXX=true": [
+            "gpio_lmp90xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_LPC11U6X=true": [
+            "gpio_lpc11u6x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MAX14906=true": [
+            "gpio_max14906.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MAX14916=true": [
+            "gpio_max14916.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MAX14917=true": [
+            "gpio_max14917.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MAX22017=true": [
+            "gpio_max22017.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MAX2219X=true": [
+            "gpio_max2219x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MAX32=true": [
+            "gpio_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCHP_MSS=true": [
+            "gpio_mchp_mss.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCHP_PORT_G1=true": [
+            "gpio_mchp_port_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCP230XX=true": [
+            "gpio_mcp230xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCP23SXX=true": [
+            "gpio_mcp23sxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCP23XXX=true": [
+            "gpio_mcp23xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCUX=true": [
+            "gpio_mcux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCUX_IGPIO=true": [
+            "gpio_mcux_igpio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCUX_LPC=true": [
+            "gpio_mcux_lpc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MCUX_RGPIO=true": [
+            "gpio_mcux_rgpio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MFXSTM32L152=true": [
+            "gpio_mfxstm32l152.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MMIO32=true": [
+            "gpio_mmio32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_MSPM0=true": [
+            "gpio_mspm0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NCT38XX=true": [
+            "gpio_nct38xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NCT38XX=true": [
+            "gpio_nct38xx_port.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NCT38XX_ALERT=true": [
+            "gpio_nct38xx_alert.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NEORV32=true": [
+            "gpio_neorv32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NPCX=true": [
+            "gpio_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NPM13XX=true": [
+            "gpio_npm13xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NPM2100=true": [
+            "gpio_npm2100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NPM6001=true": [
+            "gpio_npm6001.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NRFX=true": [
+            "gpio_nrfx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NUMAKER=true": [
+            "gpio_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NUMICRO=true": [
+            "gpio_numicro.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_NXP_SIUL2=true": [
+            "gpio_nxp_siul2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_PCA953X=true": [
+            "gpio_pca953x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_PCA95XX=true": [
+            "gpio_pca95xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_PCAL64XXA=true": [
+            "gpio_pcal64xxa.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_PCAL9722=true": [
+            "gpio_pcal9722.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_PCA_SERIES=true": [
+            "gpio_pca_series.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_PCF857X=true": [
+            "gpio_pcf857x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_PSOC6=true": [
+            "gpio_psoc6.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RA_IOPORT=true": [
+            "gpio_renesas_ra_ioport.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RCAR=true": [
+            "gpio_rcar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RENESAS_RX=true": [
+            "gpio_renesas_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RENESAS_RZ=true": [
+            "gpio_renesas_rz.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RENESAS_RZA2M=true": [
+            "gpio_renesas_rza2m.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RP1=true": [
+            "gpio_rp1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RPI_PICO=true": [
+            "gpio_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RT1718S=true": [
+            "gpio_rt1718s.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RT1718S=true": [
+            "gpio_rt1718s_port.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RTS5912=true": [
+            "gpio_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RV32M1=true": [
+            "gpio_rv32m1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_RZT2M=true": [
+            "gpio_rzt2m.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SAM=true": [
+            "gpio_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SAM0=true": [
+            "gpio_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SAM4L=true": [
+            "gpio_sam4l.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SAM_PIO4=true": [
+            "gpio_sam_pio4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SEDI=true": [
+            "gpio_sedi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SF32LB=true": [
+            "gpio_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SI32=true": [
+            "gpio_si32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SIFIVE=true": [
+            "gpio_sifive.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SILABS=true": [
+            "gpio_silabs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SILABS_SIWX91X=true": [
+            "gpio_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SILABS_SIWX91X_UULP=true": [
+            "gpio_silabs_siwx91x_uulp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SMARTBOND=true": [
+            "gpio_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SN74HC595=true": [
+            "gpio_sn74hc595.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SNPS_CREG=true": [
+            "gpio_creg_gpio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_STELLARIS=true": [
+            "gpio_stellaris.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_STM32=true": [
+            "gpio_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_STMPE1600=true": [
+            "gpio_stmpe1600.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SX1509B=true": [
+            "gpio_sx1509b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SY1XX=true": [
+            "gpio_sy1xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_TCA6424A=true": [
+            "gpio_tca6424a.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_TELINK_B91=true": [
+            "gpio_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_TEST=true": [
+            "gpio_test.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_TLE9104=true": [
+            "gpio_tle9104.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_WCH_GPIO=true": [
+            "wch_gpio_ch32v00x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_XEC=true": [
+            "gpio_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_XLNX_AXI=true": [
+            "gpio_xlnx_axi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_XLNX_PS=true": [
+            "gpio_xlnx_ps.c",
+            "gpio_xlnx_ps_bank.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_XMC4XXX=true": [
+            "gpio_xmc4xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LPGPIO_ESP32=true": [
+            "gpio_esp32_lp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_HOGS=true": [
+            "gpio_hogs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_SHELL=true": [
+            "gpio_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "gpio_handlers.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_GPIO_EMUL_SDL=true": [":gpio_config_gpio_emul_sdl_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GPIO_SC18IM704=true": [":gpio_config_gpio_sc18im704_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GPIO_SC18IS606=true": [":gpio_config_gpio_sc18is606_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "gpio_config_gpio_emul_sdl_deps",
+    srcs = [
+        "gpio_emul_sdl.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "gpio_config_gpio_sc18im704_deps",
+    srcs = [
+        "gpio_sc18im704.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "gpio_config_gpio_sc18is606_deps",
+    srcs = [
+        "gpio_sc18is606.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/gpio.h",
+    ],
+)
+
+# The atmosic gpio_atm.c driver includes this file, so we have to expose it.
+exports_files(["gpio_cmsdk_ahb.c"], visibility = ["//visibility:public"])

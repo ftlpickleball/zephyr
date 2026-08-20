@@ -1,0 +1,232 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "entropy",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "entropy_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_AMBIQ_PUF_TRNG=true": [
+            "entropy_ambiq_puf_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_BFLB_SEC_ENG=true": [
+            "entropy_bflb_sec_eng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_BRCM_IPROC_RNG200=true": [
+            "entropy_iproc_rng200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_BT_HCI=true": [
+            "entropy_bt_hci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_CC13XX_CC26XX_RNG=true": [
+            "entropy_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_ESP32_RNG=true": [
+            "entropy_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_GD32_TRNG=true": [
+            "entropy_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_GECKO_SE=true": [
+            "entropy_gecko_se.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_GECKO_TRNG=true": [
+            "entropy_gecko_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_LITEX_RNG=true": [
+            "entropy_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MAX32_TRNG=true": [
+            "entropy_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MAXQ10XX_RNG=true": [
+            "entropy_maxq10xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MCHP_TRNG_G1=true": [
+            "entropy_mchp_trng_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MCUX_CAAM=true": [
+            "entropy_mcux_caam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MCUX_RNG=true": [
+            "entropy_mcux_rng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MCUX_RNGA=true": [
+            "entropy_mcux_rnga.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MCUX_TRNG=true": [
+            "entropy_mcux_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_MSPM0_TRNG=true": [
+            "entropy_mspm0_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_NEORV32_TRNG=true": [
+            "entropy_neorv32_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_NPCX_DRBG=true": [
+            "entropy_npcx_drbg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_NRF5_RNG=true": [
+            "entropy_nrf5.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_NRF_CRACEN_CTR_DRBG=true": [
+            "entropy_nrf_cracen.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_NXP_ELE_TRNG=true": [
+            "entropy_nxp_ele.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_NXP_ELS_TRNG=true": [
+            "entropy_nxp_els_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_PSA_CRYPTO_RNG=true": [
+            "entropy_psa_crypto.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_RENESAS_RA=true": [
+            "entropy_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_RPI_PICO_RNG=true": [
+            "entropy_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_RV32M1_TRNG=true": [
+            "entropy_rv32m1_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_SAM_RNG=true": [
+            "entropy_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_SF32LB=true": [
+            "entropy_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_SILABS_SIWX91X=true": [
+            "entropy_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_SMARTBOND_TRNG=true": [
+            "entropy_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_STM32_RNG=true": [
+            "entropy_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_SY1XX_TRNG=true": [
+            "entropy_sy1xx_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_TELINK_B91_TRNG=true": [
+            "entropy_b91_trng.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_VIRTIO=true": [
+            "entropy_virtio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ENTROPY_WCH_RNG=true": [
+            "entropy_wch.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_FAKE_ENTROPY_NATIVE_SIM=true": [":entropy_config_fake_entropy_native_sim_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "entropy_config_fake_entropy_native_sim_deps",
+    srcs = [
+        "fake_entropy_native_sim.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/entropy.h",
+    ],
+)

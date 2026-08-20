@@ -1,0 +1,106 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "fuel_gauge",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "fuel_gauge_syscall_handlers.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_emul_and_config_userspace": [":fuel_gauge_config_emul_and_config_userspace_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BQ27Z746=true": [
+            "//" + package_name() + "/bq27z746",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BQ40Z50=true": [
+            "//" + package_name() + "/bq40z50",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FUEL_GAUGE_AXP2101=true": [
+            "//" + package_name() + "/axp2101",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FUEL_GAUGE_COMPOSITE=true": [
+            "//" + package_name() + "/composite",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FUEL_GAUGE_LTC2959=true": [
+            "//" + package_name() + "/ltc2959",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HY4245=true": [
+            "//" + package_name() + "/hy4245",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LC709203F=true": [
+            "//" + package_name() + "/lc709203f",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MAX17048=true": [
+            "//" + package_name() + "/max17048",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SBS_GAUGE_NEW_API=true": [
+            "//" + package_name() + "/sbs_gauge",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SY24561=true": [
+            "//" + package_name() + "/sy24561",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_emul_and_config_userspace",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_EMUL=true",
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "fuel_gauge_config_emul_and_config_userspace_deps",
+    srcs = [
+        "emul_fuel_gauge_syscall_handlers.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/emul_fuel_gauge.h",
+        "//include:zephyr/drivers/fuel_gauge.h",
+    ],
+)

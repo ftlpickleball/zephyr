@@ -1,0 +1,141 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "mbox",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "mbox_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_ADI_MAX32_SEMA=true": [
+            "mbox_adi_max32_sema.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_ANDES_PLIC_SW=true": [
+            "mbox_andes_plic_sw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_ESP32=true": [
+            "mbox_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_IVSHMEM=true": [
+            "mbox_ivshmem.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_MHUV3=true": [
+            "mbox_mhuv3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NRFX_IPC=true": [
+            "mbox_nrfx_ipc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NRF_BELLBOARD_RX=true": [
+            "mbox_nrf_bellboard_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NRF_BELLBOARD_TX=true": [
+            "mbox_nrf_bellboard_tx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NRF_VEVIF_EVENT_RX=true": [
+            "mbox_nrf_vevif_event_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NRF_VEVIF_EVENT_TX=true": [
+            "mbox_nrf_vevif_event_tx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NRF_VEVIF_TASK_RX=true": [
+            "mbox_nrf_vevif_task_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NRF_VEVIF_TASK_TX=true": [
+            "mbox_nrf_vevif_task_tx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NXP_IMX_MU=true": [
+            "mbox_nxp_imx_mu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NXP_MAILBOX=true": [
+            "mbox_nxp_mailbox.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_NXP_S32_MRU=true": [
+            "mbox_nxp_s32_mru.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_RENESAS_RA_IPC=true": [
+            "mbox_renesas_ra_ipc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_RENESAS_RZ_MHU=true": [
+            "mbox_renesas_rz_mhu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_RPI_PICO=true": [
+            "mbox_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_STM32_HSEM=true": [
+            "mbox_stm32_hsem.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_TI_OMAP_MAILBOX=true": [
+            "mbox_ti_omap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_TI_SECURE_PROXY=true": [
+            "mbox_ti_secproxy.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MBOX_XLNX_IPI_MAILBOX=true": [
+            "mbox_xlnx_ipi_mailbox.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/mbox.h",
+    ],
+)

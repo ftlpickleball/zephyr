@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "uhc",
+    srcs = [
+        "uhc_common.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UHC_MAX3421E=true": [
+            "uhc_max3421e.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UHC_VIRTUAL=true": [
+            "uhc_virtual.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UHC_NXP_EHCI=true": [
+            "uhc_mcux_common.c",
+            "uhc_mcux_ehci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UHC_NXP_KHCI=true": [
+            "uhc_mcux_common.c",
+            "uhc_mcux_khci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UHC_NXP_OHCI=true": [
+            "uhc_mcux_common.c",
+            "uhc_mcux_ohci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UHC_NXP_IP3516HS=true": [
+            "uhc_mcux_common.c",
+            "uhc_mcux_ip3516hs.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

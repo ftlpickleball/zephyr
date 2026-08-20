@@ -1,0 +1,181 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "video",
+    srcs = [
+        "video_common.c",
+        "video_ctrls.c",
+        "video_device.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_ARDUCAM_MEGA=true": [
+            "video_arducam_mega.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_EMUL_IMAGER=true": [
+            "video_emul_imager.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_EMUL_RX=true": [
+            "video_emul_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_ESP32=true": [
+            "video_esp32_dvp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_GC2145=true": [
+            "gc2145.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_HM01B0=true": [
+            "hm01b0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_HM0360=true": [
+            "hm0360.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_IMX219=true": [
+            "imx219.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_IMX335=true": [
+            "imx335.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_MCUX_CSI=true": [
+            "video_mcux_csi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_MCUX_MIPI_CSI2RX=true": [
+            "video_mcux_mipi_csi2rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_MCUX_SDMA=true": [
+            "video_mcux_smartdma.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_MT9M114=true": [
+            "mt9m114.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_OV2640=true": [
+            "ov2640.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_OV5640=true": [
+            "ov5640.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_OV5642=true": [
+            "ov5642.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_OV767X=true": [
+            "ov767x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_OV7725=true": [
+            "ov7725.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_OV9655=true": [
+            "ov9655.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_RENESAS_RA_CEU=true": [
+            "video_renesas_ra_ceu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_SHELL=true": [
+            "video_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_STM32_DCMI=true": [
+            "video_stm32_dcmi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_STM32_DCMIPP=true": [
+            "video_stm32_dcmipp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_STM32_JPEG=true": [
+            "video_stm32_jpeg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_STM32_VENC=true": [
+            "video_stm32_venc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_ST_MIPID02=true": [
+            "video_st_mipid02.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_SW_GENERATOR=true": [
+            "video_sw_generator.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = [
+        ":video.ld.target",
+    ],
+)
+
+cc_library(
+    name = "linker_includes",
+    hdrs = glob(
+        ["**/*.ld"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_linker_fragment(
+    name = "video.ld.target",
+    srcs = ["video.ld"],
+    location = "DATA_SECTIONS",
+    sort_key = "default",
+)

@@ -1,0 +1,95 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "ieee802154",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_CC1200=true": [
+            "ieee802154_cc1200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_CC13XX_CC26XX=true": [
+            "ieee802154_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_CC13XX_CC26XX_SUB_GHZ=true": [
+            "ieee802154_cc13xx_cc26xx_subg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_CC2520=true": [
+            "ieee802154_cc2520.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_DW1000=true": [
+            "ieee802154_dw1000.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_ESP32=true": [
+            "ieee802154_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_KW41Z=true": [
+            "ieee802154_kw41z.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_MCR20A=true": [
+            "ieee802154_mcr20a.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_MCXW=true": [
+            "ieee802154_mcxw.c",
+            "ieee802154_mcxw_utils.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_NRF5=true": [
+            "ieee802154_nrf5.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_RF2XX=true": [
+            "ieee802154_rf2xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_RF2XX=true": [
+            "ieee802154_rf2xx_iface.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_STM32WBA=true": [
+            "ieee802154_stm32wba.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_TELINK_B91=true": [
+            "ieee802154_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IEEE802154_UPIPE=true": [
+            "ieee802154_uart_pipe.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

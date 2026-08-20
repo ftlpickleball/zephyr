@@ -1,0 +1,386 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "pwm",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "pwm_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_CAPTURE=true": [
+            "pwm_capture.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SHELL=true": [
+            "pwm_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCPWM_ESP32=true": [
+            "pwm_mc_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_AMBIQ_CTIMER=true": [
+            "pwm_ambiq_ctimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_AMBIQ_TIMER=true": [
+            "pwm_ambiq_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_BBLED_XEC=true": [
+            "pwm_mchp_xec_bbled.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_BFLB_1=true": [
+            "pwm_bflb_1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_BFLB_2=true": [
+            "pwm_bflb_2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_CC13XX_CC26XX_TIMER=true": [
+            "pwm_cc13xx_cc26xx_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_CC23X0_TIMER=true": [
+            "pwm_cc23x0_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_ENE_KB106X=true": [
+            "pwm_ene_kb106x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_ENE_KB1200=true": [
+            "pwm_ene_kb1200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_FAKE=true": [
+            "pwm_fake.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_GD32=true": [
+            "pwm_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_GECKO=true": [
+            "pwm_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_IMX=true": [
+            "pwm_imx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_INFINEON_TCPWM=true": [
+            "pwm_infineon_tcpwm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_INFINEON_TCPWM_PSOC4=true": [
+            "pwm_infineon_m0s8tcpwm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_INTEL_BLINKY=true": [
+            "pwm_intel_blinky.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_ITE_IT51XXX=true": [
+            "pwm_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_ITE_IT8801=true": [
+            "pwm_ite_it8801.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_ITE_IT8XXX2=true": [
+            "pwm_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_LED_ESP32=true": [
+            "pwm_led_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_LITEX=true": [
+            "pwm_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MAX2221X=true": [
+            "pwm_max2221x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MAX31790=true": [
+            "pwm_max31790.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MAX32=true": [
+            "pwm_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCHP_G1_TCC=true": [
+            "pwm_mchp_tcc_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCHP_TC_G1=true": [
+            "pwm_mchp_tc_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCUX=true": [
+            "pwm_mcux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCUX_CTIMER=true": [
+            "pwm_mcux_ctimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCUX_FTM=true": [
+            "pwm_mcux_ftm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCUX_PWT=true": [
+            "pwm_mcux_pwt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCUX_QTMR=true": [
+            "pwm_mcux_qtmr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCUX_SCTIMER=true": [
+            "pwm_mcux_sctimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MCUX_TPM=true": [
+            "pwm_mcux_tpm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_MSPM0=true": [
+            "pwm_mspm0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_NEORV32=true": [
+            "pwm_neorv32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_NPCX=true": [
+            "pwm_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_NRFX=true": [
+            "pwm_nrfx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_NRF_SW=true": [
+            "pwm_nrf_sw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_NUMAKER=true": [
+            "pwm_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_NXP_FLEXIO=true": [
+            "pwm_nxp_flexio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_NXP_S32_EMIOS=true": [
+            "pwm_nxp_s32_emios.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_PCA9685=true": [
+            "pwm_pca9685.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RCAR=true": [
+            "pwm_rcar.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_REALTEK_RTS5912=true": [
+            "pwm_realtek_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RENESAS_RA=true": [
+            "pwm_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RENESAS_RX_MTU=true": [
+            "pwm_renesas_rx_mtu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RENESAS_RZA2M_GPT=true": [
+            "pwm_renesas_rza2m_gpt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RENESAS_RZ_GPT=true": [
+            "pwm_renesas_rz_gpt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RENESAS_RZ_MTU=true": [
+            "pwm_renesas_rz_mtu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RPI_PICO=true": [
+            "pwm_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_RV32M1_TPM=true": [
+            "pwm_rv32m1_tpm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SAM=true": [
+            "pwm_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SAM0_TC=true": [
+            "pwm_sam0_tc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SAM0_TCC=true": [
+            "pwm_sam0_tcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SF32LB_ATIM=true": [
+            "pwm_sf32lb_atim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SF32LB_GPT=true": [
+            "pwm_sf32lb_gpt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SIFIVE=true": [
+            "pwm_sifive.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SILABS_LETIMER=true": [
+            "pwm_silabs_letimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SILABS_SIWX91X=true": [
+            "pwm_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_SILABS_TIMER=true": [
+            "pwm_silabs_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_STM32=true": [
+            "pwm_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_TELINK_B91=true": [
+            "pwm_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_TEST=true": [
+            "pwm_test.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_WCH_GPTM=true": [
+            "pwm_wch_gptm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_XEC=true": [
+            "pwm_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_XLNX_AXI_TIMER=true": [
+            "pwm_xlnx_axi_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_XMC4XXX_CCU4=true": [
+            "pwm_xmc4xxx_ccu4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PWM_XMC4XXX_CCU8=true": [
+            "pwm_xmc4xxx_ccu8.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/pwm.h",
+    ],
+)

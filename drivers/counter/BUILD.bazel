@@ -1,0 +1,403 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "counter",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SHELL=true": [
+            "counter_timer_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "counter_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ACE_V1X_ART_COUNTER=true": [
+            "counter_ace_v1x_art.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ACE_V1X_RTC_COUNTER=true": [
+            "counter_ace_v1x_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_AMBIQ=true": [
+            "counter_ambiq_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_ANDES_ATCPIT100=true": [
+            "counter_andes_atcpit100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_BEE_TIMER=true": [
+            "counter_bee_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_BFLB_RTC=true": [
+            "counter_bflb_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_BFLB_TIMER=true": [
+            "counter_bflb_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_CC23X0_LGPT=true": [
+            "counter_cc23x0_lgpt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_CC23X0_RTC=true": [
+            "counter_cc23x0_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_CMOS=true": [
+            "counter_cmos.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_GECKO_RTCC=true": [
+            "counter_gecko_rtcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_GECKO_STIMER=true": [
+            "counter_gecko_stimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_IMX_EPIT=true": [
+            "counter_imx_epit.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_INFINEON_CAT1=true": [
+            "counter_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_INFINEON_TCPWM=true": [
+            "counter_infineon_tcpwm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_ITE_IT51XXX=true": [
+            "counter_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_ITE_IT8XXX2=true": [
+            "counter_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MAXIM_DS3231=true": [
+            "maxim_ds3231.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCHP_G1_TCC=true": [
+            "counter_mchp_tcc_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCHP_RTC_G1=true": [
+            "counter_mchp_rtc_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCHP_SAM_PIT64B=true": [
+            "counter_mchp_sam_pit64b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCHP_TC_G1=true": [
+            "counter_mchp_tc_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCHP_TC_G2=true": [
+            "counter_mchp_tc_g2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_CTIMER=true": [
+            "counter_mcux_ctimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_FTM=true": [
+            "counter_mcux_ftm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_GPT=true": [
+            "counter_mcux_gpt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_LPC_RTC=true": [
+            "counter_mcux_lpc_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_LPIT=true": [
+            "counter_mcux_lpit.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_LPTMR=true": [
+            "counter_mcux_lptmr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_QTMR=true": [
+            "counter_mcux_qtmr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_RTC=true": [
+            "counter_mcux_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_RTC_JDP=true": [
+            "counter_mcux_rtc_jdp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_SNVS=true": [
+            "counter_mcux_snvs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_STM=true": [
+            "counter_mcux_stm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MCUX_TPM=true": [
+            "counter_mcux_tpm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MICROCHIP_MCP7940N=true": [
+            "rtc_mcp7940n.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_MSPM0_TIMER=true": [
+            "counter_mspm0_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NATIVE_SIM=true": [
+            "counter_native_sim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NEORV32_GPTMR=true": [
+            "counter_neorv32_gptmr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NPCX_LCT=true": [
+            "counter_npcx_lct.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NRF_RTC=true": [
+            "counter_nrfx_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NRF_TIMER=true": [
+            "counter_nrfx_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NXP_MRT=true": [
+            "counter_nxp_mrt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NXP_PIT=true": [
+            "counter_nxp_pit.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_NXP_S32_SYS_TIMER=true": [
+            "counter_nxp_s32_sys_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RA_AGT=true": [
+            "counter_renesas_ra_agt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_REALTEK_RTS5912=true": [
+            "counter_realtek_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_REALTEK_RTS5912_SLWTMR=true": [
+            "counter_realtek_rts5912_slwtmr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RENESAS_RZA2M_OSTM=true": [
+            "counter_renesas_rza2m_ostm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RENESAS_RZ_CMTW=true": [
+            "counter_renesas_rz_cmtw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RENESAS_RZ_GTM=true": [
+            "counter_renesas_rz_gtm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RPI_PICO_PIT=true": [
+            "counter_rpi_pico_pit.c",
+            "counter_rpi_pico_pit_channel.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RTC_ESP32=true": [
+            "counter_esp32_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RTC_MAX32=true": [
+            "counter_max32_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RTC_STM32=true": [
+            "counter_stm32_rtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_RV3032=true": [
+            "counter_rv3032.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SAM0_TC32=true": [
+            "counter_sam0_tc32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SAM_TC=true": [
+            "counter_sam_tc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SILABS_BURTC=true": [
+            "counter_silabs_burtc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SILABS_PROTIMER=true": [
+            "counter_silabs_protimer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SILABS_TIMER=true": [
+            "counter_silabs_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SMARTBOND_TIMER=true": [
+            "counter_smartbond_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_SNPS_DW=true": [
+            "counter_dw_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_TIMER_GD32=true": [
+            "counter_gd32_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_TIMER_MAX32=true": [
+            "counter_max32_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_TIMER_RPI_PICO=true": [
+            "counter_rpi_pico_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_TIMER_STM32=true": [
+            "counter_stm32_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_TMR_ESP32=true": [
+            "counter_esp32_tmr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_WUT_MAX32=true": [
+            "counter_max32_wut.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_XEC=true": [
+            "counter_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COUNTER_XLNX_AXI_TIMER=true": [
+            "counter_xlnx_axi_timer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TIMER_DTMR_CMSDK_APB=true": [
+            "timer_dtmr_cmsdk_apb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TIMER_TMR_CMSDK_APB=true": [
+            "timer_tmr_cmsdk_apb.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/counter.h",
+        "//include:zephyr/drivers/rtc/maxim_ds3231.h",
+    ],
+)

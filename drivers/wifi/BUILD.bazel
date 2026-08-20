@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "wifi",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BUILD_ONLY_NO_BLOBS=true": [":wifi_config_build_only_no_blobs_deps"],
+        "//conditions:default": [":wifi_else_deps"],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_AIROC=true": [
+            "//" + package_name() + "/infineon",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_ESP32=true": [
+            "//" + package_name() + "/esp32",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_ESP_AT=true": [
+            "//" + package_name() + "/esp_at",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_ESP_HOSTED=true": [
+            "//" + package_name() + "/esp_hosted",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_ESWIFI=true": [
+            "//" + package_name() + "/eswifi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_NRF70=true": [
+            "//" + package_name() + "/nrf_wifi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_NXP=true": [
+            "//" + package_name() + "/nxp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_SILABS_SIWX91X=true": [
+            "//" + package_name() + "/siwx91x",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_SIMPLELINK=true": [
+            "//" + package_name() + "/simplelink",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI_WINC1500=true": [
+            "//" + package_name() + "/winc1500",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "wifi_config_build_only_no_blobs_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "wifi_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ESPRESSIF_ESP32_WIFI_ENABLED=true": [":wifi_else_deps_config_dt_has_espressif_esp32_wifi_enabled_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "wifi_else_deps_config_dt_has_espressif_esp32_wifi_enabled_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

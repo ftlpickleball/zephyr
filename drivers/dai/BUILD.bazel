@@ -1,0 +1,82 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "dai",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_DAI_INTEL_ALH=true": [
+            "//" + package_name() + "/intel/alh",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_INTEL_DMIC=true": [
+            "//" + package_name() + "/intel/dmic",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_INTEL_HDA=true": [
+            "//" + package_name() + "/intel/hda",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_INTEL_SSP=true": [
+            "//" + package_name() + "/intel/ssp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_INTEL_UAOL=true": [
+            "//" + package_name() + "/intel/uaol",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_NXP_ESAI=true": [
+            "//" + package_name() + "/nxp/esai",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_NXP_MICFIL=true": [
+            "//" + package_name() + "/nxp/micfil",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_NXP_SAI=true": [
+            "//" + package_name() + "/nxp/sai",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI_USERSPACE=true": [":dai_config_dai_userspace_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "dai_config_dai_userspace_deps",
+    srcs = [
+        "dai_handlers.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/dai.h",
+    ],
+)

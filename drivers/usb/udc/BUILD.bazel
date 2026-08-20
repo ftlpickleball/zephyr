@@ -1,0 +1,124 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "udc",
+    srcs = [
+        "udc_common.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_DWC2=true": [
+            "udc_dwc2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_NRF=true": [
+            "udc_nrf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_KINETIS=true": [
+            "udc_kinetis.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_SKELETON=true": [
+            "udc_skeleton.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_VIRTUAL=true": [
+            "udc_virtual.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_SMARTBOND=true": [
+            "udc_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_STM32=true": [
+            "udc_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_IT82XX2=true": [
+            "udc_it82xx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_NXP_EHCI=true": [
+            "udc_mcux_ehci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_NXP_IP3511=true": [
+            "udc_mcux_ip3511.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_NUMAKER=true": [
+            "udc_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_RPI_PICO=true": [
+            "udc_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_AMBIQ=true": [
+            "udc_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_RENESAS_RA=true": [
+            "udc_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_MAX32=true": [
+            "udc_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_SAM0=true": [
+            "udc_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_SAM_UDP=true": [
+            "udc_sam_udp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_SAM_USBC=true": [
+            "udc_sam_usbc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_SAM_USBHS=true": [
+            "udc_sam_usbhs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UDC_BFLB_V1=true": [
+            "udc_bflb_v1.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = ".",
+    deps = [
+        "//drivers/usb/common:common",
+    ],
+)

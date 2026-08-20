@@ -1,0 +1,412 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "spi",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_ASYNC=true": [
+            "spi_signal.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RTIO=true": [
+            "spi_rtio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SHELL=true": [
+            "spi_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "spi_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ESP32_SPIM=true": [
+            "spi_esp32_spim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_S32_SPI=true": [
+            "spi_nxp_s32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_AMBIQ_BLEIF=true": [
+            "spi_ambiq_bleif.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_AMBIQ_SPIC=true": [
+            "spi_ambiq_spic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_AMBIQ_SPID=true": [
+            "spi_ambiq_spid.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_ANDES_ATCSPI200=true": [
+            "spi_andes_atcspi200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_BFLB=true": [
+            "spi_bflb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_BITBANG=true": [
+            "spi_bitbang.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_CC13XX_CC26XX=true": [
+            "spi_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_CC23X0=true": [
+            "spi_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_CDNS=true": [
+            "spi_cdns.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_DW=true": [
+            "spi_dw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_EGIS_ET171=true": [
+            "spi_egis_et171.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_EMUL=true": [
+            "spi_emul.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_GD32=true": [
+            "spi_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_GRLIB_SPIMCTRL=true": [
+            "spi_grlib_spimctrl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_INFINEON_HAL=true": [
+            "spi_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_INFINEON_PDL=true": [
+            "spi_infineon_pdl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_ITE_IT51XXX=true": [
+            "spi_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_ITE_IT8XXX2=true": [
+            "spi_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_LITEX=true": [
+            "spi_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_LITEX_LITESPI=true": [
+            "spi_litex_litespi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MAX32=true": [
+            "spi_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MCHP_MSS=true": [
+            "spi_mchp_mss.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MCHP_QSPI=true": [
+            "spi_mchp_mss_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MCHP_SERCOM_G1=true": [
+            "spi_mchp_sercom_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MCUX_DSPI=true": [
+            "spi_mcux_dspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MCUX_ECSPI=true": [
+            "spi_mcux_ecspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MCUX_FLEXCOMM=true": [
+            "spi_mcux_flexcomm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_MCUX_FLEXIO=true": [
+            "spi_mcux_flexio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_NPCX_SPIP=true": [
+            "spi_npcx_spip.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_NRFX_SPI=true": [
+            "spi_nrfx_common.c",
+            "spi_nrfx_spi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_NRFX_SPIM=true": [
+            "spi_nrfx_common.c",
+            "spi_nrfx_spim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_NRFX_SPIS=true": [
+            "spi_nrfx_spis.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_NUMAKER=true": [
+            "spi_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_OC_SIMPLE=true": [
+            "spi_oc_simple.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_OMAP_MCSPI=true": [
+            "spi_omap_mcspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_OPENTITAN=true": [
+            "spi_opentitan.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_PL022=true": [
+            "spi_pl022.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_PSOC6=true": [
+            "spi_psoc6.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_PW=true": [
+            "spi_pw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_REALTEK_RTS5912=true": [
+            "spi_rts5912_spi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RENESAS_RA=true": [
+            "spi_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RENESAS_RA8=true": [
+            "spi_b_renesas_ra8.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RENESAS_RA_SCI=true": [
+            "spi_renesas_ra_sci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RENESAS_RA_SCI_B=true": [
+            "spi_renesas_ra_sci_b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RENESAS_RX=true": [
+            "spi_renesas_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RENESAS_RZ=true": [
+            "spi_renesas_rz.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RENESAS_RZ_RSPI=true": [
+            "spi_renesas_rz_rspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RPI_PICO_PIO=true": [
+            "spi_rpi_pico_pio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_RV32M1_LPSPI=true": [
+            "spi_rv32m1_lpspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SAM=true": [
+            "spi_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SAM0=true": [
+            "spi_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SEDI=true": [
+            "spi_sedi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SF32LB=true": [
+            "spi_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SIFIVE=true": [
+            "spi_sifive.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SILABS_EUSART=true": [
+            "spi_silabs_eusart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SILABS_SIWX91X_GSPI=true": [
+            "spi_silabs_siwx91x_gspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SILABS_USART=true": [
+            "spi_silabs_usart.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SMARTBOND=true": [
+            "spi_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_STM32=true": [
+            "spi_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SY1XX=true": [
+            "spi_sy1xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_TELINK_B91=true": [
+            "spi_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_TEST=true": [
+            "spi_test.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_WCH=true": [
+            "spi_wch.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_XEC_QMSPI=true": [
+            "spi_xec_qmspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_XEC_QMSPI_LDMA=true": [
+            "spi_xec_qmspi_ldma.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_XLNX_AXI_QUADSPI=true": [
+            "spi_xlnx_axi_quadspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_XMC4XXX=true": [
+            "spi_xmc4xxx.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/spi_nxp_lpspi",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SPI_SC18IS606=true": [":spi_config_spi_sc18is606_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "spi_config_spi_sc18is606_deps",
+    srcs = [
+        "spi_sc18is606.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/spi.h",
+    ],
+)
+
+exports_files(["spi_context.h"], visibility = ["//visibility:public"])

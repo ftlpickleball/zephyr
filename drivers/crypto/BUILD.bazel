@@ -1,0 +1,144 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "crypto",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_ATAES132A=true": [
+            "crypto_ataes132a.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_BFLB_SEC_ENG_AES=true": [
+            "crypto_bflb_sec_eng_aes.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_BFLB_SEC_ENG_SHA=true": [
+            "crypto_bflb_sec_eng_sha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_CC23X0=true": [
+            "crypto_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_ESP32_AES=true": [
+            "crypto_esp32_aes.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_ESP32_SHA=true": [
+            "crypto_esp32_sha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_INTEL_SHA=true": [
+            "crypto_intel_sha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_IT51XXX_SHA=true": [
+            "crypto_it51xxx_sha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_IT8XXX2_SHA=true": [
+            "crypto_it8xxx2_sha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_IT8XXX2_SHA_V2=true": [
+            "crypto_it8xxx2_sha_v2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_MBEDTLS_SHIM=true": [
+            "crypto_mbedtls_shim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_MCHP_AES_G1=true": [
+            "crypto_mchp_aes_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_MCHP_SHA_G1=true": [
+            "crypto_mchp_sha_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_MCHP_XEC_SYMCR=true": [
+            "crypto_mchp_xec_symcr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_MCUX_DCP=true": [
+            "crypto_mcux_dcp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_NPCX_SHA=true": [
+            "crypto_npcx_sha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_NRF_ECB=true": [
+            "crypto_nrf_ecb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_NXP_S32_HSE=true": [
+            "crypto_nxp_s32_hse.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_RPI_PICO_SHA256=true": [
+            "crypto_rpi_pico_sha256.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_RTS5912_SHA=true": [
+            "crypto_rts5912_sha.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_SF32LB=true": [
+            "crypto_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_SI32=true": [
+            "crypto_si32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_SMARTBOND=true": [
+            "crypto_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_STM32=true": [
+            "crypto_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CRYPTO_STM32_HASH=true": [
+            "crypto_stm32_hash.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

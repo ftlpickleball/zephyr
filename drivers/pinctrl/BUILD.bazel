@@ -1,0 +1,352 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "pinctrl",
+    srcs = [
+        "common.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ALIF=true": [
+            "pinctrl_alif.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_AMBIQ=true": [
+            "pinctrl_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_AMEBA=true": [
+            "pinctrl_ameba.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ARM_MPS2=true": [
+            "pinctrl_arm_mps2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ARM_MPS3=true": [
+            "pinctrl_arm_mps3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ARM_MPS4=true": [
+            "pinctrl_arm_mps4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ARM_V2M_BEETLE=true": [
+            "pinctrl_arm_v2m_beetle.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_BCM2711=true": [
+            "pinctrl_bcm2711.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_BEE=true": [
+            "pinctrl_bee.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_CC13XX_CC26XX=true": [
+            "pinctrl_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_CC23X0=true": [
+            "pinctrl_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_EMSDP=true": [
+            "pinctrl_emsdp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ENE_KB106X=true": [
+            "pinctrl_ene_kb106x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ENE_KB1200=true": [
+            "pinctrl_ene_kb1200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ESP32=true": [
+            "pinctrl_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_GD32_AF=true": [
+            "pinctrl_gd32_af.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_GD32_AFIO=true": [
+            "pinctrl_gd32_afio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_GECKO=true": [
+            "pinctrl_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_IMX=true": [
+            "pinctrl_imx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_IMX_SCMI=true": [
+            "pinctrl_imx_scmi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_IMX_SCU=true": [
+            "pinctrl_imx_scu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_INFINEON_CAT1=true": [
+            "pinctrl_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_ITE_IT8XXX2=true": [
+            "pinctrl_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_MAX32=true": [
+            "pinctrl_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_MCHP_PORT_G1=true": [
+            "pinctrl_mchp_port_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_MCHP_XEC=true": [
+            "pinctrl_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_MCI_IO_MUX=true": [
+            "pinctrl_mci_io_mux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_MSPM0=true": [
+            "pinctrl_mspm0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_NPCX=true": [
+            "pinctrl_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_NRF=true": [
+            "pinctrl_nrf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_NUMAKER=true": [
+            "pinctrl_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_NUMICRO=true": [
+            "pinctrl_numicro.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_NXP_IOCON=true": [
+            "pinctrl_lpc_iocon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_NXP_PORT=true": [
+            "pinctrl_nxp_port.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_NXP_SIUL2=true": [
+            "pinctrl_nxp_siul2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_QUICKLOGIC_EOS_S3=true": [
+            "pinctrl_eos_s3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_REALTEK_RTS5912=true": [
+            "pinctrl_realtek_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_RPI_PICO=true": [
+            "pinctrl_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_RTS5817=true": [
+            "pinctrl_rts5817.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_RV32M1=true": [
+            "pinctrl_rv32m1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SAM=true": [
+            "pinctrl_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SAM0=true": [
+            "pinctrl_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SAM_PIO4=true": [
+            "pinctrl_sam_pio4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SF32LB52X=true": [
+            "pinctrl_sf32lb52x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SIFIVE=true": [
+            "pinctrl_sifive.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SILABS_DBUS=true": [
+            "pinctrl_silabs_dbus.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SILABS_SIWX91X=true": [
+            "pinctrl_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_STM32=true": [
+            "pinctrl_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SY1XX=true": [
+            "pinctrl_sy1xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_SYNA_SR100=true": [
+            "pinctrl_syna_sr100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_TELINK_B91=true": [
+            "pinctrl_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_TI_CC32XX=true": [
+            "pinctrl_ti_cc32xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_TI_K3=true": [
+            "pinctrl_ti_k3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_WCH_00X_AFIO=true": [
+            "pinctrl_wch_00x_afio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_WCH_20X_30X_AFIO=true": [
+            "pinctrl_wch_20x_30x_afio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_WCH_AFIO=true": [
+            "pinctrl_wch_afio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_XLNX_ZYNQ=true": [
+            "pinctrl_xlnx_zynq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_XLNX_ZYNQMP=true": [
+            "pinctrl_xlnx_zynqmp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PINCTRL_XMC4XXX=true": [
+            "pinctrl_xmc4xxx.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/renesas",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_PINCTRL_BFLB=true": [":pinctrl_config_pinctrl_bflb_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "pinctrl_config_pinctrl_bflb_deps",
+    srcs = [
+        "pinctrl_bflb.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_BL60X=true": [
+            "pinctrl_bflb_bl60x_70x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_BL61X=true": [
+            "pinctrl_bflb_bl61x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_BL70X=true": [
+            "pinctrl_bflb_bl60x_70x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_BL70XL=true": [
+            "pinctrl_bflb_bl60x_70x.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

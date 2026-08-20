@@ -1,0 +1,766 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "flash",
+    srcs = [
+        "flash_util.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_JESD216=true": [
+            "jesd216.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_PAGE_LAYOUT=true": [
+            "flash_page_layout.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_SHELL=true": [
+            "flash_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "flash_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_ADI_MAX32_SPIXF=true": [
+            "flash_max32_spixf_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_AMBIQ=true": [
+            "flash_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_ANDES_QSPI=true": [
+            "flash_andes_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_ANDES_QSPI_XIP=true": [
+            "flash_andes_qspi_xip.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_CAD_QSPI_NOR=true": [
+            "flash_cadence_qspi_nor.c",
+            "flash_cadence_qspi_nor_ll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_CDNS_NAND=true": [
+            "flash_cadence_nand.c",
+            "flash_cadence_nand_ll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_INFINEON_CAT1=true": [
+            "flash_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_INFINEON_PSOC4=true": [
+            "flash_infineon_pdl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MCHP_NVMCTRL_G1=true": [
+            "flash_mchp_nvmctrl_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MCUX_FLEXSPI_HYPERFLASH=true": [
+            "flash_mcux_flexspi_hyperflash.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MCUX_FLEXSPI_MX25UM51345G=true": [
+            "flash_mcux_flexspi_mx25um51345g.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MCUX_FLEXSPI_NOR=true": [
+            "flash_mcux_flexspi_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MCUX_XSPI=true": [
+            "flash_mcux_xspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MSPI_ATXP032=true": [
+            "flash_mspi_atxp032.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MSPI_EMUL_DEVICE=true": [
+            "flash_mspi_emul_device.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MSPI_IS25XX0XX=true": [
+            "flash_mspi_is25xX0xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_MSPI_NOR=true": [
+            "flash_mspi_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_NPCX_FIU_NOR=true": [
+            "flash_npcx_fiu_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_NPCX_FIU_QSPI=true": [
+            "flash_npcx_fiu_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_RENESAS_RA_OSPI_B=true": [
+            "flash_renesas_ra_ospi_b.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_RENESAS_RA_QSPI=true": [
+            "flash_renesas_ra_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_RENESAS_RZA2M_QSPI_SPIBSC=true": [
+            "flash_renesas_rza2m_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_RENESAS_RZ_QSPI_SPIBSC=true": [
+            "flash_renesas_rz_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_RENESAS_RZ_QSPI_XSPI=true": [
+            "flash_renesas_rz_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_RPI_PICO=true": [
+            "flash_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_S3AXX04=true": [
+            "flash_s3axx04.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_SF32LB_MPI_QSPI_NOR=true": [
+            "flash_sf32lb_mpi_qspi_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_STM32_OSPI=true": [
+            "flash_stm32_ospi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_STM32_QSPI=true": [
+            "flash_stm32_qspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_STM32_XSPI=true": [
+            "flash_stm32_xspi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NORDIC_QSPI_NOR=true": [
+            "nrf_qspi_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_BFLB=true": [
+            "flash_bflb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_CC13XX_CC26XX=true": [
+            "soc_flash_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_CC23X0=true": [
+            "soc_flash_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_ESP32=true": [
+            "flash_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_GECKO=true": [
+            "flash_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_ITE_IT51XXX_M1K=true": [
+            "flash_ite_it51xxx_m1k.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_ITE_IT8XXX2=true": [
+            "flash_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_LPC=true": [
+            "soc_flash_lpc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_MAX32=true": [
+            "flash_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_MCUX=true": [
+            "soc_flash_mcux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NRF=true": [
+            "soc_flash_nrf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NRF_MRAM=true": [
+            "soc_flash_nrf_mram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NRF_MRAMC=true": [
+            "soc_flash_nrf_mramc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NRF_RRAM=true": [
+            "soc_flash_nrf_rram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NUMAKER=true": [
+            "soc_flash_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NUMAKER_RMC=true": [
+            "soc_flash_numaker_rmc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_RENESAS_RA_LP=true": [
+            "soc_flash_renesas_ra_lp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_RENESAS_RA_MRAM=true": [
+            "soc_flash_renesas_ra_mram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_RENESAS_RX=true": [
+            "soc_flash_renesas_rx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_RTS5912=true": [
+            "flash_realtek_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_RV32M1=true": [
+            "soc_flash_rv32m1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_SAM=true": [
+            "flash_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_SAM0=true": [
+            "flash_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_SI32=true": [
+            "flash_si32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_SILABS_S2=true": [
+            "soc_flash_silabs_series2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_SILABS_SIWX91X=true": [
+            "soc_flash_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_SMARTBOND=true": [
+            "flash_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_TELINK_B91=true": [
+            "soc_flash_b91.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_XMC4XXX=true": [
+            "soc_flash_xmc4xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_FLASH_AT25XV021A=true": [
+            "spi_flash_at25xv021a.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_FLASH_AT45=true": [
+            "spi_flash_at45.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_NAND=true": [
+            "spi_nand.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_NOR=true": [
+            "spi_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_NXP_S32_QSPI_NOR=true": [
+            "flash_nxp_s32_qspi_nor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_NXP_S32_QSPI_HYPERFLASH=true": [
+            "flash_nxp_s32_qspi_hyperflash.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_NXP_S32_XSPI_HYPERRAM=true": [
+            "flash_nxp_s32_xspi_hyperram.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_MCUX_C40=true": [
+            "flash_mcux_c40.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_INFINEON_EDGE=true": [":flash_config_soc_family_infineon_edge_deps"],
+        "//conditions:default": [":flash_else_deps"],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FLASH_SIMULATOR=true": [":flash_config_flash_simulator_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FLASH_MCUX_FLEXSPI_XIP=true": [":flash_config_flash_mcux_flexspi_xip_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FLASH_MCUX_XSPI_XIP=true": [":flash_config_flash_mcux_xspi_xip_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_STM32=true": [":flash_config_soc_flash_stm32_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_GD32=true": [":flash_config_soc_flash_gd32_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_flash_nxp_s32_qspi_nor_or_config_flash_nxp_s32_qspi_hyperflash": [":flash_config_flash_nxp_s32_qspi_nor_or_config_flash_nxp_s32_qspi_hyperflash_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_soc_flash_mcux_c40_and_config_code_data_relocation": [":flash_config_soc_flash_mcux_c40_and_config_code_data_relocation_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_RENESAS_RA_HP=true": [":flash_config_soc_flash_renesas_ra_hp_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_family_infineon_edge_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INFINEON_CAT1_QSPI_FLASH=true": [
+            "flash_infineon_serial_memory_qspi.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_else_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INFINEON_CAT1_QSPI_FLASH=true": [
+            "flash_infineon_qspi.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_flash_simulator_deps",
+    srcs = [
+        "flash_simulator.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NATIVE_LIBRARY=true": [":flash_config_flash_simulator_deps_config_native_library_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "flash_config_flash_simulator_deps_config_native_library_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_flash_mcux_flexspi_xip_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_flash_mcux_xspi_xip_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_EX_OP_ENABLED=true": [
+            "flash_stm32_ex_op.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32H7X=true": [":flash_config_soc_flash_stm32_deps_config_soc_series_stm32h7x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32H7RSX=true": [":flash_config_soc_flash_stm32_deps_config_soc_series_stm32h7rsx_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32WBAX=true": [":flash_config_soc_flash_stm32_deps_config_soc_series_stm32wbax_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32WB0X=true": [":flash_config_soc_flash_stm32_deps_config_soc_series_stm32wb0x_deps"],
+        "//conditions:default": [":flash_config_soc_flash_stm32_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_config_soc_series_stm32h7x_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32H7_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32h7x.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_config_soc_series_stm32h7rsx_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32H7_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32h7x.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_config_soc_series_stm32wbax_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_STM32WBA=true": [":flash_config_soc_flash_stm32_deps_config_soc_series_stm32wbax_deps_config_bt_stm32wba_deps"],
+        "//conditions:default": [":flash_config_soc_flash_stm32_deps_config_soc_series_stm32wbax_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_config_soc_series_stm32wbax_deps_config_bt_stm32wba_deps",
+    srcs = [
+        "flash_stm32wba_fm.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_config_soc_series_stm32wbax_deps_else_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32.c",
+            "flash_stm32wbax.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_config_soc_series_stm32wb0x_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32WB0_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32wb0x.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32_FLASH_CONTROLLER_ENABLED=true": [":flash_config_soc_flash_stm32_deps_else_deps_config_dt_has_st_stm32_flash_controller_enabled_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_stm32_deps_else_deps_config_dt_has_st_stm32_flash_controller_enabled_deps",
+    srcs = [
+        "flash_stm32.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32C5_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32c5x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32F1_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32f1x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32F2_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32f2x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32F4_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32f4x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32F7_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32f7x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32G0_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32g0x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32G4_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32g4x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32L4_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32l4x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32L5_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32l5x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32U3_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32u3x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_STM32WB_FLASH_CONTROLLER_ENABLED=true": [
+            "flash_stm32wbx.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_gd32_deps",
+    srcs = [
+        "flash_gd32.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GD32_NV_FLASH_V1=true": [
+            "flash_gd32_v1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GD32_NV_FLASH_V2=true": [
+            "flash_gd32_v2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GD32_NV_FLASH_V3=true": [
+            "flash_gd32_v3.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_flash_nxp_s32_qspi_nor_or_config_flash_nxp_s32_qspi_hyperflash",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_FLASH_NXP_S32_QSPI_NOR=true",
+        "@zephyr_kconfig//:CONFIG_FLASH_NXP_S32_QSPI_HYPERFLASH=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "flash_config_flash_nxp_s32_qspi_nor_or_config_flash_nxp_s32_qspi_hyperflash_deps",
+    srcs = [
+        "flash_nxp_s32_qspi.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_soc_flash_mcux_c40_and_config_code_data_relocation",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_MCUX_C40=true",
+        "@zephyr_kconfig//:CONFIG_CODE_DATA_RELOCATION=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_mcux_c40_and_config_code_data_relocation_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_config_soc_flash_renesas_ra_hp_deps",
+    srcs = [
+        "soc_flash_renesas_ra_hp.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FLASH_EX_OP_ENABLED=true": [
+            "soc_flash_renesas_ra_hp_ex_op.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/flash.h",
+        "//include:zephyr/drivers/flash/flash_simulator.h",
+        "//include:zephyr/drivers/flash/nrf_qspi_nor.h",
+    ],
+)

@@ -1,0 +1,155 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "regulator",
+    srcs = [
+        "regulator_common.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_SHELL=true": [
+            "regulator_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_ADP5360=true": [
+            "regulator_adp5360.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_AXP192_AXP2101=true": [
+            "regulator_axp192.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_BFLB=true": [
+            "regulator_bflb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_CP9314=true": [
+            "regulator_cp9314.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_DA1469X=true": [
+            "regulator_da1469x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_ESP32=true": [
+            "regulator_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_FAKE=true": [
+            "regulator_fake.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_FIXED=true": [
+            "regulator_fixed.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_GPIO=true": [
+            "regulator_gpio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_MAX20335=true": [
+            "regulator_max20335.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_MODULINO_LATCH_RELAY=true": [
+            "regulator_modulino_latch_relay.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_MPM54304=true": [
+            "regulator_mpm54304.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NPM10XX=true": [
+            "regulator_npm10xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NPM1100=true": [
+            "regulator_npm1100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NPM13XX=true": [
+            "regulator_npm13xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NPM2100=true": [
+            "regulator_npm2100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NPM6001=true": [
+            "regulator_npm6001.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NRF_VREGUSB=true": [
+            "regulator_nrf_vregusb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NXP_VREF=true": [
+            "regulator_nxp_vref.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_NXP_VREFV1=true": [
+            "regulator_nxp_vrefv1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_PCA9420=true": [
+            "regulator_pca9420.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_PCA9422=true": [
+            "regulator_pca9422.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_PF1550=true": [
+            "regulator_pf1550.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_RPI_PICO=true": [
+            "regulator_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_STM32_VREFBUF=true": [
+            "regulator_stm32_vrefbuf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_TPS55287=true": [
+            "regulator_tps55287.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

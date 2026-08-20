@@ -1,0 +1,291 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "ethernet",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_ADIN2111=true": [
+            "eth_adin2111.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_CYCLONEV=true": [
+            "eth_cyclonev.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_DM9051=true": [
+            "eth_dm9051.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_DRIVER_RAW_MODE=true": [
+            "eth_raw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_DWMAC=true": [
+            "eth_dwmac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_DWMAC_MMU=true": [
+            "eth_dwmac_mmu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_DWMAC_STM32H7X=true": [
+            "eth_dwmac_stm32h7x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_E1000=true": [
+            "eth_e1000.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_ENC28J60=true": [
+            "eth_enc28j60.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_ENC424J600=true": [
+            "eth_enc424j600.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_ESP32=true": [
+            "eth_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_GECKO=true": [
+            "eth_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_GECKO=true": [
+            "phy_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_IVSHMEM=true": [
+            "eth_ivshmem.c",
+            "eth_ivshmem_queue.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_LAN865X=true": [
+            "eth_lan865x.c",
+            "oa_tc6.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_LAN9250=true": [
+            "eth_lan9250.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_LITEX_LITEETH=true": [
+            "eth_litex_liteeth.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_NUMAKER=true": [
+            "eth_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_NXP_ENET=true": [
+            "eth_nxp_enet.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_NXP_S32_GMAC=true": [
+            "eth_nxp_s32_gmac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_RENESAS_RA=true": [
+            "eth_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_RENESAS_RA_RMAC=true": [
+            "eth_renesas_ra_rmac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_SAM_GMAC=true": [
+            "eth_sam_gmac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_SMSC911X=true": [
+            "eth_smsc911x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_SMSC91X=true": [
+            "eth_smsc91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_STELLARIS=true": [
+            "eth_stellaris.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_SY1XX=true": [
+            "eth_sensry_sy1xx_mac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_TEST=true": [
+            "eth_test.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_VIRTIO_NET=true": [
+            "eth_virtio_net.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_W5500=true": [
+            "eth_w5500.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_W6100=true": [
+            "eth_w6100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_WCH=true": [
+            "eth_wch.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_XILINX_AXIENET=true": [
+            "eth_xilinx_axienet.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_XILINX_AXI_ETHERNET_LITE=true": [
+            "eth_xilinx_axi_ethernet_lite.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_XLNX_GEM=true": [
+            "eth_xlnx_gem.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_XLNX_GEM=true": [
+            "phy_xlnx_gem.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_XMC4XXX=true": [
+            "eth_xmc4xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SLIP_TAP=true": [
+            "eth_slip_tap.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/dsa",
+        "//" + package_name() + "/phy",
+        "//" + package_name() + "/eth_nxp_enet_qos",
+        "//" + package_name() + "/nxp_imx_netc",
+        "//" + package_name() + "/dwc_xgmac",
+        "//" + package_name() + "/intel",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MDIO=true": [
+            "//" + package_name() + "/mdio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ETH_NXP_S32_NETC=true": [":ethernet_config_eth_nxp_s32_netc_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ETH_STM32_HAL=true": [":ethernet_config_eth_stm32_hal_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ETH_NATIVE_TAP=true": [":ethernet_config_eth_native_tap_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "ethernet_config_eth_nxp_s32_netc_deps",
+    srcs = [
+        "eth_nxp_s32_netc.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_NXP_S32_NETC_PSI_ENABLED=true": [
+            "eth_nxp_s32_netc_psi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_NXP_S32_NETC_VSI_ENABLED=true": [
+            "eth_nxp_s32_netc_vsi.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "ethernet_config_eth_stm32_hal_deps",
+    srcs = [
+        "eth_stm32_hal_common.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_STM32_HAL_API_V1=true": [
+            "eth_stm32_hal_v1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ETH_STM32_HAL_API_V2=true": [
+            "eth_stm32_hal_v2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PTP_CLOCK_STM32_HAL=true": [
+            "eth_stm32_hal_ptp.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "ethernet_config_eth_native_tap_deps",
+    srcs = [
+        "eth_native_tap.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

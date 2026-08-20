@@ -1,0 +1,114 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "audio",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_AW88298=true": [
+            "aw88298.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_CS43L22=true": [
+            "cs43l22.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_DA7212=true": [
+            "da7212.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_MAX98091=true": [
+            "max98091.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_PCM1681=true": [
+            "pcm1681.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_SF32LB=true": [
+            "sf32lb_codec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_SHELL=true": [
+            "codec_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_WM8904=true": [
+            "wm8904.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_CODEC_WM8962=true": [
+            "wm8962.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_DMIC_AMBIQ_PDM=true": [
+            "dmic_ambiq_pdm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_DMIC_INFINEON=true": [
+            "dmic_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_DMIC_MCUX=true": [
+            "dmic_mcux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_DMIC_NRFX_PDM=true": [
+            "dmic_nrfx_pdm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_DMIC_NXP_MICFIL=true": [
+            "dmic_nxp_micfil.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_MPXXDTYY=true": [
+            "mpxxdtyy-i2s.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_MPXXDTYY=true": [
+            "mpxxdtyy.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_TAS6422DAC=true": [
+            "tas6422dac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_TLV320AIC3110=true": [
+            "tlv320aic3110.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_AUDIO_TLV320DAC=true": [
+            "tlv320dac310x.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

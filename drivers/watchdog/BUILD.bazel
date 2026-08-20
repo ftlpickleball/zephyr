@@ -1,0 +1,353 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "watchdog",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FWDGT_GD32=true": [
+            "wdt_fwdgt_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IWDG_STM32=true": [
+            "wdt_iwdg_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "wdt_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDOG_CMSDK_APB=true": [
+            "wdt_cmsdk_apb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_ADI_MAX42500=true": [
+            "wdt_adi_max42500.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_AMBIQ=true": [
+            "wdt_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_ANDES_ATCWDT200=true": [
+            "wdt_andes_atcwdt200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_BFLB=true": [
+            "wdt_bflb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_CC13XX_CC26XX=true": [
+            "wdt_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_CC23X0=true": [
+            "wdt_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_CC32XX=true": [
+            "wdt_cc32xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_COUNTER=true": [
+            "wdt_counter.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_DW=true": [
+            "wdt_dw.c",
+            "wdt_dw_common.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_ENE_KB106X=true": [
+            "wdt_ene_kb106x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_ENE_KB1200=true": [
+            "wdt_ene_kb1200.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_ESP32=true": [
+            "wdt_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_GECKO=true": [
+            "wdt_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_INFINEON_CAT1=true": [
+            "wdt_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_INTEL_ADSP=true": [
+            "wdt_dw_common.c",
+            "wdt_intel_adsp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_ITE_IT51XXX=true": [
+            "wdt_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_ITE_IT8XXX2=true": [
+            "wdt_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_IWDG_WCH=true": [
+            "wdt_iwdg_wch.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_LITEX=true": [
+            "wdt_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MAX32=true": [
+            "wdt_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MCHP_G1=true": [
+            "wdt_mchp_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MCUX_COP=true": [
+            "wdt_mcux_cop.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MCUX_IMX_WDOG=true": [
+            "wdt_mcux_imx_wdog.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MCUX_RTWDOG=true": [
+            "wdt_mcux_rtwdog.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MCUX_WDOG=true": [
+            "wdt_mcux_wdog.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MCUX_WDOG32=true": [
+            "wdt_mcux_wdog32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_MCUX_WWDT=true": [
+            "wdt_mcux_wwdt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NPCX=true": [
+            "wdt_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NPM13XX=true": [
+            "wdt_npm13xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NPM2100=true": [
+            "wdt_npm2100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NPM6001=true": [
+            "wdt_npm6001.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NRFX=true": [
+            "wdt_nrfx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NXP_EWM=true": [
+            "wdt_nxp_ewm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NXP_FS26=true": [
+            "wdt_nxp_fs26.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_NXP_S32=true": [
+            "wdt_nxp_s32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_OPENTITAN=true": [
+            "wdt_opentitan.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_RENESAS_RA=true": [
+            "wdt_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_RENESAS_RX_IWDT=true": [
+            "wdt_renesas_rx_iwdt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_RENESAS_RZ=true": [
+            "wdt_renesas_rz.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_RPI_PICO=true": [
+            "wdt_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_RTS5817=true": [
+            "wdt_rts5817.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_RTS5912=true": [
+            "wdt_rts5912.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SAM=true": [
+            "wdt_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SAM0=true": [
+            "wdt_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SAM4L=true": [
+            "wdt_sam4l.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SF32LB=true": [
+            "wdt_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SHELL=true": [
+            "wdt_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SIFIVE=true": [
+            "wdt_sifive.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SILABS_SIWX91X=true": [
+            "wdt_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_SMARTBOND=true": [
+            "wdt_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_TCO=true": [
+            "wdt_tco.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_TI_RTI=true": [
+            "wdt_ti_rti.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_TI_TPS382X=true": [
+            "wdt_ti_tps382x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_XEC=true": [
+            "wdt_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_XILINX_AXI=true": [
+            "wdt_xilinx_axi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_XMC4XXX=true": [
+            "wdt_xmc4xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_XT_ESP32=true": [
+            "xt_wdt_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WWDGT_GD32=true": [
+            "wdt_wwdgt_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WWDG_STM32=true": [
+            "wdt_wwdg_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WWDT_NUMAKER=true": [
+            "wdt_wwdt_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XILINX_WINDOW_WATCHDOG=true": [
+            "wdt_xilinx_wwdt.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/watchdog.h",
+    ],
+)

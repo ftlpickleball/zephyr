@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "common",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = ".",
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_HAS_NRFX=true": [
+            "//" + package_name() + "/nrf_usbd_common",
+        ],
+        "//conditions:default": [],
+    }),
+)

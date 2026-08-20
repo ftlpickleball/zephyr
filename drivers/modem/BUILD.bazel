@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "modem",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_AT_SHELL=true": [
+            "modem_at_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_AT_USER_PIPE=true": [
+            "modem_at_user_pipe.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_CELLULAR=true": [
+            "modem_cellular.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_CMD_HANDLER=true": [
+            "modem_cmd_handler.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_CONTEXT=true": [
+            "modem_context.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_HL7800=true": [
+            "hl7800.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_IFACE_UART_ASYNC=true": [
+            "modem_iface_uart_async.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_IFACE_UART_INTERRUPT=true": [
+            "modem_iface_uart_interrupt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_QUECTEL_BG9X=true": [
+            "quectel-bg9x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_RECEIVER=true": [
+            "modem_receiver.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_SHELL=true": [
+            "modem_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_SOCKET=true": [
+            "modem_socket.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_ST87MXX=true": [
+            "st87mxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_UBLOX_SARA=true": [
+            "ublox-sara-r4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MODEM_WNCM14A2A=true": [
+            "wncm14a2a.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/simcom",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MODEM_HL78XX=true": [
+            "//" + package_name() + "/hl78xx",
+        ],
+        "//conditions:default": [],
+    }),
+)

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "sbs_gauge",
+    srcs = ["sbs_gauge.c"],
+    hdrs = glob(["*.h"], allow_empty = True),
+)

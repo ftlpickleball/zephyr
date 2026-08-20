@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "lora",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LORA_SHELL=true": [
+            "shell.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_LORA_MODULE_BACKEND_LORAMAC_NODE=true": [
+            "//" + package_name() + "/loramac-node",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LORA_MODULE_BACKEND_LORA_BASICS_MODEM=true": [
+            "//" + package_name() + "/lora-basics-modem",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LORA_MODULE_BACKEND_NATIVE=true": [
+            "//" + package_name() + "/native",
+        ],
+        "//conditions:default": [],
+    }),
+)

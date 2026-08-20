@@ -1,0 +1,334 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "sensor",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "sensor_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SENSOR_SHELL=true": [
+            "sensor_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SENSOR_SHELL_STREAM=true": [
+            "sensor_shell_stream.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SENSOR_SHELL_BATTERY=true": [
+            "shell_battery.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SENSOR_ASYNC_API=true": [
+            "default_rtio_sensor.c",
+            "sensor_decoders_init.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//" + package_name() + "/adi",
+        "//" + package_name() + "/ams",
+        "//" + package_name() + "/aosong",
+        "//" + package_name() + "/asahi_kasei",
+        "//" + package_name() + "/bosch",
+        "//" + package_name() + "/broadcom",
+        "//" + package_name() + "/espressif",
+        "//" + package_name() + "/everlight",
+        "//" + package_name() + "/honeywell",
+        "//" + package_name() + "/iclegend",
+        "//" + package_name() + "/infineon",
+        "//" + package_name() + "/ite",
+        "//" + package_name() + "/jedec",
+        "//" + package_name() + "/liteon",
+        "//" + package_name() + "/maxim",
+        "//" + package_name() + "/meas",
+        "//" + package_name() + "/melexis",
+        "//" + package_name() + "/memsic",
+        "//" + package_name() + "/microchip",
+        "//" + package_name() + "/nordic",
+        "//" + package_name() + "/nuvoton",
+        "//" + package_name() + "/nxp",
+        "//" + package_name() + "/omron",
+        "//" + package_name() + "/pixart",
+        "//" + package_name() + "/pni",
+        "//" + package_name() + "/qst",
+        "//" + package_name() + "/realtek",
+        "//" + package_name() + "/renesas",
+        "//" + package_name() + "/rohm",
+        "//" + package_name() + "/seeed",
+        "//" + package_name() + "/sensirion",
+        "//" + package_name() + "/sifli",
+        "//" + package_name() + "/silabs",
+        "//" + package_name() + "/st",
+        "//" + package_name() + "/tdk",
+        "//" + package_name() + "/ti",
+        "//" + package_name() + "/vishay",
+        "//" + package_name() + "/wsen",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_A01NYUB=true": [
+            "//" + package_name() + "/a01nyub",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ALS31300=true": [
+            "//" + package_name() + "/als31300",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_AMD_SB_TSI=true": [
+            "//" + package_name() + "/amd_sb_tsi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_AMG88XX=true": [
+            "//" + package_name() + "/amg88xx",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_APDS9253=true": [
+            "//" + package_name() + "/apds9253",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_APDS9960=true": [
+            "//" + package_name() + "/apds9960",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_APDS9306=true": [
+            "//" + package_name() + "/apds9306",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CURRENT_AMP=true": [
+            "//" + package_name() + "/current_amp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ENS160=true": [
+            "//" + package_name() + "/ens160",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_EXPLORIR_M=true": [
+            "//" + package_name() + "/explorir_m",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_F75303=true": [
+            "//" + package_name() + "/f75303",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FCX_MLDX5=true": [
+            "//" + package_name() + "/fcx_mldx5",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GROW_R502A=true": [
+            "//" + package_name() + "/grow_r502a",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HC_SR04=true": [
+            "//" + package_name() + "/hc_sr04",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HP206C=true": [
+            "//" + package_name() + "/hp206c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HX711_SPI=true": [
+            "//" + package_name() + "/hx711_spi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_IST8310=true": [
+            "//" + package_name() + "/ist8310",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LM35=true": [
+            "//" + package_name() + "/lm35",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LM75=true": [
+            "//" + package_name() + "/lm75",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LM77=true": [
+            "//" + package_name() + "/lm77",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MHZ19B=true": [
+            "//" + package_name() + "/mhz19b",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NCT75=true": [
+            "//" + package_name() + "/nct75",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NTC_THERMISTOR=true": [
+            "//" + package_name() + "/ntc_thermistor",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PMS7003=true": [
+            "//" + package_name() + "/pms7003",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PZEM004T=true": [
+            "//" + package_name() + "/pzem004t",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_QDEC_SAM=true": [
+            "//" + package_name() + "/qdec_sam",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RPI_PICO_TEMP=true": [
+            "//" + package_name() + "/rpi_pico_temp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_S11059=true": [
+            "//" + package_name() + "/s11059",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SBS_GAUGE=true": [
+            "//" + package_name() + "/sbs_gauge",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SX9500=true": [
+            "//" + package_name() + "/sx9500",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TH02=true": [
+            "//" + package_name() + "/th02",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TSIC_XX6=true": [
+            "//" + package_name() + "/tsic_xx6",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_VEAA_X_3=true": [
+            "//" + package_name() + "/veaa_x_3",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_VOLTAGE_DIVIDER=true": [
+            "//" + package_name() + "/voltage_divider",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_XBR818=true": [
+            "//" + package_name() + "/xbr818",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TACH_ENE_KB1200=true": [
+            "//" + package_name() + "/ene_tach_kb1200",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TACH_GPIO=true": [
+            "//" + package_name() + "/tach_gpio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MB7040=true": [
+            "//" + package_name() + "/mb7040",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RV3032_TEMP=true": [
+            "//" + package_name() + "/rv3032_temp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        ":config_sensor_clock_rtc_or_config_sensor_clock_counter": [":sensor_config_sensor_clock_rtc_or_config_sensor_clock_counter_deps"],
+        "@zephyr_kconfig//:CONFIG_SENSOR_CLOCK_SYSTEM=true": [":sensor_config_sensor_clock_system_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_sensor_clock_rtc_or_config_sensor_clock_counter",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_SENSOR_CLOCK_RTC=true",
+        "@zephyr_kconfig//:CONFIG_SENSOR_CLOCK_COUNTER=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "sensor_config_sensor_clock_rtc_or_config_sensor_clock_counter_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "//conditions:default": [":sensor_config_sensor_clock_rtc_or_config_sensor_clock_counter_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "sensor_config_sensor_clock_rtc_or_config_sensor_clock_counter_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "sensor_config_sensor_clock_system_deps",
+    srcs = [
+        "sensor_clock_sys.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/sensor.h",
+    ],
+)

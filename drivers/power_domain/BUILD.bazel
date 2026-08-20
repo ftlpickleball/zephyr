@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "power_domain",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_ARM_SCMI=true": [
+            "power_domain_arm_scmi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_GPIO=true": [
+            "power_domain_gpio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_GPIO_MONITOR=true": [
+            "power_domain_gpio_monitor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_INTEL_ADSP=true": [
+            "power_domain_intel_adsp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_NRFS_GDPWR=true": [
+            "power_domain_nrfs_gdpwr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_NRFS_SWEXT=true": [
+            "power_domain_nrfs_swext.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_NXP_SCU=true": [
+            "power_domain_nxp_scu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_SILABS_SIWX91X=true": [
+            "power_domain_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_SOC_PM_STATE=true": [
+            "power_domain_soc_state_change.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN_TISCI=true": [
+            "power_domain_tisci.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

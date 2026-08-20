@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "mdio",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_SHELL=true": [
+            "mdio_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_ATMEL_SAM=true": [
+            "mdio_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_ESP32=true": [
+            "mdio_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_LITEX_LITEETH=true": [
+            "mdio_litex_liteeth.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_NXP_IMX_NETC=true": [
+            "mdio_nxp_imx_netc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_NXP_S32_NETC=true": [
+            "mdio_nxp_s32_netc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_NXP_S32_GMAC=true": [
+            "mdio_nxp_s32_gmac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_ADIN2111=true": [
+            "mdio_adin2111.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_GPIO=true": [
+            "mdio_gpio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_NXP_ENET=true": [
+            "mdio_nxp_enet.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_ST_STM32_HAL=true": [
+            "mdio_stm32_hal.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_INFINEON_XMC4XXX=true": [
+            "mdio_xmc4xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_NXP_ENET_QOS=true": [
+            "mdio_nxp_enet_qos.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_DWCXGMAC=true": [
+            "mdio_dwcxgmac.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_RENESAS_RA=true": [
+            "mdio_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_LAN865X=true": [
+            "mdio_lan865x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_SENSRY_SY1XX=true": [
+            "mdio_sy1xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_XILINX_AXI_ENET=true": [
+            "mdio_xilinx_axienet.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MDIO_INTEL_IGC=true": [
+            "mdio_intel_igc.c",
+        ],
+    }),
+    hdrs = glob(["*.h"], allow_empty=True),
+)

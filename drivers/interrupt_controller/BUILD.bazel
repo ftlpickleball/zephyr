@@ -1,0 +1,352 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "interrupt_controller",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCV2_INTERRUPT_UNIT=true": [
+            "intc_arcv2_irq_unit.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CAVS_ICTL=true": [
+            "intc_cavs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLIC=true": [
+            "intc_clic.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLIC=true": [
+            "intc_clic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DW_ICTL=true": [
+            "intc_dw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DW_ICTL_ACE=true": [
+            "intc_dw_ace.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EXTI_STM32=true": [
+            "intc_exti_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GD32_EXTI=true": [
+            "intc_gd32_exti.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GIC_V1=true": [
+            "intc_gic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GIC_V2=true": [
+            "intc_gic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GIC_V3=true": [
+            "intc_gicv3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GIC_V3_ITS=true": [
+            "intc_gicv3_its.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_INTC_STM32=true": [
+            "intc_gpio_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_GPIO_INTC_STM32WB0=true": [
+            "intc_gpio_stm32wb0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HAZARD3_INTC=true": [
+            "intc_hazard3.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HAZARD3_INTC=true": [
+            "intc_hazard3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INTC_ESP32=true": [
+            "intc_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INTC_MCHP_AIC_G1=true": [
+            "intc_mchp_aic_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INTC_MCHP_EIC_G1=true": [
+            "intc_mchp_eic_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INTC_MTK_ADSP=true": [
+            "intc_mtk_adsp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INTEL_VTD_ICTL=true": [
+            "intc_intel_vtd.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IOAPIC=true": [
+            "intc_ioapic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ITE_IT51XXX_INTC=true": [
+            "intc_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ITE_IT51XXX_WUC=true": [
+            "wuc_ite_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ITE_IT8XXX2_INTC=true": [
+            "intc_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ITE_IT8XXX2_INTC_V2=true": [
+            "intc_ite_it8xxx2_v2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ITE_IT8XXX2_WUC=true": [
+            "wuc_ite_it8xxx2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LEON_IRQMP=true": [
+            "intc_irqmp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOAPIC=true": [
+            "intc_loapic.c",
+            "intc_system_apic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOAPIC_SPURIOUS_VECTOR=true": [
+            "intc_loapic_spurious.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MAX32_RV32_INTC=true": [
+            "intc_max32_rv32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCHP_ECIA_XEC=true": [
+            "intc_mchp_ecia_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NPCX_MIWU=true": [
+            "intc_miwu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRFX_CLIC=true": [
+            "intc_nrfx_clic.S",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NRFX_CLIC=true": [
+            "intc_nrfx_clic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_GINT=true": [
+            "intc_nxp_gint.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_IRQSTEER=true": [
+            "intc_nxp_irqsteer.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_PINT=true": [
+            "intc_nxp_pint.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_S32_WKPU=true": [
+            "intc_wkpu_nxp_s32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NXP_SIUL2_EIRQ=true": [
+            "intc_nxp_siul2_eirq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_PLIC=true": [
+            "intc_plic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RENESAS_RX_GRP_INTC=true": [
+            "intc_renesas_rx_grp_int.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RENESAS_RX_ICU=true": [
+            "intc_renesas_rx_icu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RENESAS_RZ_EXT_IRQ=true": [
+            "intc_renesas_rz_ext_irq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RENESAS_RZ_ICU_V2=true": [
+            "intc_renesas_rz_icu.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RENESAS_RZ_TINT=true": [
+            "intc_renesas_rz_tint.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RISCV_APLIC=true": [
+            "intc_riscv_aplic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RISCV_APLIC_MSI=true": [
+            "intc_riscv_aplic_msi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RISCV_IMSIC=true": [
+            "intc_riscv_imsic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RV32M1_INTMUX=true": [
+            "intc_rv32m1_intmux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SAM0_EIC=true": [
+            "intc_sam0_eic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SHARED_IRQ=true": [
+            "intc_shared_irq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SWERV_PIC=true": [
+            "intc_swerv_pic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TI_VIM=true": [
+            "intc_vim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VEXRISCV_LITEX_IRQ=true": [
+            "intc_vexriscv_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WCH_EXTI=true": [
+            "intc_wch_exti.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WCH_PFIC=true": [
+            "intc_wch_pfic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XMC4XXX_INTC=true": [
+            "intc_xmc4xxx.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//arch/common:interface",  # The PLIC interrupt controller depends on sw_isr_common.h in arc/common/include
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_INTEL_VTD_ICTL=true": [":interrupt_controller_config_intel_vtd_ictl_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PLIC_SHELL=true": [":interrupt_controller_config_plic_shell_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NXP_PINT=true": [":interrupt_controller_config_nxp_pint_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "interrupt_controller_config_intel_vtd_ictl_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "interrupt_controller_config_plic_shell_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "interrupt_controller_config_nxp_pint_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

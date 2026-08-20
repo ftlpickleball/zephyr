@@ -1,0 +1,123 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "sdhc",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = ".",
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SDHC=true": [":sdhc_config_sdhc_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "sdhc_config_sdhc_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CDNS_SDHC=true": [
+            "sdhc_cdns.c",
+            "sdhc_cdns_ll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_IMX_USDHC=true": [
+            "imx_usdhc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_INTEL_EMMC_HOST=true": [
+            "intel_emmc_host.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_MCUX_SDIF=true": [
+            "mcux_sdif.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_RCAR_MMC=true": [
+            "rcar_mmc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SAM_HSMCI=true": [
+            "sam_hsmci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SAM_SDMMC=true": [
+            "sam_sdmmc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_AMBIQ=true": [
+            "sdhc_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_ESP32=true": [
+            "sdhc_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_INFINEON_CAT1_PDL=true": [
+            "sdhc_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_LITEX_LITESDCARD=true": [
+            "sdhc_litex_litesdcard.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_MAX32=true": [
+            "sdhc_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_RENESAS_RA=true": [
+            "sdhc_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_STM32_SDIO=true": [
+            "sdhc_stm32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI_SDHC=true": [
+            "sdhc_spi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SDHC_MSHC=true": [
+            "sdhc_mshc.c",
+            "sdhc_mshc_vendor_quirks.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_XLNX_SDHC=true": [
+            "xlnx_sdhc.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = ".",
+)

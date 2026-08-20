@@ -1,0 +1,534 @@
+# SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "drivers",
+    defines = ["__ZEPHYR_SUPERVISOR__"],
+    deps = [
+        "//drivers/disk",
+        "//drivers/interrupt_controller",
+        "//drivers/misc",
+        "//drivers/pcie",
+        "//drivers/usb",
+        "//drivers/usb_c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ADC=true": [
+            "//drivers/adc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARM_SIP_SVC_DRIVER=true": [
+            "//drivers/sip_svc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_AUDIO=true": [
+            "//drivers/audio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_AUXDISPLAY=true": [
+            "//drivers/auxdisplay",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BBRAM=true": [
+            "//drivers/bbram",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_DRIVERS=true": [
+            "//drivers/bluetooth",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CACHE_MANAGEMENT=true": [
+            "//drivers/cache",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CAN=true": [
+            "//drivers/can",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CHARGER=true": [
+            "//drivers/charger",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL=true": [
+            "//drivers/clock_control",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_COMPARATOR=true": [
+            "//drivers/comparator",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CONSOLE=true": [
+            "//drivers/console",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_COREDUMP_DEVICE=true": [
+            "//drivers/coredump",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_COUNTER=true": [
+            "//drivers/counter",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CRC_DRIVER=true": [
+            "//drivers/crc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CRYPTO=true": [
+            "//drivers/crypto",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAC=true": [
+            "//drivers/dac",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DAI=true": [
+            "//drivers/dai",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DEBUG_DRIVER=true": [
+            "//drivers/debug",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DISPLAY=true": [
+            "//drivers/display",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DMA=true": [
+            "//drivers/dma",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DP_DRIVER=true": [
+            "//drivers/dp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_EDAC=true": [
+            "//drivers/edac",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_EEPROM=true": [
+            "//drivers/eeprom",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ENTROPY_GENERATOR=true": [
+            "//drivers/entropy",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ESPI=true": [
+            "//drivers/espi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ETH_DRIVER=true": [
+            "//drivers/ethernet",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FLASH=true": [
+            "//drivers/flash",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FPGA=true": [
+            "//drivers/fpga",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FUEL_GAUGE=true": [
+            "//drivers/fuel_gauge",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GNSS=true": [
+            "//drivers/gnss",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GPIO=true": [
+            "//drivers/gpio",
+        ],
+        "//conditions:default": [],
+
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HDLC_RCP_IF=true": [
+            "//drivers/hdlc_rcp_if",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HWINFO=true": [
+            "//drivers/hwinfo",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HWSPINLOCK=true": [
+            "//drivers/hwspinlock",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_I2C=true": [
+            "//drivers/i2c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_I2S=true": [
+            "//drivers/i2s",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_I3C=true": [
+            "//drivers/i3c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_IEEE802154=true": [
+            "//drivers/ieee802154",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_INPUT=true": [
+            "//drivers/input",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_INTEL_ADSP_MIC_PRIVACY=true": [
+            "//drivers/audio/mic_privacy/intel",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_IPM=true": [
+            "//drivers/ipm",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LED=true": [
+            "//drivers/led",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LED_STRIP=true": [
+            "//drivers/led_strip",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LORA=true": [
+            "//drivers/lora",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MBOX=true": [
+            "//drivers/mbox",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MDIO=true": [
+            "//drivers/mdio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MEMC=true": [
+            "//drivers/memc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MFD=true": [
+            "//drivers/mfd",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MIPI_DBI=true": [
+            "//drivers/mipi_dbi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MIPI_DSI=true": [
+            "//drivers/mipi_dsi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MM_DRV=true": [
+            "//drivers/mm",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MODEM=true": [
+            "//drivers/modem",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI=true": [
+            "//drivers/mspi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_DRIVERS=true": [
+            "//drivers/net",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_OPAMP=true": [
+            "//drivers/opamp",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PECI=true": [
+            "//drivers/peci",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PINCTRL=true": [
+            "//drivers/pinctrl",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PM_CPU_OPS=true": [
+            "//drivers/pm_cpu_ops",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_POWER_DOMAIN=true": [
+            "//drivers/power_domain",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PS2=true": [
+            "//drivers/ps2",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PSI5=true": [
+            "//drivers/psi5",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PTP_CLOCK=true": [
+            "//drivers/ptp_clock",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PWM=true": [
+            "//drivers/pwm",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_REGULATOR=true": [
+            "//drivers/regulator",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RESET=true": [
+            "//drivers/reset",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RETAINED_MEM=true": [
+            "//drivers/retained_mem",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RTC=true": [
+            "//drivers/rtc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SDHC=true": [
+            "//drivers/sdhc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SENSOR=true": [
+            "//drivers/sensor",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SENT=true": [
+            "//drivers/sent",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SERIAL=true": [
+            "//drivers/serial",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SMBUS=true": [
+            "//drivers/smbus",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SPI=true": [
+            "//drivers/spi",
+        ],
+        "//conditions:default": [],
+
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SYSCON=true": [
+            "//drivers/syscon",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SYS_CLOCK_EXISTS=true": [
+            "//drivers/timer",
+        ],
+        "//conditions:default": [],
+
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_VIDEO=true": [
+            "//drivers/video",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_VIRTIO=true": [
+            "//drivers/virtio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_VIRTUALIZATION=true": [
+            "//drivers/virtualization",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_W1=true": [
+            "//drivers/w1",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WATCHDOG=true": [
+            "//drivers/watchdog",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_WIFI=true": [
+            "//drivers/wifi",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_XEN=true": [
+            "//drivers/xen",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//drivers/adc:syscall_client_files",
+        "//drivers/auxdisplay:syscall_client_files",
+        "//drivers/cache:syscall_client_files",
+        "//drivers/can:syscall_client_files",
+        "//drivers/charger:syscall_client_files",
+        "//drivers/counter:syscall_client_files",
+        "//drivers/dac:syscall_client_files",
+        "//drivers/eeprom:syscall_client_files",
+        "//drivers/entropy:syscall_client_files",
+        "//drivers/espi:syscall_client_files",
+        "//drivers/flash:syscall_client_files",
+        "//drivers/fuel_gauge:syscall_client_files",
+        "//drivers/gpio:syscall_client_files",
+        "//drivers/hwinfo:syscall_client_files",
+        "//drivers/i2c:syscall_client_files",
+        "//drivers/i2s:syscall_client_files",
+        "//drivers/i3c:syscall_client_files",
+        "//drivers/ipm:syscall_client_files",
+        "//drivers/led:syscall_client_files",
+        "//drivers/mbox:syscall_client_files",
+        "//drivers/misc/devmux:syscall_client_files",
+        "//drivers/misc/timeaware_gpio:syscall_client_files",
+        "//drivers/peci:syscall_client_files",
+        "//drivers/ps2:syscall_client_files",
+        "//drivers/ptp_clock:syscall_client_files",
+        "//drivers/pwm:syscall_client_files",
+        "//drivers/reset:syscall_client_files",
+        "//drivers/retained_mem:syscall_client_files",
+        "//drivers/rtc:syscall_client_files",
+        "//drivers/sensor:syscall_client_files",
+        "//drivers/serial:syscall_client_files",
+        "//drivers/smbus:syscall_client_files",
+        "//drivers/spi:syscall_client_files",
+        "//drivers/usb/bc12:syscall_client_files",
+        "//drivers/virtualization:syscall_client_files",
+        "//drivers/w1:syscall_client_files",
+        "//drivers/watchdog:syscall_client_files",
+        # This is used in drivers/i2c but Zephyr forgot to add this to
+        # zephyr_syscall_header(). Seems to be an error in Zephyr.
+        "//include:zephyr/drivers/i3c.h",
+    ],
+)
+
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_VIDEO=true": [
+            "//drivers/video:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_UVB=true": [
+            "//drivers/usb/uvb:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MODEM_HL78XX=true": [
+            "//drivers/modem/hl78xx:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HL78XX_EVT_MONITOR=true": [
+            "//drivers/modem/hl78xx/hl78xx_evt_monitor:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "linker_includes",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_VIDEO=true": [
+            "//drivers/video:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_UVB=true": [
+            "//drivers/usb/uvb:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MODEM_HL78XX=true": [
+            "//drivers/modem/hl78xx:linker_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_HL78XX_EVT_MONITOR=true": [
+            "//drivers/modem/hl78xx/hl78xx_evt_monitor:linker_includes",
+        ],
+        "//conditions:default": [],
+    }),
+)

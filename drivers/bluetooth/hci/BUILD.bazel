@@ -1,0 +1,262 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "hci",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_AMBIQ_HCI=true": [
+            "apollox_blue.c",
+            "hci_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BEE=true": [
+            "hci_bee.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BFLB_BL70X=true": [
+            "hci_bflb_bl70x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CYW208XX=true": [
+            "hci_infineon_cyw208xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_DA1453X=true": [
+            "hci_da1453x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_DA1469X=true": [
+            "hci_da1469x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ESP32=true": [
+            "hci_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_H4=true": [
+            "h4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_H4_NXP_CTLR=true": [
+            "hci_nxp_setup.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_H5=true": [
+            "h5.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HCI_IPC=true": [
+            "ipc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_HCI_UART_INFINEON=true": [
+            "hci_uart_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_NXP=true": [
+            "hci_nxp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_PSOC6_BLESS=true": [
+            "hci_infineon_psoc6_bless.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_SF32LB=true": [
+            "hci_sf32lb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_SILABS_EFR32=true": [
+            "hci_silabs_efr32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_SILABS_SIWX91X=true": [
+            "hci_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_SPI_BLUENRG=true": [
+            "hci_spi_st.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_SPI_ZEPHYR=true": [
+            "spi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_STM32WB0=true": [
+            "hci_stm32wb0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_STM32WBA=true": [
+            "hci_stm32wba.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_STM32_IPM=true": [
+            "ipm_stm32wb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_NRF5340_CPUAPP=true": [
+            "nrf53_support.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BUILD_ONLY_NO_BLOBS=true": [":hci_config_build_only_no_blobs_deps"],
+        "//conditions:default": [":hci_else_deps"],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_USERCHAN=true": [":hci_config_bt_userchan_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "hci_config_build_only_no_blobs_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "hci_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ESPRESSIF_ESP32_BT_HCI_ENABLED=true": [":hci_else_deps_config_dt_has_espressif_esp32_bt_hci_enabled_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":_config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled_": [":hci_else_deps__config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled__deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DT_HAS_SILABS_BT_HCI_EFR32_ENABLED=true": [":hci_else_deps_config_dt_has_silabs_bt_hci_efr32_enabled_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DT_HAS_INFINEON_BLESS_HCI_ENABLED=true": [":hci_else_deps_config_dt_has_infineon_bless_hci_enabled_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_DT_HAS_RENESAS_BT_HCI_DA1469X_ENABLED=true": [":hci_else_deps_config_dt_has_renesas_bt_hci_da1469x_enabled_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_BFLB_BL70X=true": [":hci_else_deps_config_bt_bflb_bl70x_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "hci_else_deps_config_dt_has_espressif_esp32_bt_hci_enabled_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "_config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled_",
+    match_any = [
+        "@zephyr_kconfig//:(CONFIG_DT_HAS_ST_HCI_STM32WBA_ENABLED)=true",
+        "@zephyr_kconfig//:(CONFIG_DT_HAS_ST_HCI_STM32WB0_ENABLED)=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "hci_else_deps__config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled__deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "hci_else_deps_config_dt_has_silabs_bt_hci_efr32_enabled_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "hci_else_deps_config_dt_has_infineon_bless_hci_enabled_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "hci_else_deps_config_dt_has_renesas_bt_hci_da1469x_enabled_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "hci_else_deps_config_bt_bflb_bl70x_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "hci_config_bt_userchan_deps",
+    srcs = [
+        "userchan.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

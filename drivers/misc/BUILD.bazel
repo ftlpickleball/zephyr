@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "misc",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_DEVMUX=true": [
+            "//" + package_name() + "/devmux",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ETHOS_U=true": [
+            "//" + package_name() + "/ethos_u",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FT800=true": [
+            "//" + package_name() + "/ft8xx",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_GROVE_LCD_RGB=true": [
+            "//" + package_name() + "/grove_lcd_rgb",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUX_FLEXIO=true": [
+            "//" + package_name() + "/mcux_flexio",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MISC_MAX2221X=true": [
+            "//" + package_name() + "/max2221x",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NORDIC_VPR_LAUNCHER=true": [
+            "//" + package_name() + "/nordic_vpr_launcher",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NXP_FLEXRAM=true": [
+            "//" + package_name() + "/nxp_flexram",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NXP_MEDIAMIX_BLK_CTRL=true": [
+            "//" + package_name() + "/nxp_imx93_mediamix",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NXP_RTXXX_DSP_CTRL=true": [
+            "//" + package_name() + "/nxp_rtxxx_dsp_ctrl",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NXP_S32_EMIOS=true": [
+            "//" + package_name() + "/nxp_s32_emios",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PIO_RPI_PICO=true": [
+            "//" + package_name() + "/pio_rpi_pico",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RENESAS_DRW=true": [
+            "//" + package_name() + "/renesas_drw",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RENESAS_RA_EXTERNAL_INTERRUPT=true": [
+            "//" + package_name() + "/renesas_ra_external_interrupt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RENESAS_RX_DTC=true": [
+            "//" + package_name() + "/renesas_rx_dtc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_RENESAS_RX_EXTERNAL_INTERRUPT=true": [
+            "//" + package_name() + "/renesas_rx_external_interrupt",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_STM32N6_AXISRAM=true": [
+            "//" + package_name() + "/stm32n6_axisram",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TIMEAWARE_GPIO=true": [
+            "//" + package_name() + "/timeaware_gpio",
+        ],
+        "//conditions:default": [],
+    }),
+)

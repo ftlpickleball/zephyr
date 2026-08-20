@@ -1,0 +1,240 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "hwinfo",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "hwinfo_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO=true": [
+            "hwinfo_weak_impl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_SHELL=true": [
+            "hwinfo_shell.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_AMBIQ=true": [
+            "hwinfo_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_ANDES=true": [
+            "hwinfo_andes.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_BFLB=true": [
+            "hwinfo_bflb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_CC13XX_CC26XX=true": [
+            "hwinfo_cc13xx_cc26xx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_CC23X0=true": [
+            "hwinfo_cc23x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_ESP32=true": [
+            "hwinfo_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_GD32=true": [
+            "hwinfo_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_GECKO=true": [
+            "hwinfo_gecko.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_IMXRT=true": [
+            "hwinfo_imxrt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_LITEX=true": [
+            "hwinfo_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MAX32=true": [
+            "hwinfo_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCHP_G1=true": [
+            "hwinfo_mchp_g1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCUX_MCX_CMC=true": [
+            "hwinfo_mcux_mcx_cmc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCUX_RCM=true": [
+            "hwinfo_mcux_rcm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCUX_RSTCTL=true": [
+            "hwinfo_mcux_rstctl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCUX_SIM=true": [
+            "hwinfo_mcux_sim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCUX_SRC=true": [
+            "hwinfo_mcux_src.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCUX_SRC_V2=true": [
+            "hwinfo_mcux_src_rev2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MCUX_SYSCON=true": [
+            "hwinfo_mcux_syscon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_MSPM0=true": [
+            "hwinfo_mspm0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_NRF=true": [
+            "hwinfo_nrf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_NUMAKER=true": [
+            "hwinfo_numaker.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_NUMAKER_RMC=true": [
+            "hwinfo_numaker_rmc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_PSOC6=true": [
+            "hwinfo_psoc6.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_RENESAS_RA=true": [
+            "hwinfo_renesas_ra.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_RPI_PICO=true": [
+            "hwinfo_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_RW61X=true": [
+            "hwinfo_rw61x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_SAM=true": [
+            "hwinfo_sam.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_SAM0=true": [
+            "hwinfo_sam0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_SAM4L=true": [
+            "hwinfo_sam4l.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_SAM_RSTC=true": [
+            "hwinfo_sam_rstc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_SILABS_S2=true": [
+            "hwinfo_silabs_series2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_SMARTBOND=true": [
+            "hwinfo_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HWINFO_STM32=true": [
+            "hwinfo_stm32.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_HWINFO_NATIVE=true": [":hwinfo_config_hwinfo_native_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "hwinfo_config_hwinfo_native_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "//conditions:default": [":hwinfo_config_hwinfo_native_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "hwinfo_config_hwinfo_native_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/hwinfo.h",
+    ],
+)

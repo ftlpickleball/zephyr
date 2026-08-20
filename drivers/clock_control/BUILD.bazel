@@ -1,0 +1,742 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "clock_control",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_ADSP=true": [
+            "clock_control_adsp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_AGILEX5=true": [
+            "clock_control_agilex5.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_AGILEX5=true": [
+            "clock_control_agilex5_ll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_ALIF=true": [
+            "clock_control_alif.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_AMBIQ=true": [
+            "clock_control_ambiq.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_AMEBA=true": [
+            "clock_control_ameba.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_ARM_SCMI=true": [
+            "clock_control_arm_scmi.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_AST10X0=true": [
+            "clock_control_ast10x0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_BEE=true": [
+            "clock_control_bee.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_BEETLE=true": [
+            "beetle_clock_control.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_BOUFFALOLAB_BL60X=true": [
+            "clock_control_bl60x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_BOUFFALOLAB_BL61X=true": [
+            "clock_control_bl61x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_BOUFFALOLAB_BL70X_L=true": [
+            "clock_control_bl70x_l.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_ESP32=true": [
+            "clock_control_esp32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_FIXED_RATE_CLOCK=true": [
+            "clock_control_fixed_rate.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_FOCALTECH_FT9001=true": [
+            "clock_control_ft9001.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_GD32=true": [
+            "clock_control_gd32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_IFX_FIXED_CLOCK=true": [
+            "clock_control_infineon_fixed_clock.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_IFX_FIXED_FACTOR_CLOCK=true": [
+            "clock_control_infineon_fixed_factor_clock.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_IFX_PERI_CLOCK=true": [
+            "clock_control_infineon_peri_clock.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_INFINEON_CAT1=true": [
+            "clock_control_infineon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_IT51XXX=true": [
+            "clock_control_it51xxx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_LITEX=true": [
+            "clock_control_litex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_LPC11U6X=true": [
+            "clock_control_lpc11u6x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MAX32=true": [
+            "clock_control_max32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCHP_PIC32CM_JH=true": [
+            "clock_control_mchp_pic32cm_jh.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCHP_PIC32CM_PL=true": [
+            "clock_control_mchp_pic32cm_pl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCHP_PIC32CZ_CA=true": [
+            "clock_control_mchp_pic32cz_ca.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCHP_SAM_D5X_E5X=true": [
+            "clock_control_mchp_sam_d5x_e5x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCHP_XEC=true": [
+            "clock_control_mchp_xec.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_CCM=true": [
+            "clock_control_mcux_ccm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_CCM_REV2=true": [
+            "clock_control_mcux_ccm_rev2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_MCG=true": [
+            "clock_control_mcux_mcg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_PCC=true": [
+            "clock_control_mcux_pcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_SCG=true": [
+            "clock_control_mcux_scg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_SCG_K4=true": [
+            "clock_control_mcux_scg_k4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_SIM=true": [
+            "clock_control_mcux_sim.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MCUX_SYSCON=true": [
+            "clock_control_mcux_syscon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MSPM0=true": [
+            "clock_control_mspm0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NPCM=true": [
+            "clock_control_npcm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NPCX=true": [
+            "clock_control_npcx.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF=true": [
+            "clock_control_nrf.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF2_COMMON=true": [
+            "clock_control_nrf2_common.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF54H_HFXO=true": [
+            "clock_control_nrf54h_hfxo.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRFS_AUDIOPLL=true": [
+            "clock_control_nrfs_audiopll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF_AUXPLL=true": [
+            "clock_control_nrf_auxpll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF_DRIVER_CALIBRATION=true": [
+            "nrf_clock_calibration.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF_FLL16M=true": [
+            "clock_control_nrf_fll16m.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF_HSFLL_GLOBAL=true": [
+            "clock_control_nrf_hsfll_global.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF_HSFLL_LOCAL=true": [
+            "clock_control_nrf_hsfll_local.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF_IRON_HSFLL_LOCAL=true": [
+            "clock_control_nrf_iron_hsfll_local.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NRF_LFCLK=true": [
+            "clock_control_nrf_lfclk.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NUMAKER_SCC=true": [
+            "clock_control_numaker_scc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NXP_MC_CGM=true": [
+            "clock_control_nxp_mc_cgm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_NXP_S32=true": [
+            "clock_control_nxp_s32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_PWM=true": [
+            "clock_control_pwm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RA_CGC=true": [
+            "clock_control_renesas_ra_cgc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RA_SUBCLK=true": [
+            "clock_control_renesas_ra_cgc_subclk.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RX_PCLK=true": [
+            "clock_control_renesas_rx_pclk_cgc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RX_PLL=true": [
+            "clock_control_renesas_rx_pll_cgc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RX_ROOT=true": [
+            "clock_control_renesas_rx_root_cgc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RZ_CGC=true": [
+            "clock_control_renesas_rz_cgc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RZ_CPG=true": [
+            "clock_control_renesas_rz_cpg.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RPI_PICO=true": [
+            "clock_control_rpi_pico.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RTS5817=true": [
+            "clock_control_rts5817.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RTS5912_SCCON=true": [
+            "clock_control_rts5912_sccon.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RV32M1_PCC=true": [
+            "clock_control_rv32m1_pcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SAM=true": [
+            "clock_control_sam_pmc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SAMA7G5=true": [
+            "clock_control_sama7g5_pmc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SAMA7G5=true": [
+            "clock_control_sama7g5_sckc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SF32LB_HXT48=true": [
+            "clock_control_sf32lb_hxt48.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SF32LB_RCC=true": [
+            "clock_control_sf32lb_rcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SI32_AHB=true": [
+            "clock_control_si32_ahb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SI32_APB=true": [
+            "clock_control_si32_apb.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SI32_PLL=true": [
+            "clock_control_si32_pll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SILABS_SERIES=true": [
+            "clock_control_silabs_series.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SILABS_SIWX91X=true": [
+            "clock_control_silabs_siwx91x.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SMARTBOND=true": [
+            "clock_control_smartbond.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_SYNA_SR100=true": [
+            "clock_control_syna_sr100.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_TISCI=true": [
+            "clock_control_tisci.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_WCH_RCC=true": [
+            "clock_control_wch_rcc.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_AGILEX=true": [
+            "clock_agilex.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_AGILEX=true": [
+            "clock_agilex_ll.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RENESAS_RZA2M_CPG=true": [":clock_control_config_clock_control_renesas_rza2m_cpg_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_STM32_CUBE=true": [":clock_control_config_clock_control_stm32_cube_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_RCAR_CPG_MSSR=true": [":clock_control_config_clock_control_rcar_cpg_mssr_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_renesas_rza2m_cpg_deps",
+    srcs = [
+        "clock_control_renesas_rza2m_cpg.c",
+        "clock_control_renesas_rza2m_cpg_lld.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_STM32_MUX=true": [
+            "clock_stm32_mux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CLOCK_STM32_MCO=true": [
+            "clock_stm32_mco.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32MP1X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32mp1x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32MP13X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32mp13x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32MP2X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32mp2x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32C5X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32c5x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32H7X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32h7x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32H7RSX=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32h7rsx_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32H5X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32h5x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32N6X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32n6x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32U3X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32u3x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32U5X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32u5x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32WB0X=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32wb0x_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32WBAX=true": [":clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32wbax_deps"],
+        "//conditions:default": [":clock_control_config_clock_control_stm32_cube_deps_else_deps"],
+    }),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32mp1x_deps",
+    srcs = [
+        "clock_stm32_ll_mp1.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32mp13x_deps",
+    srcs = [
+        "clock_stm32_ll_mp13.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32mp2x_deps",
+    srcs = [
+        "clock_stm32_ll_mp2.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32c5x_deps",
+    srcs = [
+        "clock_stm32_ll_c5.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32h7x_deps",
+    srcs = [
+        "clock_stm32_ll_h7.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32h7rsx_deps",
+    srcs = [
+        "clock_stm32_ll_h7.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32h5x_deps",
+    srcs = [
+        "clock_stm32_ll_h5.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32n6x_deps",
+    srcs = [
+        "clock_stm32_ll_n6.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32u3x_deps",
+    srcs = [
+        "clock_stm32_ll_u3.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32u5x_deps",
+    srcs = [
+        "clock_stm32_ll_u5.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32wb0x_deps",
+    srcs = [
+        "clock_stm32_ll_wb0.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_config_soc_series_stm32wbax_deps",
+    srcs = [
+        "clock_stm32_ll_wba.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_stm32_cube_deps_else_deps",
+    srcs = [
+        "clock_stm32_ll_common.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32C0X=true": [
+            "clock_stm32c0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32F0X=true": [
+            "clock_stm32f0_f3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32F1X=true": [
+            "clock_stm32f1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32F2X=true": [
+            "clock_stm32f2_f4_f7.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32F3X=true": [
+            "clock_stm32f0_f3.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32F4X=true": [
+            "clock_stm32f2_f4_f7.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32F7X=true": [
+            "clock_stm32f2_f4_f7.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32G0X=true": [
+            "clock_stm32g0_u0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32G4X=true": [
+            "clock_stm32g4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32L0X=true": [
+            "clock_stm32l0_l1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32L1X=true": [
+            "clock_stm32l0_l1.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32L4X=true": [
+            "clock_stm32l4_l5_wb_wl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32L5X=true": [
+            "clock_stm32l4_l5_wb_wl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32U0X=true": [
+            "clock_stm32g0_u0.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32WBX=true": [
+            "clock_stm32l4_l5_wb_wl.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_STM32WLX=true": [
+            "clock_stm32l4_l5_wb_wl.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "clock_control_config_clock_control_rcar_cpg_mssr_deps",
+    srcs = [
+        "clock_control_renesas_cpg_mssr.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_RENESAS_R8A7795_CPG_MSSR_ENABLED=true": [
+            "clock_control_r8a7795_cpg_mssr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_RENESAS_R8A779F0_CPG_MSSR_ENABLED=true": [
+            "clock_control_r8a779f0_cpg_mssr.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_RENESAS_R8A779G0_CPG_MSSR_ENABLED=true": [
+            "clock_control_r8a779g0_cpg_mssr.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
