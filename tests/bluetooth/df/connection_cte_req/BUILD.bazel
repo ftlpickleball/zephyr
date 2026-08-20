@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "connection_cte_req_config_soc_compatible_nrf_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "connection_cte_req_config_soc_openisa_rv32m1_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "${common_sources}",
+        "src/test_cte_req_enable.c",
+        "src/test_cte_set_rx_params.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SOC_COMPATIBLE_NRF=true": [":connection_cte_req_config_soc_compatible_nrf_deps"],
+        "@zephyr_kconfig//:CONFIG_SOC_OPENISA_RV32M1=true": [":connection_cte_req_config_soc_openisa_rv32m1_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+ztest(
+    name = "connection_cte_req",
+    deps = [":main"],
+)

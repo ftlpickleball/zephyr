@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+        "src/test_priority_scheduling.c",
+        "src/test_sched_is_preempt_thread.c",
+        "src/test_sched_priority.c",
+        "src/test_sched_timeslice_and_lock.c",
+        "src/test_sched_timeslice_reset.c",
+        "src/test_slice_scheduling.c",
+        "src/user_api.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+ztest(
+    name = "schedule_api",
+    deps = [":main"],
+)

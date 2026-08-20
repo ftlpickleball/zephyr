@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/condvar.c",
+        "src/events.c",
+        "src/fifo.c",
+        "src/heap_malloc_free.c",
+        "src/int_to_thread.c",
+        "src/lifo.c",
+        "src/main.c",
+        "src/mutex_lock_unlock.c",
+        "src/sema_test_signal_release.c",
+        "src/stack.c",
+        "src/thread.c",
+        "src/thread_switch_yield.c",
+        "src/timing_sc.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+ztest(
+    name = "latency_measure",
+    deps = [":main"],
+)

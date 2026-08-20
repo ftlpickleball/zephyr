@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_UNARY_Q7=true": [
+            "src/unary_q7.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_UNARY_Q15=true": [
+            "src/unary_q15.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_UNARY_Q31=true": [
+            "src/unary_q31.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_UNARY_F16=true": [
+            "src/unary_f16.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_UNARY_F32=true": [
+            "src/unary_f32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_UNARY_F64=true": [
+            "src/unary_f64.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_BINARY_Q7=true": [
+            "src/binary_q7.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_BINARY_Q15=true": [
+            "src/binary_q15.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_BINARY_Q31=true": [
+            "src/binary_q31.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_BINARY_F16=true": [
+            "src/binary_f16.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_BINARY_F32=true": [
+            "src/binary_f32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_MATRIX_BINARY_F64=true": [
+            "src/binary_f64.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+ztest(
+    name = "matrix",
+    deps = [":main"],
+)

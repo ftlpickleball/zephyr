@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "smf_config_smf_initial_transition_deps",
+    srcs = [
+        "src/test_lib_self_transition_smf.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "smf_config_smf_ancestor_support_deps",
+    srcs = [
+        "src/test_lib_hierarchical_5_ancestor_smf.c",
+        "src/test_lib_hierarchical_smf.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "smf_else_deps",
+    srcs = [
+        "src/test_lib_flat_smf.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SMF_INITIAL_TRANSITION=true": [":smf_config_smf_initial_transition_deps"],
+        "@zephyr_kconfig//:CONFIG_SMF_ANCESTOR_SUPPORT=true": [":smf_config_smf_ancestor_support_deps"],
+        "//conditions:default": [":smf_else_deps"],
+    }),
+)
+
+ztest(
+    name = "smf",
+    deps = [":main"],
+)

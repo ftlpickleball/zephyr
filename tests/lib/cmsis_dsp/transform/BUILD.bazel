@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_CQ15=true": [
+            "src/cq15.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_RQ15=true": [
+            "src/rq15.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_CQ31=true": [
+            "src/cq31.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_RQ31=true": [
+            "src/rq31.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_CF16=true": [
+            "src/cf16.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_RF16=true": [
+            "src/rf16.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_CF32=true": [
+            "src/cf32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_RF32=true": [
+            "src/rf32.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_CF64=true": [
+            "src/cf64.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_TRANSFORM_RF64=true": [
+            "src/rf64.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+ztest(
+    name = "transform",
+    deps = [":main"],
+)

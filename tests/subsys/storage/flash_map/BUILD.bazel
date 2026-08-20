@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "flash_map_not_config_flash_area_check_integrity_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "flash_map_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main_sha.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "//conditions:default": [":flash_map_not_config_flash_area_check_integrity_deps"],
+        "@zephyr_kconfig//:CONFIG_FLASH_AREA_CHECK_INTEGRITY=true": [":flash_map_else_deps"],
+    }),
+)
+
+ztest(
+    name = "flash_map",
+    deps = [":main"],
+)

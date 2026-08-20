@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/_main.c",
+        "src/block.c",
+        "src/closed_ends.c",
+        "src/expected_failures.c",
+        "src/fcntl.c",
+        "src/fionread.c",
+        "src/happy_path.c",
+        "src/nonblock.c",
+        "src/poll.c",
+        "src/unsupported_calls.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+ztest(
+    name = "socketpair",
+    deps = [":main"],
+)

@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "fcb_not_config_fcb_allow_fixed_endmarker_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/fcb_test_append.c",
+        "src/fcb_test_append_fill.c",
+        "src/fcb_test_append_too_big.c",
+        "src/fcb_test_crc_disabled_after_enabled.c",
+        "src/fcb_test_empty_walk.c",
+        "src/fcb_test_init.c",
+        "src/fcb_test_last_of_n.c",
+        "src/fcb_test_len.c",
+        "src/fcb_test_multiple_scratch.c",
+        "src/fcb_test_reset.c",
+        "src/fcb_test_rotate.c",
+        "src/main.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "//conditions:default": [":fcb_not_config_fcb_allow_fixed_endmarker_deps"],
+        "@zephyr_kconfig//:CONFIG_FCB_ALLOW_FIXED_ENDMARKER=true": [],
+    }),
+)
+
+ztest(
+    name = "fcb",
+    deps = [":main"],
+)

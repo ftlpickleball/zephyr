@@ -1,0 +1,110 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "filtering_config_cmsis_dsp_test_filtering_biquad_deps",
+    srcs = [
+        "src/biquad_f32.c",
+        "src/biquad_f64.c",
+        "src/biquad_q15.c",
+        "src/biquad_q31.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_FLOAT16=true": [
+            "src/biquad_f16.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "filtering_config_cmsis_dsp_test_filtering_decim_deps",
+    srcs = [
+        "src/decim_f32.c",
+        "src/decim_q15.c",
+        "src/decim_q31.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "filtering_config_cmsis_dsp_test_filtering_fir_deps",
+    srcs = [
+        "src/fir_f32.c",
+        "src/fir_q15.c",
+        "src/fir_q31.c",
+        "src/fir_q7.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_FLOAT16=true": [
+            "src/fir_f16.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "filtering_config_cmsis_dsp_test_filtering_misc_deps",
+    srcs = [
+        "src/misc_f32.c",
+        "src/misc_q15.c",
+        "src/misc_q31.c",
+        "src/misc_q7.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_FLOAT16=true": [
+            "src/misc_f16.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_FILTERING_BIQUAD=true": [":filtering_config_cmsis_dsp_test_filtering_biquad_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_FILTERING_DECIM=true": [":filtering_config_cmsis_dsp_test_filtering_decim_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_FILTERING_FIR=true": [":filtering_config_cmsis_dsp_test_filtering_fir_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CMSIS_DSP_TEST_FILTERING_MISC=true": [":filtering_config_cmsis_dsp_test_filtering_misc_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+ztest(
+    name = "filtering",
+    deps = [":main"],
+)

@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+        "src/test_common_dir.c",
+        "src/test_common_file.c",
+        "src/test_fat_dir.c",
+        "src/test_fat_file.c",
+        "src/test_fat_mount.c",
+        "src/test_fs_shell.c",
+        "src/test_littlefs_dir.c",
+        "src/test_littlefs_file.c",
+        "src/test_littlefs_mount.c",
+        "src/test_ram_backend.c",
+        "src/test_utils.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+ztest(
+    name = "multi_fs",
+    deps = [":main"],
+)

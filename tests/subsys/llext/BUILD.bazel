@@ -1,0 +1,184 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc_test.bzl", "ztest")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "llext_config_arm_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "//conditions:default": [":llext_config_arm_deps_not_config_cpu_cortex_m0_and_not_config_cpu_cortex_m0plus_and_not_config_cpu_cortex_m1_deps"],
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M0=true": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "llext_config_arm_deps_not_config_cpu_cortex_m0_and_not_config_cpu_cortex_m0plus_and_not_config_cpu_cortex_m1_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+config_setting(
+    name = "not_config_arm",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_ARM": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_llext_type_elf_relocatable_and_not_config_arm",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_LLEXT_TYPE_ELF_RELOCATABLE=true",
+        ":not_config_arm",
+    ],
+)
+
+zephyr_cc_library(
+    name = "llext_config_llext_type_elf_relocatable_and_not_config_arm_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "llext_config_llext_storage_writable_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "llext_not_config_llext_type_elf_sharedlib_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "llext_config_llext_rodata_no_reloc_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "llext_not_config_llext_type_elf_object_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+selects.config_setting_group(
+    name = "config_llext_type_elf_relocatable_and_config_xtensa",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_LLEXT_TYPE_ELF_RELOCATABLE=true",
+        "@zephyr_kconfig//:CONFIG_XTENSA=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "llext_config_llext_type_elf_relocatable_and_config_xtensa_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "llext_not_config_llext_type_elf_object_and_config_riscv_and_config_riscv_isa_ext_c_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "llext_not_config_llext_type_elf_object_and_config_riscv_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/test_llext.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ARM=true": [":llext_config_arm_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_llext_type_elf_relocatable_and_not_config_arm": [":llext_config_llext_type_elf_relocatable_and_not_config_arm_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LLEXT_STORAGE_WRITABLE=true": [":llext_config_llext_storage_writable_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [":llext_not_config_llext_type_elf_sharedlib_deps"],
+        "@zephyr_kconfig//:CONFIG_LLEXT_TYPE_ELF_SHAREDLIB=true": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LLEXT_RODATA_NO_RELOC=true": [":llext_config_llext_rodata_no_reloc_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [":llext_not_config_llext_type_elf_object_deps"],
+        "@zephyr_kconfig//:CONFIG_LLEXT_TYPE_ELF_OBJECT=true": [],
+    }) + select({
+        ":config_llext_type_elf_relocatable_and_config_xtensa": [":llext_config_llext_type_elf_relocatable_and_config_xtensa_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [":llext_not_config_llext_type_elf_object_and_config_riscv_and_config_riscv_isa_ext_c_deps"],
+        "@zephyr_kconfig//:CONFIG_LLEXT_TYPE_ELF_OBJECT=true": [],
+    }) + select({
+        "//conditions:default": [":llext_not_config_llext_type_elf_object_and_config_riscv_deps"],
+        "@zephyr_kconfig//:CONFIG_LLEXT_TYPE_ELF_OBJECT=true": [],
+    }),
+)
+
+ztest(
+    name = "llext",
+    deps = [":main"],
+)
