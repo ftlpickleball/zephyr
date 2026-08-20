@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "tfm_psa_test_config_tfm_psa_test_crypto_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "tfm_psa_test_config_tfm_psa_test_protected_storage_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "tfm_psa_test_config_tfm_psa_test_internal_trusted_storage_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "tfm_psa_test_config_tfm_psa_test_storage_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "tfm_psa_test_config_tfm_psa_test_initial_attestation_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_TFM_PSA_TEST_CRYPTO=true": [":tfm_psa_test_config_tfm_psa_test_crypto_deps"],
+        "@zephyr_kconfig//:CONFIG_TFM_PSA_TEST_PROTECTED_STORAGE=true": [":tfm_psa_test_config_tfm_psa_test_protected_storage_deps"],
+        "@zephyr_kconfig//:CONFIG_TFM_PSA_TEST_INTERNAL_TRUSTED_STORAGE=true": [":tfm_psa_test_config_tfm_psa_test_internal_trusted_storage_deps"],
+        "@zephyr_kconfig//:CONFIG_TFM_PSA_TEST_STORAGE=true": [":tfm_psa_test_config_tfm_psa_test_storage_deps"],
+        "@zephyr_kconfig//:CONFIG_TFM_PSA_TEST_INITIAL_ATTESTATION=true": [":tfm_psa_test_config_tfm_psa_test_initial_attestation_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_app(
+    name = "tfm_psa_test",
+    deps = [":main"],
+)

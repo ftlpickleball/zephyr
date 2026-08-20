@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/app_a.c",
+        "src/app_b.c",
+        "src/app_shared.c",
+        "src/app_syscall.c",
+        "src/main.c",
+        "src/sample_driver_foo.c",
+        "src/sample_driver_handlers.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+zephyr_app(
+    name = "prod_consumer",
+    deps = [":main"],
+)

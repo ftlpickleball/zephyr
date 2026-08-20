@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/bap_unicast_sr.c",
+        "src/has_server.c",
+        "src/main.c",
+        "src/vcp_vol_renderer.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_HAP_HA_HEARING_AID_BINAURAL=true": [
+            "src/csip_set_member.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ASCS_ASE_SRC=true": [
+            "src/micp_mic_dev.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_TBS_CLIENT=true": [
+            "src/ccp_call_ctrl.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+zephyr_app(
+    name = "hap_ha",
+    deps = [":main"],
+)

@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/bap_unicast_sr.c",
+        "src/ccp_call_ctrl.c",
+        "src/main.c",
+        "src/mcp_ctlr.c",
+        "src/vcp_vol_renderer.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_TMAP_PERIPHERAL_DUO=true": [
+            "src/csip_set_member.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+zephyr_app(
+    name = "tmap_peripheral",
+    deps = [":main"],
+)

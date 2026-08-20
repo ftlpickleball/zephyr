@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/accelerometer_handler.cpp",
+        "src/accelerometer_handler.hpp",
+        "src/assert.cpp",
+        "src/constants.hpp",
+        "src/gesture_predictor.cpp",
+        "src/gesture_predictor.hpp",
+        "src/magic_wand_model_data.cpp",
+        "src/magic_wand_model_data.hpp",
+        "src/main.cpp",
+        "src/main_functions.cpp",
+        "src/main_functions.hpp",
+        "src/output_handler.cpp",
+        "src/output_handler.hpp",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+)
+
+zephyr_app(
+    name = "magic_wand",
+    deps = [":main"],
+)

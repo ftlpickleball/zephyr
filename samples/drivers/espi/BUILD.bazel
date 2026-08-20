@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "espi_config_espi_oob_channel_deps",
+    srcs = [
+        "src/espi_oob_handler.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "espi_config_espi_flash_channel_deps",
+    srcs = [
+        "src/espi_flash_caf_sample.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "espi_config_espi_taf_deps",
+    srcs = [
+        "src/espi_taf_sample.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ESPI_OOB_CHANNEL=true": [":espi_config_espi_oob_channel_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ESPI_FLASH_CHANNEL=true": [":espi_config_espi_flash_channel_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ESPI_TAF=true": [":espi_config_espi_taf_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_app(
+    name = "espi",
+    deps = [":main"],
+)

@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "tflm_ethosu_config_sample_tflm_ethosu_pmu_deps",
+    srcs = [
+        "src/ethosu_pmu_monitor.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        ":config_ethos_u85_128_or_config_ethos_u85_256_or_config_ethos_u85_512_or_config_ethos_u85_1024_or_config_ethos_u85_2048": [":tflm_ethosu_config_sample_tflm_ethosu_pmu_deps_config_ethos_u85_128_or_config_ethos_u85_256_or_config_ethos_u85_512_or_config_ethos_u85_1024_or_config_ethos_u85_2048_deps"],
+        "//conditions:default": [":tflm_ethosu_config_sample_tflm_ethosu_pmu_deps_else_deps"],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_ethos_u85_128_or_config_ethos_u85_256_or_config_ethos_u85_512_or_config_ethos_u85_1024_or_config_ethos_u85_2048",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_ETHOS_U85_128=true",
+        "@zephyr_kconfig//:CONFIG_ETHOS_U85_256=true",
+        "@zephyr_kconfig//:CONFIG_ETHOS_U85_512=true",
+        "@zephyr_kconfig//:CONFIG_ETHOS_U85_1024=true",
+        "@zephyr_kconfig//:CONFIG_ETHOS_U85_2048=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "tflm_ethosu_config_sample_tflm_ethosu_pmu_deps_config_ethos_u85_128_or_config_ethos_u85_256_or_config_ethos_u85_512_or_config_ethos_u85_1024_or_config_ethos_u85_2048_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "tflm_ethosu_config_sample_tflm_ethosu_pmu_deps_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/inference_process.cpp",
+        "src/main.cpp",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["src/models/keyword_spotting_cnn_small_int8"],
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SAMPLE_TFLM_ETHOSU_PMU=true": [":tflm_ethosu_config_sample_tflm_ethosu_pmu_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_app(
+    name = "tflm_ethosu",
+    deps = [":main"],
+)

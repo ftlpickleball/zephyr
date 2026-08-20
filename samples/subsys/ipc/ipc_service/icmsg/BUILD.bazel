@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "icmsg_not_config_board_nrf5340dk_nrf5340_cpuapp_and_not_config_board_nrf5340bsim_nrf5340_cpuapp_and_not_config_board_nrf54lm20dk_nrf54lm20a_cpuapp_and_not_config_board_stm32h747i_disco_and_not_config_board_nrf54l15dk_nrf54l15_cpuapp_and_not_config_board_ek_ra8p1_r7ka8p1kflcac_cm85_and_not_config_board_nrf7120dk_nrf7120_cpuapp_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "//conditions:default": [":icmsg_not_config_board_nrf5340dk_nrf5340_cpuapp_and_not_config_board_nrf5340bsim_nrf5340_cpuapp_and_not_config_board_nrf54lm20dk_nrf54lm20a_cpuapp_and_not_config_board_stm32h747i_disco_and_not_config_board_nrf54l15dk_nrf54l15_cpuapp_and_not_config_board_ek_ra8p1_r7ka8p1kflcac_cm85_and_not_config_board_nrf7120dk_nrf7120_cpuapp_deps"],
+        "@zephyr_kconfig//:CONFIG_BOARD_NRF5340DK_NRF5340_CPUAPP=true": [],
+    }),
+)
+
+zephyr_app(
+    name = "icmsg",
+    deps = [":main"],
+)

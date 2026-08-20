@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "zperf_config_net_sample_code_relocate_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NET_L2_ETHERNET=true": [":zperf_config_net_sample_code_relocate_deps_config_net_l2_ethernet_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "zperf_config_net_sample_code_relocate_deps_config_net_l2_ethernet_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "zperf_config_usb_device_stack_next_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "zperf_config_soc_nrf5340_cpuapp_deps",
+    srcs = [
+        "src/nrf5340_cpu_boost.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/main.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_NET_SAMPLE_CODE_RELOCATE=true": [":zperf_config_net_sample_code_relocate_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_STACK_NEXT=true": [":zperf_config_usb_device_stack_next_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_NRF5340_CPUAPP=true": [":zperf_config_soc_nrf5340_cpuapp_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_app(
+    name = "zperf",
+    deps = [":main"],
+)

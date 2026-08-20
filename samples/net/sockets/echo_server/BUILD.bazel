@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+selects.config_setting_group(
+    name = "config_net_sockets_sockopt_tls_and_config_mbedtls_key_exchange_psk_enabled_and__config_net_sample_psk_header_file_strequal__dummy_psk_h_",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_SOCKOPT_TLS=true",
+        "@zephyr_kconfig//:CONFIG_MBEDTLS_KEY_EXCHANGE_PSK_ENABLED=true",
+        '@zephyr_kconfig//:(CONFIG_NET_SAMPLE_PSK_HEADER_FILE STREQUAL "dummy_psk.h"=true',
+    ],
+)
+
+zephyr_cc_library(
+    name = "echo_server_config_net_sockets_sockopt_tls_and_config_mbedtls_key_exchange_psk_enabled_and__config_net_sample_psk_header_file_strequal__dummy_psk_h__deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "echo_server_config_usb_device_stack_next_deps",
+    srcs = [
+        "src/usb.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "echo_server_config_net_sample_websocket_console_deps",
+    srcs = [
+        "src/ws_console/ws.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "echo_server_config_net_sample_https_service_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+        "src/echo-server.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_UDP=true": [
+            "src/udp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_TCP=true": [
+            "src/tcp.c",
+        ],
+    }),
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        ":config_net_sockets_sockopt_tls_and_config_mbedtls_key_exchange_psk_enabled_and__config_net_sample_psk_header_file_strequal__dummy_psk_h_": [":echo_server_config_net_sockets_sockopt_tls_and_config_mbedtls_key_exchange_psk_enabled_and__config_net_sample_psk_header_file_strequal__dummy_psk_h__deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USB_DEVICE_STACK_NEXT=true": [":echo_server_config_usb_device_stack_next_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_SAMPLE_WEBSOCKET_CONSOLE=true": [":echo_server_config_net_sample_websocket_console_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_SAMPLE_HTTPS_SERVICE=true": [":echo_server_config_net_sample_https_service_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_app(
+    name = "echo_server",
+    deps = [":main"],
+)

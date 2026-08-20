@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+selects.config_setting_group(
+    name = "config_board_nrf5340dk_nrf5340_cpuapp_or_config_board_nrf5340bsim_nrf5340_cpuapp_or_config_board_adp_xc7k_ae350_or_config_board_mimxrt1170_evk_mimxrt1176_cm7_or_config_board_mimxrt1160_evk_mimxrt1166_cm7_or_config_board_mimxrt1180_evk_mimxrt1189_cm33_or_config_board_frdm_imxrt1186_mimxrt1186_cm33_or_config_board_mimxrt700_evk_mimxrt798s_cm33_cpu0_or_config_board_lpcxpresso55s69_lpc55s69_cpu0_or_config_board_frdm_mcxn947_mcxn947_cpu0_or_config_board_mcx_n9xx_evk_mcxn947_cpu0_or_config_board_esp32_devkitc_esp32_procpu_or_config_board_esp32s3_devkitc_esp32s3_procpu_or_config_board_esp32c6_devkitc_esp32c6_hpcore_or_config_board_nrf54h20dk_nrf54h20_cpuapp_or_config_board_nrf54l15dk_nrf54l15_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20a_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20b_cpuapp_or_config_board_stm32h747i_disco_stm32h747xx_m7_or_config_board_imx943_evk_mimx94398_m7_0_or_config_board_imx943_evk_mimx94398_m7_1_or_config_board_imx943_evk_mimx94398_m33_or_config_board_bl54l15_dvk_nrf54l15_cpuapp_or_config_board_bl54l15u_dvk_nrf54l15_cpuapp_or_config_board_ek_ra8p1_r7ka8p1kflcac_cm85_or_config_board_versalnet_rpu_or_config_board_versal2_rpu",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BOARD_NRF5340DK_NRF5340_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_NRF5340BSIM_NRF5340_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_ADP_XC7K_AE350=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_MIMXRT1170_EVK_MIMXRT1176_CM7=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_MIMXRT1160_EVK_MIMXRT1166_CM7=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_MIMXRT1180_EVK_MIMXRT1189_CM33=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_FRDM_IMXRT1186_MIMXRT1186_CM33=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_MIMXRT700_EVK_MIMXRT798S_CM33_CPU0=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_LPCXPRESSO55S69_LPC55S69_CPU0=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_FRDM_MCXN947_MCXN947_CPU0=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_MCX_N9XX_EVK_MCXN947_CPU0=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_ESP32_DEVKITC_ESP32_PROCPU=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_ESP32S3_DEVKITC_ESP32S3_PROCPU=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_ESP32C6_DEVKITC_ESP32C6_HPCORE=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_NRF54H20DK_NRF54H20_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_NRF54L15DK_NRF54L15_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_NRF54LM20DK_NRF54LM20A_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_NRF54LM20DK_NRF54LM20B_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_STM32H747I_DISCO_STM32H747XX_M7=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_IMX943_EVK_MIMX94398_M7_0=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_IMX943_EVK_MIMX94398_M7_1=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_IMX943_EVK_MIMX94398_M33=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_BL54L15_DVK_NRF54L15_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_BL54L15U_DVK_NRF54L15_CPUAPP=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_EK_RA8P1_R7KA8P1KFLCAC_CM85=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_VERSALNET_RPU=true",
+        "@zephyr_kconfig//:CONFIG_BOARD_VERSAL2_RPU=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "mbox_config_board_nrf5340dk_nrf5340_cpuapp_or_config_board_nrf5340bsim_nrf5340_cpuapp_or_config_board_adp_xc7k_ae350_or_config_board_mimxrt1170_evk_mimxrt1176_cm7_or_config_board_mimxrt1160_evk_mimxrt1166_cm7_or_config_board_mimxrt1180_evk_mimxrt1189_cm33_or_config_board_frdm_imxrt1186_mimxrt1186_cm33_or_config_board_mimxrt700_evk_mimxrt798s_cm33_cpu0_or_config_board_lpcxpresso55s69_lpc55s69_cpu0_or_config_board_frdm_mcxn947_mcxn947_cpu0_or_config_board_mcx_n9xx_evk_mcxn947_cpu0_or_config_board_esp32_devkitc_esp32_procpu_or_config_board_esp32s3_devkitc_esp32s3_procpu_or_config_board_esp32c6_devkitc_esp32c6_hpcore_or_config_board_nrf54h20dk_nrf54h20_cpuapp_or_config_board_nrf54l15dk_nrf54l15_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20a_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20b_cpuapp_or_config_board_stm32h747i_disco_stm32h747xx_m7_or_config_board_imx943_evk_mimx94398_m7_0_or_config_board_imx943_evk_mimx94398_m7_1_or_config_board_imx943_evk_mimx94398_m33_or_config_board_bl54l15_dvk_nrf54l15_cpuapp_or_config_board_bl54l15u_dvk_nrf54l15_cpuapp_or_config_board_ek_ra8p1_r7ka8p1kflcac_cm85_or_config_board_versalnet_rpu_or_config_board_versal2_rpu_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "mbox_else_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "mbox_config_include_remote_dir_deps",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "mbox_else_deps_1",
+    srcs = [
+        "src/main.c",
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "main",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:private"],
+    deps = [
+    ] + select({
+        ":config_board_nrf5340dk_nrf5340_cpuapp_or_config_board_nrf5340bsim_nrf5340_cpuapp_or_config_board_adp_xc7k_ae350_or_config_board_mimxrt1170_evk_mimxrt1176_cm7_or_config_board_mimxrt1160_evk_mimxrt1166_cm7_or_config_board_mimxrt1180_evk_mimxrt1189_cm33_or_config_board_frdm_imxrt1186_mimxrt1186_cm33_or_config_board_mimxrt700_evk_mimxrt798s_cm33_cpu0_or_config_board_lpcxpresso55s69_lpc55s69_cpu0_or_config_board_frdm_mcxn947_mcxn947_cpu0_or_config_board_mcx_n9xx_evk_mcxn947_cpu0_or_config_board_esp32_devkitc_esp32_procpu_or_config_board_esp32s3_devkitc_esp32s3_procpu_or_config_board_esp32c6_devkitc_esp32c6_hpcore_or_config_board_nrf54h20dk_nrf54h20_cpuapp_or_config_board_nrf54l15dk_nrf54l15_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20a_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20b_cpuapp_or_config_board_stm32h747i_disco_stm32h747xx_m7_or_config_board_imx943_evk_mimx94398_m7_0_or_config_board_imx943_evk_mimx94398_m7_1_or_config_board_imx943_evk_mimx94398_m33_or_config_board_bl54l15_dvk_nrf54l15_cpuapp_or_config_board_bl54l15u_dvk_nrf54l15_cpuapp_or_config_board_ek_ra8p1_r7ka8p1kflcac_cm85_or_config_board_versalnet_rpu_or_config_board_versal2_rpu": [":mbox_config_board_nrf5340dk_nrf5340_cpuapp_or_config_board_nrf5340bsim_nrf5340_cpuapp_or_config_board_adp_xc7k_ae350_or_config_board_mimxrt1170_evk_mimxrt1176_cm7_or_config_board_mimxrt1160_evk_mimxrt1166_cm7_or_config_board_mimxrt1180_evk_mimxrt1189_cm33_or_config_board_frdm_imxrt1186_mimxrt1186_cm33_or_config_board_mimxrt700_evk_mimxrt798s_cm33_cpu0_or_config_board_lpcxpresso55s69_lpc55s69_cpu0_or_config_board_frdm_mcxn947_mcxn947_cpu0_or_config_board_mcx_n9xx_evk_mcxn947_cpu0_or_config_board_esp32_devkitc_esp32_procpu_or_config_board_esp32s3_devkitc_esp32s3_procpu_or_config_board_esp32c6_devkitc_esp32c6_hpcore_or_config_board_nrf54h20dk_nrf54h20_cpuapp_or_config_board_nrf54l15dk_nrf54l15_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20a_cpuapp_or_config_board_nrf54lm20dk_nrf54lm20b_cpuapp_or_config_board_stm32h747i_disco_stm32h747xx_m7_or_config_board_imx943_evk_mimx94398_m7_0_or_config_board_imx943_evk_mimx94398_m7_1_or_config_board_imx943_evk_mimx94398_m33_or_config_board_bl54l15_dvk_nrf54l15_cpuapp_or_config_board_bl54l15u_dvk_nrf54l15_cpuapp_or_config_board_ek_ra8p1_r7ka8p1kflcac_cm85_or_config_board_versalnet_rpu_or_config_board_versal2_rpu_deps"],
+        "//conditions:default": [":mbox_else_deps"],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_INCLUDE_REMOTE_DIR=true": [":mbox_config_include_remote_dir_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "//conditions:default": [":mbox_else_deps_1"],
+    }),
+)
+
+zephyr_app(
+    name = "mbox",
+    deps = [":main"],
+)
