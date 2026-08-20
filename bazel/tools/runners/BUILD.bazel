@@ -1,0 +1,90 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "ztest_runner.py",
+    "ztest_runner_core.py",
+    "zephyr_flash_utils.py",
+])
+
+py_library(
+    name = "zephyr_flash_utils",
+    srcs = ["zephyr_flash_utils.py"],
+    imports = ["."],
+    data = [
+        "//scripts:west_runners_scripts",
+    ],
+    deps = [
+        "@rules_python//python/runfiles",
+        "@zephyr_pip_deps//pylink_square",
+        "@zephyr_pip_deps//pyserial",
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_binary(
+    name = "zephyr_flash_utils_bin",
+    srcs = ["zephyr_flash_utils.py"],
+    imports = ["."],
+    data = [
+        "//scripts:west_runners_scripts",
+    ],
+    main = "zephyr_flash_utils.py",
+    deps = [
+        ":zephyr_flash_utils",
+    ],
+)
+
+py_test(
+    name = "zephyr_flash_utils_test",
+    srcs = ["zephyr_flash_utils_test.py"],
+    imports = ["."],
+    deps = [
+        ":zephyr_flash_utils",
+    ],
+)
+
+py_library(
+    name = "ztest_runner_core",
+    srcs = ["ztest_runner_core.py"],
+    imports = ["."],
+    deps = [
+        ":zephyr_flash_utils",
+        "@zephyr_pip_deps//pylink_square",
+        "@zephyr_pip_deps//pyserial",
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_test(
+    name = "ztest_runner_core_test",
+    srcs = ["ztest_runner_core_test.py"],
+    imports = ["."],
+    deps = [
+        ":ztest_runner_core",
+    ],
+)
+
+py_library(
+    name = "ztest_runner",
+    srcs = ["ztest_runner.py"],
+    imports = ["."],
+    deps = [
+        ":zephyr_flash_utils",
+        ":ztest_runner_core",
+        "@rules_python//python/runfiles",
+    ],
+)
+
+py_test(
+    name = "ztest_runner_test",
+    srcs = ["ztest_runner_test.py"],
+    imports = ["."],
+    deps = [
+        ":ztest_runner",
+    ],
+)

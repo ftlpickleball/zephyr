@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:defs.bzl", "py_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "linker_snippet_generator.py",
+])
+
+py_binary(
+    name = "linker_snippet_generator",
+    srcs = ["linker_snippet_generator.py"],
+)

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Reference upstream Zephyr base dependencies
+-r ../../scripts/requirements-base.txt
+
+# Additional dependencies required by Bazel build tooling
+pcpp==1.30
+ply>=3.11
+pyusb
+cryptography
+cbor2

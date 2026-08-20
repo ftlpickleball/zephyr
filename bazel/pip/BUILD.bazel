@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:pip.bzl", "compile_pip_requirements")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "requirements.in",
+    "requirements-lock.txt",
+])
+
+compile_pip_requirements(
+    name = "requirements",
+    src = "requirements.in",
+    data = ["//scripts:requirements-base.txt"],
+    requirements_txt = "requirements-lock.txt",
+)

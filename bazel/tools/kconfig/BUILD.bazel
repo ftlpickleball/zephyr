@@ -1,0 +1,80 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "discovery_utils.py",
+    "kconfig_gen_symbols.py",
+    "kconfig_gen_values.py",
+    "kconfig_utils.py",
+])
+
+py_library(
+    name = "discovery_utils",
+    srcs = ["discovery_utils.py"],
+)
+
+py_test(
+    name = "discovery_utils_test",
+    srcs = ["discovery_utils_test.py"],
+    deps = [":discovery_utils"],
+)
+
+py_library(
+    name = "kconfig_utils",
+    srcs = ["kconfig_utils.py"],
+)
+
+py_test(
+    name = "kconfig_utils_test",
+    srcs = ["kconfig_utils_test.py"],
+    deps = [":kconfig_utils"],
+)
+
+py_library(
+    name = "kconfig_gen_symbols_lib",
+    srcs = ["kconfig_gen_symbols.py"],
+    deps = [
+        ":discovery_utils",
+        ":kconfig_utils",
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_binary(
+    name = "kconfig_gen_symbols",
+    srcs = ["kconfig_gen_symbols.py"],
+    deps = [":kconfig_gen_symbols_lib"],
+)
+
+py_test(
+    name = "kconfig_gen_symbols_test",
+    srcs = ["kconfig_gen_symbols_test.py"],
+    deps = [":kconfig_gen_symbols_lib"],
+)
+
+py_library(
+    name = "kconfig_gen_values_lib",
+    srcs = ["kconfig_gen_values.py"],
+    deps = [
+        ":discovery_utils",
+        ":kconfig_utils",
+        "@zephyr_pip_deps//pcpp",
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_binary(
+    name = "kconfig_gen_values",
+    srcs = ["kconfig_gen_values.py"],
+    deps = [":kconfig_gen_values_lib"],
+)
+
+py_test(
+    name = "kconfig_gen_values_test",
+    srcs = ["kconfig_gen_values_test.py"],
+    deps = [":kconfig_gen_values_lib"],
+)

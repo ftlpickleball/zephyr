@@ -1,0 +1,106 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "parse_board_metadata.py",
+    "parse_sysbuild_metadata.py",
+    "parse_test_metadata.py",
+    "scan_modules.py",
+])
+
+py_library(
+    name = "parse_board_metadata_lib",
+    srcs = ["parse_board_metadata.py"],
+    imports = ["."],
+    deps = [
+        "//bazel/tools/kconfig:discovery_utils",
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_binary(
+    name = "parse_board_metadata",
+    srcs = ["parse_board_metadata.py"],
+    imports = ["."],
+    deps = [":parse_board_metadata_lib"],
+)
+
+py_test(
+    name = "parse_board_metadata_test",
+    srcs = ["parse_board_metadata_test.py"],
+    imports = ["."],
+    deps = [":parse_board_metadata_lib"],
+)
+
+py_library(
+    name = "parse_sysbuild_metadata_lib",
+    srcs = ["parse_sysbuild_metadata.py"],
+    imports = ["."],
+    deps = [
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_binary(
+    name = "parse_sysbuild_metadata",
+    srcs = ["parse_sysbuild_metadata.py"],
+    imports = ["."],
+    deps = [":parse_sysbuild_metadata_lib"],
+)
+
+py_test(
+    name = "parse_sysbuild_metadata_test",
+    srcs = ["parse_sysbuild_metadata_test.py"],
+    imports = ["."],
+    deps = [":parse_sysbuild_metadata_lib"],
+)
+
+py_library(
+    name = "parse_test_metadata_lib",
+    srcs = ["parse_test_metadata.py"],
+    imports = ["."],
+    deps = [
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_binary(
+    name = "parse_test_metadata",
+    srcs = ["parse_test_metadata.py"],
+    imports = ["."],
+    deps = [":parse_test_metadata_lib"],
+)
+
+py_test(
+    name = "parse_test_metadata_test",
+    srcs = ["parse_test_metadata_test.py"],
+    imports = ["."],
+    deps = [":parse_test_metadata_lib"],
+)
+
+py_library(
+    name = "scan_modules_lib",
+    srcs = ["scan_modules.py"],
+    imports = ["."],
+    deps = [
+        "@zephyr_pip_deps//pyyaml",
+    ],
+)
+
+py_binary(
+    name = "scan_modules",
+    srcs = ["scan_modules.py"],
+    imports = ["."],
+    deps = [":scan_modules_lib"],
+)
+
+py_test(
+    name = "scan_modules_test",
+    srcs = ["scan_modules_test.py"],
+    imports = ["."],
+    deps = [":scan_modules_lib"],
+)
