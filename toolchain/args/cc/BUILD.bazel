@@ -1,0 +1,246 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+
+package(default_visibility = ["//visibility:public"])
+
+# C++ Standard features
+cc_args(
+    name = "c++98_args",
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_compile_actions"],
+    args = ["-std=c++98"],
+)
+
+cc_feature(
+    name = "c++98",
+    args = [":c++98_args"],
+    feature_name = "c++98",
+)
+
+cc_args(
+    name = "c++11_args",
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_compile_actions"],
+    args = ["-std=c++11"],
+)
+
+cc_feature(
+    name = "c++11",
+    args = [":c++11_args"],
+    feature_name = "c++11",
+)
+
+cc_args(
+    name = "c++14_args",
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_compile_actions"],
+    args = ["-std=c++14"],
+)
+
+cc_feature(
+    name = "c++14",
+    args = [":c++14_args"],
+    feature_name = "c++14",
+)
+
+cc_args(
+    name = "c++17_args",
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_compile_actions"],
+    args = ["-std=c++17"],
+)
+
+cc_feature(
+    name = "c++17",
+    args = [":c++17_args"],
+    feature_name = "c++17",
+)
+
+cc_args(
+    name = "c++20_args",
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_compile_actions"],
+    args = ["-std=c++20"],
+)
+
+cc_feature(
+    name = "c++20",
+    args = [":c++20_args"],
+    feature_name = "c++20",
+)
+
+cc_args(
+    name = "c++23_args",
+    actions = ["@rules_cc//cc/toolchains/actions:cpp_compile_actions"],
+    args = ["-std=c++23"],
+)
+
+cc_feature(
+    name = "c++23",
+    args = [":c++23_args"],
+    feature_name = "c++23",
+)
+
+string_flag(
+    name = "cxx_standard",
+    build_setting_default = "kconfig",
+    values = [
+        "kconfig",
+        "98",
+        "11",
+        "14",
+        "17",
+        "20",
+        "23",
+    ],
+)
+
+config_setting(
+    name = "cxx_std_kconfig",
+    flag_values = {":cxx_standard": "kconfig"},
+)
+
+config_setting(
+    name = "cxx_std_98",
+    flag_values = {":cxx_standard": "98"},
+)
+
+config_setting(
+    name = "cxx_std_11",
+    flag_values = {":cxx_standard": "11"},
+)
+
+config_setting(
+    name = "cxx_std_14",
+    flag_values = {":cxx_standard": "14"},
+)
+
+config_setting(
+    name = "cxx_std_17",
+    flag_values = {":cxx_standard": "17"},
+)
+
+config_setting(
+    name = "cxx_std_20",
+    flag_values = {":cxx_standard": "20"},
+)
+
+config_setting(
+    name = "cxx_std_23",
+    flag_values = {":cxx_standard": "23"},
+)
+
+# Kconfig OR groups
+selects.config_setting_group(
+    name = "kconfig_cpp20_any",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_STD_CPP20=true",
+        "@zephyr_kconfig//:CONFIG_STD_CPP2A=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "kconfig_cpp23_any",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_STD_CPP23=true",
+        "@zephyr_kconfig//:CONFIG_STD_CPP2B=true",
+    ],
+)
+
+# AND groups (kconfig mode AND specific standard)
+selects.config_setting_group(
+    name = "cxx_std_kconfig_and_cpp98",
+    match_all = [
+        ":cxx_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_CPP98=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "cxx_std_kconfig_and_cpp11",
+    match_all = [
+        ":cxx_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_CPP11=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "cxx_std_kconfig_and_cpp14",
+    match_all = [
+        ":cxx_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_CPP14=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "cxx_std_kconfig_and_cpp17",
+    match_all = [
+        ":cxx_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_CPP17=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "cxx_std_kconfig_and_cpp20",
+    match_all = [
+        ":cxx_std_kconfig",
+        ":kconfig_cpp20_any",
+    ],
+)
+
+selects.config_setting_group(
+    name = "cxx_std_kconfig_and_cpp23",
+    match_all = [
+        ":cxx_std_kconfig",
+        ":kconfig_cpp23_any",
+    ],
+)
+
+# Final Triggers (explicit OR (kconfig AND kconfig_option))
+selects.config_setting_group(
+    name = "c++98_enabled",
+    match_any = [
+        ":cxx_std_98",
+        ":cxx_std_kconfig_and_cpp98",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c++11_enabled",
+    match_any = [
+        ":cxx_std_11",
+        ":cxx_std_kconfig_and_cpp11",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c++14_enabled",
+    match_any = [
+        ":cxx_std_14",
+        ":cxx_std_kconfig_and_cpp14",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c++17_enabled",
+    match_any = [
+        ":cxx_std_17",
+        ":cxx_std_kconfig_and_cpp17",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c++20_enabled",
+    match_any = [
+        ":cxx_std_20",
+        ":cxx_std_kconfig_and_cpp20",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c++23_enabled",
+    match_any = [
+        ":cxx_std_23",
+        ":cxx_std_kconfig_and_cpp23",
+    ],
+)

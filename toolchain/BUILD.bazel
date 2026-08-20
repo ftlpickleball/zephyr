@@ -1,0 +1,442 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
+# This file is loaded unconditionally from WORKSPACE in all builds Google-wide.
+#
+# DO NOT add any rule types other than
+# toolchain(),  filegroup(), config_setting(), or constraint_value()
+#
+# DO NOT use glob() in this file.
+#
+# This file exists for toolchain() registrations ONLY. This prevents evaluating
+# toolchains (especially unsupported toolchains) from being created unless
+# specifically requested.
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+string_flag(
+    name = "zephyr_toolchain_variant",
+    build_setting_default = "gcc",
+    values = [
+        "gcc",
+        "llvm",
+    ],
+)
+
+alias(
+    name = "compiler",
+    actual = ":zephyr_toolchain_variant",
+)
+
+config_setting(
+    name = "compiler_is_clang",
+    flag_values = {":zephyr_toolchain_variant": "llvm"},
+)
+
+config_setting(
+    name = "compiler_is_gcc",
+    flag_values = {":zephyr_toolchain_variant": "gcc"},
+)
+
+# arc
+toolchain(
+    name = "arc_gcc_cc",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints:arc",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arc:arc_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# arm
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m0",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m0",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m0plus",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m0plus",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m1",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m1",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m3",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m3",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m4",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m4",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m7",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m7",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m23",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m23",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m33",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m33",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m52",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m52",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m55",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m55",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_gcc_cc_cortex-m85",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m85",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# arm llvm
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m0",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m0",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m0plus",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m0plus",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m1",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m1",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m3",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m3",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m4",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m4",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m7",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m7",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m23",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m23",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m33",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m33",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m52",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m52",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m55",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m55",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "cortex-m_llvm_cc_cortex-m85",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints/arm:cortex-m85",
+        "//constraints:llvm",
+    ],
+    toolchain = "//toolchain/arm:cortex-m_llvm",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# arm64
+toolchain(
+    name = "arm64_gcc_cc",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "@platforms//cpu:aarch64",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/arm64:arm64_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# mips
+toolchain(
+    name = "mips_gcc_cc",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints:mips",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/mips:mips_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# riscv
+toolchain(
+    name = "riscv_gcc_cc",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "@platforms//cpu:riscv32",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/riscv:riscv_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# rx
+toolchain(
+    name = "rx_gcc_cc",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints:rx",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/rx:rx_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# sparc
+toolchain(
+    name = "sparc_gcc_cc",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints:sparc",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/sparc:sparc_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# x86
+toolchain(
+    name = "x86_gcc_cc",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "@platforms//cpu:x86_64",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/x86:x86_gcc",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# xtensa
+toolchain(
+    name = "xtensa_gcc_cc_dc233c",
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "@platforms//os:none",
+        "//constraints:xtensa",
+        "//constraints:gcc",
+    ],
+    toolchain = "//toolchain/xtensa:xtensa_gcc_dc233c",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+# native_sim
+toolchain(
+    name = "native_sim_clang_cc_linux",
+    exec_compatible_with = [
+        "@platforms//os:linux",
+    ],
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "//boards:sim",
+        "@platforms//os:linux",
+    ],
+    toolchain = "//toolchain/native_sim:native_sim_clang",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)
+
+toolchain(
+    name = "native_sim_clang_cc_macos",
+    exec_compatible_with = [
+        "@platforms//os:macos",
+    ],
+    target_compatible_with = [
+        "//constraints:zephyr_autoconf_force_included",
+        "//boards:sim",
+        "@platforms//os:macos",
+    ],
+    toolchain = "//toolchain/native_sim:native_sim_clang",
+    toolchain_type = "@bazel_tools//tools/cpp:toolchain_type",
+)

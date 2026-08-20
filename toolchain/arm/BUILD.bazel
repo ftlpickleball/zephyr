@@ -1,0 +1,897 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("//bazel:naming.bzl", "get_repo_root", "get_zephyr_bazel_root")
+
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# Additional arm_gcc specific warning flags
+cc_args(
+    name = "warnings",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        # This can't be in common, because proto headers in host builds trigger
+        "-Wundef",
+        # Silence the really verbose ARM warnings.
+        "-Wno-psabi",
+    ],
+)
+
+cc_args(
+    name = "thumb_abi",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mabi=aapcs",
+        "-mthumb",
+    ],
+)
+
+# This flag prevents Arm GCC from printing the resolved paths of symlinks,
+# which prevents compilation actions from being hermetic. See
+# https://github.com/bazelbuild/bazel/issues/21981 and
+# https://pwbug.dev/319665090.
+cc_args(
+    name = "no_canonical_system_headers",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-fno-canonical-system-headers",
+    ],
+)
+
+cc_args(
+    name = "cortex_common",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+)
+
+cc_feature(
+    name = "cortex_libc",
+    args = [":cortex_common_link"],
+    feature_name = "cortex_libc_linking",
+)
+
+cc_args(
+    name = "cortex_common_link",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
+        "-Wl,--gc-sections",
+        "-lstdc++",
+        "-lc",
+        "-lm",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m0",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m0",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m0plus",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m0plus",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m1",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m1",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m3",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m3",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m4",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m4",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m7",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m7",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m23",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m23",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m33",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m33",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m52",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m52",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m55",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m55",
+        "-mfloat-abi=soft",
+    ],
+)
+
+cc_args(
+    name = "gcc_cortex-m85",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-mcpu=cortex-m85",
+        "-mfloat-abi=soft",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m0",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv6m-none-eabi",
+        "-mcpu=cortex-m0",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m0plus",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv6m-none-eabi",
+        "-mcpu=cortex-m0plus",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m1",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv6m-none-eabi",
+        "-mcpu=cortex-m1",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m3",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv7m-none-eabi",
+        "-mcpu=cortex-m3",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m4",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv7m-none-eabi",
+        "-mcpu=cortex-m4",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m7",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv7em-none-eabi",
+        "-mcpu=cortex-m7",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m23",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv8m.base-none-eabi",
+        "-mcpu=cortex-m23",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m33",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv8m.main-none-eabi",
+        "-mcpu=cortex-m33",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m52",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv8.1m.main-none-eabi",
+        "-mcpu=cortex-m52",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m55",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv8.1m.main-none-eabi",
+        "-mcpu=cortex-m55",
+        "-mfloat-abi=soft",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex-m85",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--target=armv8.1m.main-none-eabi",
+        "-mcpu=cortex-m85",
+        "-mfloat-abi=soft",
+    ],
+)
+
+cc_args(
+    name = "float_abi_hard",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mfloat-abi=hard"],
+)
+
+cc_args(
+    name = "float_abi_softfp",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mfloat-abi=softfp"],
+)
+
+cc_args(
+    name = "fp16_format_ieee",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mfp16-format=ieee"],
+)
+
+cc_args(
+    name = "fp16_format_alt",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mfp16-format=alternative"],
+)
+
+cc_args(
+    name = "thread_local_storage_soft",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mtp=soft"],
+)
+
+cc_args(
+    name = "secure_firmware",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mcmse"],
+)
+
+_ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT = get_repo_root("@zephyr_sdk_arm")
+
+cc_args(
+    name = "sysroot",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "--sysroot=" + _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/arm-zephyr-eabi",
+    ],
+)
+
+# In some cases, Zephyr adds "-nostdinc" flag to the compiler flags, and that
+# will mask compiler includes like stddef.h. Zephyr adds them back using
+# -isystem. We do it here.
+cc_args(
+    name = "add_stddef",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-isystem",
+        _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/lib/gcc/arm-zephyr-eabi/14.3.0/include",
+        "-isystem",
+        _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/lib/gcc/arm-zephyr-eabi/14.3.0/include-fixed",
+    ],
+)
+
+cc_args(
+    name = "add_cxx_headers",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-isystem",
+        _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/arm-zephyr-eabi/include/c++/14.3.0",
+        "-isystem",
+        _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/arm-zephyr-eabi/include/c++/14.3.0/arm-zephyr-eabi",
+    ],
+)
+
+cc_toolchain(
+    name = "cortex-m_gcc",
+    args = [
+        "//toolchain/args:zephyr_gcc_optimization_flags",
+        "//toolchain/args:debugging",
+        "//toolchain/args:reduced_size",
+        "//toolchain/args:no_canonical_prefixes",
+        "//toolchain/args:common_warnings",
+        "//toolchain/args:color_diagnostics",
+        "//toolchain/args:zephyr_common",
+    ] + select({
+        "//constraints/arm:cortex-m0": [":gcc_cortex-m0"],
+        "//constraints/arm:cortex-m0plus": [":gcc_cortex-m0plus"],
+        "//constraints/arm:cortex-m1": [":gcc_cortex-m1"],
+        "//constraints/arm:cortex-m3": [":gcc_cortex-m3"],
+        "//constraints/arm:cortex-m4": [":gcc_cortex-m4"],
+        "//constraints/arm:cortex-m7": [":gcc_cortex-m7"],
+        "//constraints/arm:cortex-m23": [":gcc_cortex-m23"],
+        "//constraints/arm:cortex-m33": [":gcc_cortex-m33"],
+        "//constraints/arm:cortex-m52": [":gcc_cortex-m52"],
+        "//constraints/arm:cortex-m55": [":gcc_cortex-m55"],
+        "//constraints/arm:cortex-m85": [":gcc_cortex-m85"],
+        "//constraints/arm:none": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FP_HARDABI=true": [":float_abi_hard"],
+        "@zephyr_kconfig//:CONFIG_FP_SOFTABI=true": [":float_abi_softfp"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FP16_IEEE=true": [":fp16_format_ieee"],
+        "@zephyr_kconfig//:CONFIG_FP16_ALT=true": [":fp16_format_alt"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_THREAD_LOCAL_STORAGE=true": [":thread_local_storage_soft"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARM_SECURE_FIRMWARE=true": [":secure_firmware"],
+        "//conditions:default": [],
+    }) + [
+        ":thumb_abi",
+        ":cortex_common",
+        ":no_canonical_system_headers",
+        ":warnings",
+        ":add_stddef",
+        ":add_cxx_headers",
+        ":sysroot",
+        "//toolchain/args:zephyr_mode_defines",
+        "//toolchain/args:gcc_cxx_flags",
+    ],
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//toolchain/capability:compiler_is_gcc",
+        "//toolchain/capability:linker_is_gcc",
+        "//toolchain/args:zephyr_force_include_autoconf",
+        "//toolchain/args:zephyr_stdint",
+        "//toolchain/args:nostdinc",
+        "//toolchain/args:zephyr_gcc_link_flags",
+        # This MUST be the last feature!!!!
+        ":cortex_libc",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MINIMAL_LIBC=true": [
+            "//toolchain/args:zephyr_minimal_libc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//lib/libc/picolibc:use_toolchain_picolibc": [
+            "//toolchain/args:use_toolchain_picolibc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NEWLIB_LIBC=true": [
+            "//toolchain/args:zephyr_newlib_libc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//toolchain/args/cc:c++98_enabled": ["//toolchain/args/cc:c++98"],
+        "//toolchain/args/cc:c++11_enabled": ["//toolchain/args/cc:c++11"],
+        "//toolchain/args/cc:c++14_enabled": ["//toolchain/args/cc:c++14"],
+        "//toolchain/args/cc:c++17_enabled": ["//toolchain/args/cc:c++17"],
+        "//toolchain/args/cc:c++20_enabled": ["//toolchain/args/cc:c++20"],
+        "//toolchain/args/cc:c++23_enabled": ["//toolchain/args/cc:c++23"],
+        "//conditions:default": [],
+    }) + select({
+        "//toolchain/args/c:std_c90_gnu": ["//toolchain/args/c:gnu90"],
+        "//toolchain/args/c:std_c90_pure": ["//toolchain/args/c:c90"],
+        "//toolchain/args/c:std_c99_gnu": ["//toolchain/args/c:gnu99"],
+        "//toolchain/args/c:std_c99_pure": ["//toolchain/args/c:c99"],
+        "//toolchain/args/c:std_c11_gnu": ["//toolchain/args/c:gnu11"],
+        "//toolchain/args/c:std_c11_pure": ["//toolchain/args/c:c11"],
+        "//toolchain/args/c:std_c17_gnu": ["//toolchain/args/c:gnu17"],
+        "//toolchain/args/c:std_c17_pure": ["//toolchain/args/c:c17"],
+        "//toolchain/args/c:std_c23_gnu": ["//toolchain/args/c:gnu23"],
+        "//toolchain/args/c:std_c23_pure": ["//toolchain/args/c:c23"],
+        "//conditions:default": [],
+    }),
+    known_features = [
+        "//toolchain/capability:known_toolchain_types",
+        "//toolchain/args:zephyr_warning_suppressions",
+        "//toolchain/args:freestanding",
+        "//toolchain/args/cc:c++98",
+        "//toolchain/args/cc:c++11",
+        "//toolchain/args/cc:c++14",
+        "//toolchain/args/cc:c++17",
+        "//toolchain/args/cc:c++20",
+        "//toolchain/args/cc:c++23",
+        "//toolchain/args/c:c90",
+        "//toolchain/args/c:gnu90",
+        "//toolchain/args/c:c99",
+        "//toolchain/args/c:gnu99",
+        "//toolchain/args/c:c11",
+        "//toolchain/args/c:gnu11",
+        "//toolchain/args/c:c17",
+        "//toolchain/args/c:gnu17",
+        "//toolchain/args/c:c23",
+        "//toolchain/args/c:gnu23",
+    ],
+    supports_param_files = 0,
+    tags = ["manual"],
+    tool_map = "@zephyr_sdk_arm//:arm_tools",
+)
+_ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT = get_repo_root("@zephyr_sdk_llvm")
+
+
+cc_args(
+    name = "llvm_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-fno-rtti",
+        "--sysroot=" + _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/arm-zephyr-eabi",
+        "--gcc-toolchain=" + _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT,
+        "-stdlib=libc++",
+        "-Wno-unused-command-line-argument",
+    ],
+)
+
+cc_args(
+    name = "llvm_cmse_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = select({
+        "@zephyr_kconfig//:CONFIG_ARM_SECURE_FIRMWARE=true": ["-mcmse"],
+        "@zephyr_kconfig//:CONFIG_TRUSTED_EXECUTION_SECURE=true": ["-mcmse"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_args(
+    name = "llvm_add_stddef",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-idirafter",
+        _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang/19/include",
+    ],
+)
+
+cc_args(
+    name = "llvm_cortex_common_link",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = [
+        "-Wl,--gc-sections",
+        "-Wl,--allow-multiple-definition",
+        "-nodefaultlibs",
+        "-lc++",
+        "-lc++abi",
+        "-lunwind",
+        "-l:libclang_rt.builtins.a",
+        "-lc",
+        "-lm",
+    ],
+)
+
+cc_feature(
+    name = "llvm_cortex_libc",
+    args = [":llvm_cortex_common_link"],
+    feature_name = "cortex_libc_linking",
+)
+
+cc_args(
+    name = "llvm_multilib_link",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = select({
+        "//constraints/arm:cortex-m0": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m0plus": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m1": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m3": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m4": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m7": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m23": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.base_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m33": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.main_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m52": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_soft_nofp_nomve/lib",
+        ],
+        "//constraints/arm:cortex-m55": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_soft_nofp_nomve/lib",
+        ],
+        "//constraints/arm:cortex-m85": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_soft_nofp_nomve/lib",
+        ],
+        "//conditions:default": [],
+    }),
+    data = select({
+        "//constraints/arm:cortex-m0": ["@zephyr_sdk_llvm//:lib_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m0plus": ["@zephyr_sdk_llvm//:lib_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m1": ["@zephyr_sdk_llvm//:lib_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m3": ["@zephyr_sdk_llvm//:lib_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m4": ["@zephyr_sdk_llvm//:lib_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m7": ["@zephyr_sdk_llvm//:lib_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m23": ["@zephyr_sdk_llvm//:lib_armv8m_base_soft_nofp"],
+        "//constraints/arm:cortex-m33": ["@zephyr_sdk_llvm//:lib_armv8m_main_soft_nofp"],
+        "//constraints/arm:cortex-m52": ["@zephyr_sdk_llvm//:lib_armv8_1m_main_soft_nofp_nomve"],
+        "//constraints/arm:cortex-m55": ["@zephyr_sdk_llvm//:lib_armv8_1m_main_soft_nofp_nomve"],
+        "//constraints/arm:cortex-m85": ["@zephyr_sdk_llvm//:lib_armv8_1m_main_soft_nofp_nomve"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_args(
+    name = "llvm_cxx_multilib_includes",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = select({
+        "//constraints/arm:cortex-m0": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m0plus": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m1": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m3": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m4": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m7": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m23": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.base_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m33": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.main_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m52": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_soft_nofp_nomve/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m55": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_soft_nofp_nomve/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m85": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_soft_nofp_nomve/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//conditions:default": [],
+    }),
+    data = select({
+        "//constraints/arm:cortex-m0": ["@zephyr_sdk_llvm//:cxx_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m0plus": ["@zephyr_sdk_llvm//:cxx_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m1": ["@zephyr_sdk_llvm//:cxx_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m3": ["@zephyr_sdk_llvm//:cxx_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m4": ["@zephyr_sdk_llvm//:cxx_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m7": ["@zephyr_sdk_llvm//:cxx_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m23": ["@zephyr_sdk_llvm//:cxx_armv8m_base_soft_nofp"],
+        "//constraints/arm:cortex-m33": ["@zephyr_sdk_llvm//:cxx_armv8m_main_soft_nofp"],
+        "//constraints/arm:cortex-m52": ["@zephyr_sdk_llvm//:cxx_armv8_1m_main_soft_nofp_nomve"],
+        "//constraints/arm:cortex-m55": ["@zephyr_sdk_llvm//:cxx_armv8_1m_main_soft_nofp_nomve"],
+        "//constraints/arm:cortex-m85": ["@zephyr_sdk_llvm//:cxx_armv8_1m_main_soft_nofp_nomve"],
+        "//conditions:default": [],
+    }),
+)
+
+cc_args(
+    name = "llvm_picolibc_includes",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = select({
+        "//constraints/arm:cortex-m0": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m0plus": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m1": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m3": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m4": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m7": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m23": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m33": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m52": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m55": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//constraints/arm:cortex-m85": [
+            "-isystem",
+            _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT + "/picolibc/arm-zephyr-eabi/sys-include",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+cc_toolchain(
+    name = "cortex-m_llvm",
+    args = [
+        "//toolchain/args:oz",
+        "//toolchain/args:debugging",
+        "//toolchain/args:reduced_size",
+        "//toolchain/args:no_canonical_prefixes",
+        "//toolchain/args:common_warnings",
+        "//toolchain/args:color_diagnostics",
+        "//toolchain/args:zephyr_common",
+    ] + select({
+        "//constraints/arm:cortex-m0": [":llvm_cortex-m0"],
+        "//constraints/arm:cortex-m0plus": [":llvm_cortex-m0plus"],
+        "//constraints/arm:cortex-m1": [":llvm_cortex-m1"],
+        "//constraints/arm:cortex-m3": [":llvm_cortex-m3"],
+        "//constraints/arm:cortex-m4": [":llvm_cortex-m4"],
+        "//constraints/arm:cortex-m7": [":llvm_cortex-m7"],
+        "//constraints/arm:cortex-m23": [":llvm_cortex-m23"],
+        "//constraints/arm:cortex-m33": [":llvm_cortex-m33"],
+        "//constraints/arm:cortex-m52": [":llvm_cortex-m52"],
+        "//constraints/arm:cortex-m55": [":llvm_cortex-m55"],
+        "//constraints/arm:cortex-m85": [":llvm_cortex-m85"],
+        "//constraints/arm:none": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_FP_HARDABI=true": [":float_abi_hard"],
+        "@zephyr_kconfig//:CONFIG_FP_SOFTABI=true": [":float_abi_softfp"],
+        "//conditions:default": [],
+    }) + [
+        ":thumb_abi",
+        ":cortex_common",
+        ":warnings",
+        ":llvm_flags",
+        ":llvm_cmse_flags",
+        ":llvm_cxx_multilib_includes",
+        ":llvm_add_stddef",
+        ":llvm_picolibc_includes",
+        ":llvm_multilib_link",
+    ],
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//toolchain/capability:compiler_is_clang",
+        "//toolchain/capability:linker_is_clang",
+        "//toolchain/args:zephyr_force_include_autoconf",
+        "//toolchain/args:zephyr_stdint",
+        "//toolchain/args:nostdinc",
+        "//toolchain/args:zephyr_clang_link_flags",
+        # This MUST be the last feature!!!!
+        ":llvm_cortex_libc",
+    ],
+    known_features = [
+        "//toolchain/capability:known_toolchain_types",
+        "//toolchain/args:zephyr_warning_suppressions",
+        "//toolchain/args:freestanding",
+    ],
+    supports_param_files = 0,
+    tags = ["manual"],
+    tool_map = "@zephyr_sdk_llvm//:llvm_tools",
+)
+
+

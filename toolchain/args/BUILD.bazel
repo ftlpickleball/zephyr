@@ -1,0 +1,517 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+load("@rules_cc//cc/toolchains:feature_constraint.bzl", "cc_feature_constraint")
+load("//bazel:errno.bzl", "ZEPHYR_ERRNO")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_args(
+    name = "empty_cc_args",
+    actions = [],
+)
+
+cc_args(
+    name = "common_warnings",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-Wall",
+        "-Werror",
+        "-Wno-error=cpp",  # preprocessor #warning statement
+        "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
+    ],
+)
+
+# Prevent relative paths from being converted to absolute paths.
+cc_args(
+    name = "no_canonical_prefixes",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = ["-no-canonical-prefixes"],
+)
+
+# Enables colors in compiler diagnostics. This uses the GCC spelling of the
+# flag, which Clang supports as an undocumented extension.
+cc_args(
+    name = "color_diagnostics",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-fdiagnostics-color=always"],
+)
+
+cc_args(
+    name = "debugging",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = ["-g"],
+)
+
+# Optimization level option
+cc_args(
+    name = "o2",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-O2"],
+)
+
+# Optimization for size rather than speed option (-Os)
+cc_args(
+    name = "os",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-Os"],
+)
+
+# No optimizations (-O0)
+cc_args(
+    name = "o0",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-O0"],
+)
+
+# Debugging optimizations (-Og)
+cc_args(
+    name = "og",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-Og"],
+)
+
+# Extreme size optimization (-Oz)
+cc_args(
+    name = "oz",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-Oz"],
+)
+
+# Standard compiler flags to reduce output binary size.
+cc_args(
+    name = "reduced_size",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-fno-common",
+        "-fno-exceptions",
+        "-ffunction-sections",
+        "-fdata-sections",
+    ],
+)
+
+cc_args(
+    name = "zephyr_common",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-ftls-model=local-exec",  # CONFIG_THREAD_LOCAL_STORAGE
+        "-gdwarf-4",  # GCC 11 by default emits DWARF v5 which cannot be parsed by pyelftools.
+    ] + select({
+        "//toolchain:compiler_is_clang": [],
+        "//conditions:default": ["-mfp16-format=ieee"],
+    }),
+)
+
+cc_args(
+    name = "newlib_cdefs_workaround",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-include",
+        "sys/cdefs.h",
+    ],
+)
+
+cc_feature(
+    name = "newlib_cdefs_workaround_feature",
+    args = [":newlib_cdefs_workaround"],
+    feature_name = "newlib_cdefs_workaround",
+)
+
+cc_args(
+    name = "zephyr_force_include_autoconf_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-isystem",
+        "{autoconf_dir}",
+        "-include",
+        "zephyr/autoconf.h",
+    ],
+    data = ["//:autoconf_file"],
+    format = {
+        "autoconf_dir": "//:autoconf_dir",
+    },
+)
+
+cc_feature(
+    name = "zephyr_force_include_autoconf",
+    args = [":zephyr_force_include_autoconf_args"],
+    feature_name = "zephyr_force_include_autoconf",
+)
+
+cc_args(
+    name = "picolibc_specs",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-specs=picolibc.specs"],
+    requires_any_of = [":not_freestanding"],
+)
+
+cc_args(
+    name = "picolibc_link_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-lm",
+        "-lc",
+        "-lgcc",
+    ],
+    requires_any_of = [":not_freestanding"],
+)
+
+cc_feature(
+    name = "use_toolchain_picolibc",
+    args = [
+        ":picolibc_specs",
+        ":picolibc_link_args",
+    ],
+    feature_name = "use_toolchain_picolibc",
+)
+
+# Selects execution domain defines based on target platform mode.
+# Defaults to kernel mode (defining -DKERNEL). User-mode targets
+# (transitioned to //platforms:user_mode) omit -DKERNEL to compile
+# with restricted privileges (userspace).
+cc_args(
+    name = "zephyr_mode_defines",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-D__ZEPHYR__=1",
+    ] + select({
+        "//platforms:kernel_mode": [
+            "-DKERNEL",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+# Centralized optimization flags for GCC toolchains based on Kconfig.
+cc_args(
+    name = "zephyr_gcc_optimization_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = select({
+        "@zephyr_kconfig//:CONFIG_SIZE_OPTIMIZATIONS_AGGRESSIVE=true": ["-Os"],
+        "@zephyr_kconfig//:CONFIG_SIZE_OPTIMIZATIONS=true": ["-Os"],
+        "@zephyr_kconfig//:CONFIG_SPEED_OPTIMIZATIONS=true": ["-O2"],
+        "@zephyr_kconfig//:CONFIG_DEBUG_OPTIMIZATIONS=true": ["-Og"],
+        "@zephyr_kconfig//:CONFIG_NO_OPTIMIZATIONS=true": ["-O0"],
+        "//conditions:default": ["-Os"],
+    }),
+)
+
+# Centralized optimization flags for Clang toolchains based on Kconfig.
+cc_args(
+    name = "zephyr_clang_optimization_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = select({
+        "@zephyr_kconfig//:CONFIG_SIZE_OPTIMIZATIONS_AGGRESSIVE=true": ["-Oz"],
+        "@zephyr_kconfig//:CONFIG_SIZE_OPTIMIZATIONS=true": ["-Os"],
+        "@zephyr_kconfig//:CONFIG_SPEED_OPTIMIZATIONS=true": ["-O2"],
+        "@zephyr_kconfig//:CONFIG_DEBUG_OPTIMIZATIONS=true": ["-Og"],
+        "@zephyr_kconfig//:CONFIG_NO_OPTIMIZATIONS=true": ["-O0"],
+        "//conditions:default": ["-Os"],
+    }),
+)
+
+# TODO(pwbug/483423180): Remove -Werror from the toolchain args so that we
+# don't need this big list.
+cc_args(
+    name = "zephyr_warning_suppression_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-Wno-error=array-parameter",
+        "-Wno-error=type-limits",
+        "-Wno-error=sign-compare",
+        "-Wno-error=format",
+        "-Wno-error=undef",
+        "-Wno-error=redundant-decls",
+        "-Wno-error=cast-qual",
+        "-Wno-error=strict-prototypes",
+        "-Wno-vla-cxx-extension",
+        "-Wno-error=missing-field-initializers",
+        "-Wno-unused-parameter",
+        "-Wno-unused-but-set-variable",
+        "-Wno-error=format-zero-length",
+    ],
+)
+
+cc_feature(
+    name = "zephyr_warning_suppressions",
+    args = [":zephyr_warning_suppression_flags"],
+    feature_name = "zephyr_warning_suppressions",
+)
+
+cc_args(
+    name = "zephyr_gcc_link_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-nostdlib",
+        "-lgcc",
+        "-fuse-ld=bfd",
+        "-Wl,--build-id=none",
+        "-Wl,--sort-common=descending",
+        "-Wl,--sort-section=alignment",
+        "-static",
+        "-Wl,-z,noexecstack",
+        "-gdwarf-4",
+        "-Wl,-X",
+        "-Wl,-N",
+        "-Wl,--orphan-handling=warn",
+        "-Wl,-no-pie",
+    ],
+)
+
+cc_feature(
+    name = "zephyr_gcc_link_flags",
+    args = [":zephyr_gcc_link_args"],
+    feature_name = "zephyr_gcc_link_flags",
+    requires_any_of = ["//toolchain/capability:linker_is_gcc"],
+)
+
+cc_args(
+    name = "zephyr_clang_link_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-Wl,--build-id=none",
+        "-Wl,--sort-section=alignment",
+        "-static",
+        "-Wl,-N",
+        "-Wl,--orphan-handling=warn",
+        "-Wl,-no-pie",
+    ],
+)
+
+cc_feature(
+    name = "zephyr_clang_link_flags",
+    args = [":zephyr_clang_link_args"],
+    feature_name = "zephyr_clang_link_flags",
+    requires_any_of = ["//toolchain/capability:linker_is_clang"],
+)
+
+cc_args(
+    name = "nostdinc_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = select({
+        "//:want_stdinc": [],
+        "//conditions:default": ["-nostdinc"],
+    }),
+)
+
+cc_args(
+    name = "zephyr_stdint_imacros",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = select({
+        "@zephyr_kconfig//:CONFIG_ENFORCE_ZEPHYR_STDINT=true": [
+            "-imacros",
+            "{stdint_hdr}",
+        ],
+        "//conditions:default": [],
+    }),
+    data = select({
+        "@zephyr_kconfig//:CONFIG_ENFORCE_ZEPHYR_STDINT=true": [
+            "//include:zephyr_stdint_hdr",
+        ],
+        "//conditions:default": [],
+    }),
+    format = {
+        "stdint_hdr": "//include:zephyr_stdint_hdr",
+    },
+)
+
+cc_feature(
+    name = "zephyr_stdint",
+    args = [
+        ":zephyr_stdint_imacros",
+    ],
+    feature_name = "zephyr_stdint",
+)
+
+cc_feature(
+    name = "nostdinc",
+    args = [":nostdinc_args"],
+    feature_name = "nostdinc",
+)
+
+cc_args(
+    name = "zephyr_app_main_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = select({
+        "@zephyr_kconfig//:CONFIG_ARCH_POSIX=true": [
+            "-Dmain=zephyr_app_main",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+# When using the native simulator, we need to rename main to
+# zephyr_app_main when compiling the app sources, as the native
+# simulator code defines a main() which sets up the simulator. That
+# then calls zephyr_app_main(). This along with
+# boards/native/native_sim/main_shim.cc allows the binary to be built
+# and to run.
+cc_feature(
+    name = "zephyr_app_main",
+    args = [":zephyr_app_main_args"],
+    feature_name = "zephyr_app_main",
+)
+
+cc_args(
+    name = "gcc_cxx_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = ["-Wno-volatile"],
+)
+
+cc_args(
+    name = "zephyr_errno_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = ["-D" + e for e in ZEPHYR_ERRNO],
+)
+
+cc_feature(
+    name = "zephyr_errno",
+    args = [":zephyr_errno_args"],
+    feature_name = "zephyr_errno",
+)
+
+cc_args(
+    name = "zephyr_minimal_libc_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-isystem",
+        "lib/libc/minimal/include",
+    ],
+    data = ["//lib/libc/minimal:minimal_libc_headers"],
+    requires_any_of = [":not_freestanding"],
+)
+
+cc_feature(
+    name = "zephyr_minimal_libc",
+    args = [":zephyr_minimal_libc_args"],
+    feature_name = "zephyr_minimal_libc",
+)
+
+cc_args(
+    name = "zephyr_newlib_libc_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        # Newlib requires -lc -lgcc -lc to resolve circular link
+        # dependencies between libc and libgcc.
+        "-lm",
+        "-lc",
+        "-lgcc",
+        "-lc",
+    ],
+    requires_any_of = [":not_freestanding"],
+)
+
+cc_feature(
+    name = "zephyr_newlib_libc",
+    args = [":zephyr_newlib_libc_args"],
+    feature_name = "zephyr_newlib_libc",
+)
+
+cc_args(
+    name = "freestanding_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = ["-ffreestanding"],
+)
+
+# This causes your cc_library to skip the toolchain's libc and injects -ffreestanding.
+cc_feature(
+    name = "freestanding",
+    args = [":freestanding_args"],
+    feature_name = "freestanding",
+)
+
+# This is the default behavior if feature isn't specified in your cc_library
+# and that this lets you link against the libc specified by the toolchain args
+# (could be minimal libc, picolibc, or the toolchain's own libc).
+cc_feature_constraint(
+    name = "not_freestanding",
+    none_of = [":freestanding"],
+)

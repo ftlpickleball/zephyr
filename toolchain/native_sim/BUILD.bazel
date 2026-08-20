@@ -1,0 +1,164 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
+load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+cc_tool(
+    name = "llvm-ar",
+    src = "@llvm_toolchain//:bin/llvm-ar",
+)
+
+cc_tool(
+    name = "clang",
+    src = "@llvm_toolchain//:bin/cc_wrapper.sh",
+    data = ["@llvm_toolchain//:compiler-files-x86_64-linux"],
+)
+
+cc_tool(
+    name = "llvm-objcopy",
+    src = "@llvm_toolchain//:bin/llvm-objcopy",
+)
+
+cc_tool_map(
+    name = "llvm_tools",
+    tools = {
+        "@rules_cc//cc/toolchains/actions:ar_actions": ":llvm-ar",
+        "@rules_cc//cc/toolchains/actions:assembly_actions": ":clang",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions": ":clang",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":clang",
+        "@rules_cc//cc/toolchains/actions:link_actions": ":clang",
+        "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":llvm-objcopy",
+    },
+)
+
+cc_args(
+    name = "no_canonical_prefixes",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = [
+        "-no-canonical-prefixes",
+        "--target=x86_64-unknown-linux-gnu",
+    ],
+)
+
+cc_args(
+    name = "posix_norelro_args",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-Wl,-z,norelro",
+    ],
+)
+
+cc_args(
+    name = "linux_link_libs",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    allowlist_absolute_include_directories = [
+        "/usr/include",
+        "/usr/local/include",
+        "/usr/lib",
+        "/usr/lib/gcc",
+    ],
+    args = [
+        "-pthread",
+        "-ldl",
+        "-lrt",
+        "-lm",
+    ],
+)
+
+cc_args(
+    name = "link_with_lld",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-fuse-ld=lld",
+    ],
+)
+
+cc_feature(
+    name = "supports_pic",
+    feature_name = "supports_pic",
+)
+
+cc_toolchain(
+    name = "native_sim_clang",
+    args = select({
+        "@platforms//os:linux": [
+            ":linux_link_libs",
+        ],
+        "//conditions:default": [],
+    }) + [
+        ":no_canonical_prefixes",
+        ":posix_norelro_args",
+        ":link_with_lld",
+    ] + [
+        "//toolchain/args:zephyr_mode_defines",
+        "//toolchain/args:zephyr_clang_optimization_flags",
+    ],
+    enabled_features = [
+        ":supports_pic",
+        "//toolchain/capability:compiler_is_clang",
+        "//toolchain/capability:linker_is_clang",
+    ] + [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//toolchain/args:zephyr_force_include_autoconf",
+        "//toolchain/args:zephyr_stdint",
+        "//toolchain/args:zephyr_app_main",
+        "//toolchain/args:zephyr_errno",
+    ] + select({
+        "//toolchain/args/cc:c++98_enabled": ["//toolchain/args/cc:c++98"],
+        "//toolchain/args/cc:c++11_enabled": ["//toolchain/args/cc:c++11"],
+        "//toolchain/args/cc:c++14_enabled": ["//toolchain/args/cc:c++14"],
+        "//toolchain/args/cc:c++17_enabled": ["//toolchain/args/cc:c++17"],
+        "//toolchain/args/cc:c++20_enabled": ["//toolchain/args/cc:c++20"],
+        "//toolchain/args/cc:c++23_enabled": ["//toolchain/args/cc:c++23"],
+        "//conditions:default": [],
+    }) + select({
+        "//toolchain/args/c:std_c90_gnu": ["//toolchain/args/c:gnu90"],
+        "//toolchain/args/c:std_c90_pure": ["//toolchain/args/c:c90"],
+        "//toolchain/args/c:std_c99_gnu": ["//toolchain/args/c:gnu99"],
+        "//toolchain/args/c:std_c99_pure": ["//toolchain/args/c:c99"],
+        "//toolchain/args/c:std_c11_gnu": ["//toolchain/args/c:gnu11"],
+        "//toolchain/args/c:std_c11_pure": ["//toolchain/args/c:c11"],
+        "//toolchain/args/c:std_c17_gnu": ["//toolchain/args/c:gnu17"],
+        "//toolchain/args/c:std_c17_pure": ["//toolchain/args/c:c17"],
+        "//toolchain/args/c:std_c23_gnu": ["//toolchain/args/c:gnu23"],
+        "//toolchain/args/c:std_c23_pure": ["//toolchain/args/c:c23"],
+        "//conditions:default": [],
+    }),
+    known_features = [
+        "//toolchain/capability:known_toolchain_types",
+        "//toolchain/args:zephyr_warning_suppressions",
+        "//toolchain/args/cc:c++98",
+        "//toolchain/args/cc:c++11",
+        "//toolchain/args/cc:c++14",
+        "//toolchain/args/cc:c++17",
+        "//toolchain/args/cc:c++20",
+        "//toolchain/args/cc:c++23",
+        "//toolchain/args/c:c90",
+        "//toolchain/args/c:gnu90",
+        "//toolchain/args/c:c99",
+        "//toolchain/args/c:gnu99",
+        "//toolchain/args/c:c11",
+        "//toolchain/args/c:gnu11",
+        "//toolchain/args/c:c17",
+        "//toolchain/args/c:gnu17",
+        "//toolchain/args/c:c23",
+        "//toolchain/args/c:gnu23",
+    ],
+    tool_map = ":llvm_tools",
+)

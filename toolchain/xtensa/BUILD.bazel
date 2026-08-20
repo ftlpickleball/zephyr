@@ -1,0 +1,196 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
+load("//bazel:naming.bzl", "get_repo_root", "get_zephyr_bazel_root")
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+# This pairs with symbol_garbage_collection to allow symbols to be garbage
+# collected by the linker.
+cc_args(
+    name = "data_and_function_sections",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-ffunction-sections",
+        "-fdata-sections",
+    ],
+)
+
+_ZEPHYR_SDK_DC233C_TOOLCHAIN_ROOT = get_repo_root("@zephyr_sdk_xtensa_dc233c")
+
+# In some cases, Zephyr adds "-nostdinc" flag to the compiler flags, and that
+# will mask compiler includes like stddef.h. Zephyr adds them back using
+# -isystem. We do it here.
+cc_args(
+    name = "add_stddef",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-isystem",
+        _ZEPHYR_SDK_DC233C_TOOLCHAIN_ROOT + "/lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/include",
+        "-isystem",
+        _ZEPHYR_SDK_DC233C_TOOLCHAIN_ROOT + "/lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/include-fixed",
+    ],
+)
+
+cc_args(
+    name = "symbol_garbage_collection",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = ["-Wl,--gc-sections"],
+)
+
+cc_args(
+    name = "print_memory_usage",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = ["-Wl,--print-memory-usage"],
+)
+
+cc_args(
+    name = "optimizations",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = ["-O"],
+)
+
+cc_args(
+    name = "common_defines",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        "-D_LINUX_ERRNO_EXTENSIONS__",
+        "-D_POSIX_THREAD_SAFE_FUNCTIONS=200809L",
+    ],
+)
+
+cc_args(
+    name = "common",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = [
+        # We do not use -fno-threadsafe-statics for C++ but instead rely on
+        # Zephyr's built-in support for C++ thread-safe statics.
+        "-mlongcalls",
+    ],
+)
+
+cc_args(
+    name = "c99",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:c_compile_actions",
+    ],
+    args = ["-std=c99"],
+)
+
+cc_toolchain(
+    name = "xtensa_gcc_dc233c",
+    args = [
+        "//toolchain/args:zephyr_gcc_optimization_flags",
+        "//toolchain/args:debugging",
+        "//toolchain/args:reduced_size",
+        "//toolchain/args:no_canonical_prefixes",
+        "//toolchain/args:common_warnings",
+        "//toolchain/args:color_diagnostics",
+        ":optimizations",
+        ":data_and_function_sections",
+        ":symbol_garbage_collection",
+        ":print_memory_usage",
+        ":common_defines",
+        ":common",
+        ":c99",
+        ":add_stddef",
+        "//toolchain/args:zephyr_mode_defines",
+        "//toolchain/args:gcc_cxx_flags",
+    ],
+    enabled_features = [
+        "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
+        "//toolchain/capability:compiler_is_gcc",
+        "//toolchain/capability:linker_is_gcc",
+        "//toolchain/args:zephyr_force_include_autoconf",
+        "//toolchain/args:zephyr_stdint",
+        "//toolchain/args:nostdinc",
+        "//toolchain/args:zephyr_gcc_link_flags",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MINIMAL_LIBC=true": [
+            "//toolchain/args:zephyr_minimal_libc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//lib/libc/picolibc:use_toolchain_picolibc": [
+            "//toolchain/args:use_toolchain_picolibc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NEWLIB_LIBC=true": [
+            "//toolchain/args:zephyr_newlib_libc",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "//toolchain/args/cc:c++98_enabled": ["//toolchain/args/cc:c++98"],
+        "//toolchain/args/cc:c++11_enabled": ["//toolchain/args/cc:c++11"],
+        "//toolchain/args/cc:c++14_enabled": ["//toolchain/args/cc:c++14"],
+        "//toolchain/args/cc:c++17_enabled": ["//toolchain/args/cc:c++17"],
+        "//toolchain/args/cc:c++20_enabled": ["//toolchain/args/cc:c++20"],
+        "//toolchain/args/cc:c++23_enabled": ["//toolchain/args/cc:c++23"],
+        "//conditions:default": [],
+    }) + select({
+        "//toolchain/args/c:std_c90_gnu": ["//toolchain/args/c:gnu90"],
+        "//toolchain/args/c:std_c90_pure": ["//toolchain/args/c:c90"],
+        "//toolchain/args/c:std_c99_gnu": ["//toolchain/args/c:gnu99"],
+        "//toolchain/args/c:std_c99_pure": ["//toolchain/args/c:c99"],
+        "//toolchain/args/c:std_c11_gnu": ["//toolchain/args/c:gnu11"],
+        "//toolchain/args/c:std_c11_pure": ["//toolchain/args/c:c11"],
+        "//toolchain/args/c:std_c17_gnu": ["//toolchain/args/c:gnu17"],
+        "//toolchain/args/c:std_c17_pure": ["//toolchain/args/c:c17"],
+        "//toolchain/args/c:std_c23_gnu": ["//toolchain/args/c:gnu23"],
+        "//toolchain/args/c:std_c23_pure": ["//toolchain/args/c:c23"],
+        "//conditions:default": [],
+    }),
+    known_features = [
+        "//toolchain/args:zephyr_warning_suppressions",
+        "//toolchain/args:freestanding",
+        "//toolchain/args/cc:c++98",
+        "//toolchain/args/cc:c++11",
+        "//toolchain/args/cc:c++14",
+        "//toolchain/args/cc:c++17",
+        "//toolchain/args/cc:c++20",
+        "//toolchain/args/cc:c++23",
+        "//toolchain/args/c:c90",
+        "//toolchain/args/c:gnu90",
+        "//toolchain/args/c:c99",
+        "//toolchain/args/c:gnu99",
+        "//toolchain/args/c:c11",
+        "//toolchain/args/c:gnu11",
+        "//toolchain/args/c:c17",
+        "//toolchain/args/c:gnu17",
+        "//toolchain/args/c:c23",
+        "//toolchain/args/c:gnu23",
+    ],
+    supports_param_files = 0,
+    tags = ["manual"],
+    tool_map = "@zephyr_sdk_xtensa_dc233c//:all_tools",
+)
+
+filegroup(
+    name = "dc233c_core_files",
+    srcs = ["@zephyr_sdk_xtensa_dc233c//:xtensa_core_stdlib"],
+)

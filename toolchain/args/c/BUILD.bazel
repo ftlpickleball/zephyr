@@ -1,0 +1,348 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
+load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
+
+package(default_visibility = ["//visibility:public"])
+
+# C Standard features
+cc_args(
+    name = "c90_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=c90"],
+)
+
+cc_feature(
+    name = "c90",
+    args = [":c90_args"],
+    feature_name = "c90",
+)
+
+cc_args(
+    name = "gnu90_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=gnu90"],
+)
+
+cc_feature(
+    name = "gnu90",
+    args = [":gnu90_args"],
+    feature_name = "gnu90",
+)
+
+cc_args(
+    name = "c99_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=c99"],
+)
+
+cc_feature(
+    name = "c99",
+    args = [":c99_args"],
+    feature_name = "c99",
+)
+
+cc_args(
+    name = "gnu99_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=gnu99"],
+)
+
+cc_feature(
+    name = "gnu99",
+    args = [":gnu99_args"],
+    feature_name = "gnu99",
+)
+
+cc_args(
+    name = "c11_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=c11"],
+)
+
+cc_feature(
+    name = "c11",
+    args = [":c11_args"],
+    feature_name = "c11",
+)
+
+cc_args(
+    name = "gnu11_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=gnu11"],
+)
+
+cc_feature(
+    name = "gnu11",
+    args = [":gnu11_args"],
+    feature_name = "gnu11",
+)
+
+cc_args(
+    name = "c17_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=c17"],
+)
+
+cc_feature(
+    name = "c17",
+    args = [":c17_args"],
+    feature_name = "c17",
+)
+
+cc_args(
+    name = "gnu17_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=gnu17"],
+)
+
+cc_feature(
+    name = "gnu17",
+    args = [":gnu17_args"],
+    feature_name = "gnu17",
+)
+
+cc_args(
+    name = "c23_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=c23"],
+)
+
+cc_feature(
+    name = "c23",
+    args = [":c23_args"],
+    feature_name = "c23",
+)
+
+cc_args(
+    name = "gnu23_args",
+    actions = ["@rules_cc//cc/toolchains/actions:c_compile_actions"],
+    args = ["-std=gnu23"],
+)
+
+cc_feature(
+    name = "gnu23",
+    args = [":gnu23_args"],
+    feature_name = "gnu23",
+)
+
+# C standard config settings for toolchains (with override support)
+
+string_flag(
+    name = "c_standard",
+    build_setting_default = "kconfig",
+    values = [
+        "kconfig",
+        "90",
+        "99",
+        "11",
+        "17",
+        "23",
+    ],
+)
+
+config_setting(
+    name = "c_std_kconfig",
+    flag_values = {":c_standard": "kconfig"},
+)
+
+config_setting(
+    name = "c_std_90",
+    flag_values = {":c_standard": "90"},
+)
+
+config_setting(
+    name = "c_std_99",
+    flag_values = {":c_standard": "99"},
+)
+
+config_setting(
+    name = "c_std_11",
+    flag_values = {":c_standard": "11"},
+)
+
+config_setting(
+    name = "c_std_17",
+    flag_values = {":c_standard": "17"},
+)
+
+config_setting(
+    name = "c_std_23",
+    flag_values = {":c_standard": "23"},
+)
+
+# AND groups (kconfig mode AND specific standard)
+selects.config_setting_group(
+    name = "c_std_kconfig_and_c90",
+    match_all = [
+        ":c_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_C90=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c_std_kconfig_and_c99",
+    match_all = [
+        ":c_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_C99=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c_std_kconfig_and_c11",
+    match_all = [
+        ":c_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_C11=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c_std_kconfig_and_c17",
+    match_all = [
+        ":c_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_C17=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c_std_kconfig_and_c23",
+    match_all = [
+        ":c_std_kconfig",
+        "@zephyr_kconfig//:CONFIG_STD_C23=true",
+    ],
+)
+
+# Final Triggers (explicit OR (kconfig AND kconfig_option))
+selects.config_setting_group(
+    name = "c90_enabled",
+    match_any = [
+        ":c_std_90",
+        ":c_std_kconfig_and_c90",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c99_enabled",
+    match_any = [
+        ":c_std_99",
+        ":c_std_kconfig_and_c99",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c11_enabled",
+    match_any = [
+        ":c_std_11",
+        ":c_std_kconfig_and_c11",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c17_enabled",
+    match_any = [
+        ":c_std_17",
+        ":c_std_kconfig_and_c17",
+    ],
+)
+
+selects.config_setting_group(
+    name = "c23_enabled",
+    match_any = [
+        ":c_std_23",
+        ":c_std_kconfig_and_c23",
+    ],
+)
+
+config_setting(
+    name = "gnu_extensions_enabled",
+    flag_values = {"@zephyr_kconfig//:CONFIG_GNU_C_EXTENSIONS": "true"},
+)
+
+config_setting(
+    name = "gnu_extensions_disabled",
+    flag_values = {"@zephyr_kconfig//:CONFIG_GNU_C_EXTENSIONS": "false"},
+)
+
+# Redefined C standard config settings for toolchains
+selects.config_setting_group(
+    name = "std_c90_gnu",
+    match_all = [
+        ":c90_enabled",
+        ":gnu_extensions_enabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c90_pure",
+    match_all = [
+        ":c90_enabled",
+        ":gnu_extensions_disabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c99_gnu",
+    match_all = [
+        ":c99_enabled",
+        ":gnu_extensions_enabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c99_pure",
+    match_all = [
+        ":c99_enabled",
+        ":gnu_extensions_disabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c11_gnu",
+    match_all = [
+        ":c11_enabled",
+        ":gnu_extensions_enabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c11_pure",
+    match_all = [
+        ":c11_enabled",
+        ":gnu_extensions_disabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c17_gnu",
+    match_all = [
+        ":c17_enabled",
+        ":gnu_extensions_enabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c17_pure",
+    match_all = [
+        ":c17_enabled",
+        ":gnu_extensions_disabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c23_gnu",
+    match_all = [
+        ":c23_enabled",
+        ":gnu_extensions_enabled",
+    ],
+)
+
+selects.config_setting_group(
+    name = "std_c23_pure",
+    match_all = [
+        ":c23_enabled",
+        ":gnu_extensions_disabled",
+    ],
+)
