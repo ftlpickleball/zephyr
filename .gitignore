@@ -15,6 +15,7 @@
 \#*\#
 
 build*/
+bazel-*
 !doc/build/
 !scripts/build
 !share/sysbuild/build

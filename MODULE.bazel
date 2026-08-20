@@ -1,0 +1,165 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+module(
+    name = "zephyr",
+    version = "3.5.99",
+)
+
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+bazel_dep(name = "gperf", version = "3.1.bcr.1")
+bazel_dep(name = "platforms", version = "1.1.0")
+bazel_dep(name = "rules_cc", version = "0.2.22")
+bazel_dep(name = "rules_python", version = "1.8.5")
+bazel_dep(name = "toolchains_llvm", version = "1.3.0")
+
+llvm = use_extension("@toolchains_llvm//toolchain/extensions:llvm.bzl", "llvm")
+llvm.toolchain(
+    llvm_version = "18.1.8",
+)
+use_repo(llvm, "llvm_toolchain")
+
+# Register Zephyr C++ toolchains.
+register_toolchains(
+    "//toolchain:all",
+    "@llvm_toolchain//:all",
+    dev_dependency = True,
+)
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "zephyr_sdk_xtensa_dc233c",
+    build_file = "//toolchain/xtensa:zephyr_sdk_xtensa_dc233c.BUILD",
+    sha256 = "d5dcce629d7cc24b1d0a367447340c1d9fbcedc0a6ed99ee105c8f1fe87060b2",
+    strip_prefix = "xtensa-dc233c_zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_xtensa-dc233c_zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_arm",
+    build_file = "//toolchain/arm:zephyr_sdk_arm.BUILD",
+    sha256 = "21b85981cb5a1818d9bc53d82af80f208946ec038b982ff1907287572ed3a634",
+    strip_prefix = "arm-zephyr-eabi",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_arm-zephyr-eabi.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_arc",
+    build_file = "//toolchain/arc:zephyr_sdk_arc.BUILD",
+    sha256 = "3b2c499772a6a56d8e72fda4db35d3f3443a75f287968fcf6e80657f3b4f48ca",
+    strip_prefix = "arc-zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_arc-zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_arm64",
+    build_file = "//toolchain/arm64:zephyr_sdk_arm64.BUILD",
+    sha256 = "01c0cfe1daaab2d2a0f71165f11a066d983ef97e51c4a3753186afa6ae55c24b",
+    strip_prefix = "aarch64-zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_aarch64-zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_mips",
+    build_file = "//toolchain/mips:zephyr_sdk_mips.BUILD",
+    sha256 = "6b0ee0f71bd1f2fd15d91950fced546b9542ba81dbcceff1456530ab95dac0bc",
+    strip_prefix = "mips-zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_mips-zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_riscv",
+    build_file = "//toolchain/riscv:zephyr_sdk_riscv.BUILD",
+    sha256 = "01750834c471fbdb335c1b8b8aee17010a1968938957db85640c366235771a38",
+    strip_prefix = "riscv64-zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_riscv64-zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_rx",
+    build_file = "//toolchain/rx:zephyr_sdk_rx.BUILD",
+    sha256 = "d3200cde7ab547094024900a6d289a62f0be05958d89131704d03e3e9499112d",
+    strip_prefix = "rx-zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_rx-zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_sparc",
+    build_file = "//toolchain/sparc:zephyr_sdk_sparc.BUILD",
+    sha256 = "d11759fbe6accf4106601c79864270494ab6b1e6539fd29e8223e8e124fa609e",
+    strip_prefix = "sparc-zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_sparc-zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_x86",
+    build_file = "//toolchain/x86:zephyr_sdk_x86.BUILD",
+    sha256 = "960fd8d8690ce130b141736e494a7bae7da1f96956f8da405de66429670b62e9",
+    strip_prefix = "x86_64-zephyr-elf",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/toolchain_gnu_linux-x86_64_x86_64-zephyr-elf.tar.xz"],
+)
+
+http_archive(
+    name = "zephyr_sdk_llvm",
+    build_file = "//toolchain/llvm:zephyr_sdk_llvm.BUILD",
+    sha256 = "13b96230c90025105ec9bdc914b1ccb6c4b319f68a44518ec4e86ef293f3dce8",
+    strip_prefix = "zephyr-sdk-1.0.1",
+    urls = ["https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v1.0.1/zephyr-sdk-1.0.1_linux-x86_64_llvm.tar.xz"],
+)
+
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+use_repo(python, "pythons_hub")
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "zephyr_pip_deps",
+    python_version = "3.11",
+    requirements_lock = "//bazel/pip:requirements-lock.txt",
+)
+pip.parse(
+    hub_name = "zephyr_pip_deps",
+    python_version = "3.12",
+    requirements_lock = "//bazel/pip:requirements-lock.txt",
+)
+use_repo(pip, "zephyr_pip_deps")
+
+new_git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
+
+new_git_repository(
+    name = "cmsis",
+    build_file = "//modules/cmsis:external.BUILD",
+    commit = "4b96cbb174678dcd3ca86e11e1f24bc5f8726da0",
+    remote = "https://github.com/zephyrproject-rtos/cmsis.git",
+)
+
+new_git_repository(
+    name = "cmsis_6",
+    build_file = "//modules/cmsis_6:external.BUILD",
+    commit = "30a859f44ef8ab4dc8f84b03ed586fd16ccf9d74",
+    remote = "https://github.com/zephyrproject-rtos/CMSIS_6.git",
+)
+
+zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
+zephyr_setup.env(
+    apps_dirs = [
+        "//samples",
+        "//tests",
+    ],
+    boards_dirs = ["//boards"],
+    manual_boards = [
+        "native_sim/native",
+        "native_sim/native/64",
+        "qemu_cortex_m3",
+        "qemu_malta",
+    ],
+)
+use_repo(
+    zephyr_setup,
+    "zephyr_index",
+    "zephyr_kconfig",
+    "zephyr_state",
+    "zephyr_version",
+)
+
+zephyr_setup_apps = use_extension("//bazel:setup.bzl", "zephyr_setup_apps")

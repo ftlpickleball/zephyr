@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Build & Toolchain configuration
+build --incompatible_strict_action_env
+build --cxxopt=-std=c++17
+build --strip=never
+
+# Caching & Action environment
+common --experimental_exclude_defines_from_exec_config
+common --experimental_exclude_starlark_flags_from_exec_config
+common --incompatible_default_to_explicit_init_py
+
+# Python execution toolchains
+build --@rules_python//python/config_settings:exec_tools_toolchain=enabled
+
+# External dependency warnings
+common --per_file_copt=external/.*@-w
+common --host_per_file_copt=external/.*@-w
+
+# Test & UX output
+common --verbose_failures
+test --test_output=errors
+common --ui_event_filters=-debug
