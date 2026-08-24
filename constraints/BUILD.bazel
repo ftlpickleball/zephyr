@@ -56,18 +56,3 @@ constraint_value(
     name = "sparc",
     constraint_setting = ":arch",
 )
-
-constraint_setting(
-    name = "zephyr_toolchain_variant",
-    default_constraint_value = ":gcc",
-)
-
-constraint_value(
-    name = "gcc",
-    constraint_setting = ":zephyr_toolchain_variant",
-)
-
-constraint_value(
-    name = "llvm",
-    constraint_setting = ":zephyr_toolchain_variant",
-)
