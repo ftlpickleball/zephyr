@@ -87,6 +87,7 @@ cc_toolchain(
         ":common",
         ":add_stddef",
         ":asm_specific",
+        "//toolchain/args:extra_toolchain_args",
     ],
     enabled_features = [
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",

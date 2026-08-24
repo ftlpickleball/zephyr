@@ -13,6 +13,12 @@ cc_args(
     actions = [],
 )
 
+label_flag(
+    name = "extra_toolchain_args",
+    build_setting_default = ":empty_cc_args",
+    visibility = ["//visibility:public"],
+)
+
 cc_args(
     name = "common_warnings",
     actions = [

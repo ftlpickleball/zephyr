@@ -69,6 +69,7 @@ cc_toolchain(
         ":symbol_garbage_collection",
         ":common",
         ":add_stddef",
+        "//toolchain/args:extra_toolchain_args",
     ],
     enabled_features = [
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",

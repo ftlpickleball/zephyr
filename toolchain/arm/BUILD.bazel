@@ -506,6 +506,7 @@ cc_toolchain(
         ":sysroot",
         "//toolchain/args:zephyr_mode_defines",
         "//toolchain/args:gcc_cxx_flags",
+        "//toolchain/args:extra_toolchain_args",
     ],
     enabled_features = [
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
@@ -872,6 +873,7 @@ cc_toolchain(
         ":llvm_add_stddef",
         ":llvm_picolibc_includes",
         ":llvm_multilib_link",
+        "//toolchain/args:extra_toolchain_args",
     ],
     enabled_features = [
         "@rules_cc//cc/toolchains/args:experimental_replace_legacy_action_config_features",
