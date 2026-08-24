@@ -108,6 +108,7 @@ cc_toolchain(
     ] + [
         "//toolchain/args:zephyr_mode_defines",
         "//toolchain/args:zephyr_clang_optimization_flags",
+        "//toolchain/args:common_warnings",
         "//toolchain/args:extra_toolchain_args",
     ],
     enabled_features = [

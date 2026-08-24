@@ -299,6 +299,7 @@ cc_args(
         "-Wno-unused-parameter",
         "-Wno-unused-but-set-variable",
         "-Wno-error=format-zero-length",
+        "-Wno-error=pointer-sign",
     ],
 )
 
