@@ -11,7 +11,7 @@ visibility(["//..."])
 
 _DEFAULT_HOST_PYTHON_VERSION = "python_{}_host".format(DEFAULT_PYTHON_VERSION.replace(".", "_"))
 _DEFAULT_PYTHON_INTERPRETER_LABEL = INTERPRETER_LABELS.get(_DEFAULT_HOST_PYTHON_VERSION)
-_PIP_HUB_NAME = "zephyr_bazel_pip_deps"
+_PIP_HUB_NAME = "zephyr_pip_deps"
 
 def _requirement_to_py_repo_dir(ctx, dep):
     """Resolves the site-packages directory of a pip dependency.

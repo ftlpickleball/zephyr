@@ -15,6 +15,6 @@ py_library(
         "src/devicetree/grutils.py",
     ],
     deps = [
-        "@zephyr_bazel_pip_deps//pyyaml",
+        "@zephyr_pip_deps//pyyaml",
     ],
 )
