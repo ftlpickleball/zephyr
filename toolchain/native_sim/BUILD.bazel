@@ -11,33 +11,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-cc_tool(
-    name = "llvm-ar",
-    src = "@llvm_toolchain//:bin/llvm-ar",
-)
-
-cc_tool(
-    name = "clang",
-    src = "@llvm_toolchain//:bin/cc_wrapper.sh",
-    data = ["@llvm_toolchain//:compiler-files-x86_64-linux"],
-)
-
-cc_tool(
-    name = "llvm-objcopy",
-    src = "@llvm_toolchain//:bin/llvm-objcopy",
-)
-
-cc_tool_map(
-    name = "llvm_tools",
-    tools = {
-        "@rules_cc//cc/toolchains/actions:ar_actions": ":llvm-ar",
-        "@rules_cc//cc/toolchains/actions:assembly_actions": ":clang",
-        "@rules_cc//cc/toolchains/actions:c_compile_actions": ":clang",
-        "@rules_cc//cc/toolchains/actions:cpp_compile_actions": ":clang",
-        "@rules_cc//cc/toolchains/actions:link_actions": ":clang",
-        "@rules_cc//cc/toolchains/actions:objcopy_embed_data": ":llvm-objcopy",
-    },
-)
+# Use @zephyr_sdk_llvm for native_sim LLVM tools
 
 cc_args(
     name = "no_canonical_prefixes",
@@ -162,5 +136,5 @@ cc_toolchain(
         "//toolchain/args/c:c23",
         "//toolchain/args/c:gnu23",
     ],
-    tool_map = ":llvm_tools",
+    tool_map = "@zephyr_sdk_llvm//:llvm_tools",
 )
