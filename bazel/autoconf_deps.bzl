@@ -43,14 +43,14 @@ def autoconf_deps(board, configs_repo, **kwargs):
 
     native.alias(
         name = board_name + "_autoconf_dir",
-        actual = configs_repo + "//:autoconf_dir",
+        actual = configs_repo + Label("//:autoconf_dir"),
     )
 
     flags = {
-        "//:autoconf_file": ":" + board_name + "_autoconf_file",
-        "//:autoconf_dir": ":" + board_name + "_autoconf_dir",
-        "//:autoconf_library": ":" + board_name + "_autoconf",
-        "//:autoconf_symbols_to_link": ":" + board_name + "_autoconf_symbols_to_link",
+        Label("//:autoconf_file"): ":" + board_name + "_autoconf_file",
+        Label("//:autoconf_dir"): ":" + board_name + "_autoconf_dir",
+        Label("//:autoconf_library"): ":" + board_name + "_autoconf",
+        Label("//:autoconf_symbols_to_link"): ":" + board_name + "_autoconf_symbols_to_link",
     }
 
     overlay_file = "boards/" + board_name + ".overlay"
@@ -59,6 +59,6 @@ def autoconf_deps(board, configs_repo, **kwargs):
             name = board_name + "_extra_dts_overlays",
             srcs = [overlay_file],
         )
-        flags["//:extra_dts_overlays"] = ":" + board_name + "_extra_dts_overlays"
+        flags[Label("//:extra_dts_overlays")] = ":" + board_name + "_extra_dts_overlays"
 
     return flags

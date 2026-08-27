@@ -20,13 +20,13 @@ load("//bazel:compatibility.bzl", "zephyr")
 
 def if_compiler_is_clang(then, *, otherwise = []):
     return select({
-        "//:compiler_is_clang": then,
+        Label("//:compiler_is_clang"): then,
         "//conditions:default": otherwise,
     })
 
 def if_compiler_is_gcc(then, *, otherwise = []):
     return select({
-        "//:compiler_is_gcc": then,
+        Label("//:compiler_is_gcc"): then,
         "//conditions:default": otherwise,
     })
 
@@ -38,13 +38,15 @@ def zephyr_soc_library(*, name, **kwargs):
         name: The name of the library
         **kwargs: Keyword arguments to pass to the cc_library rule.
     """
-    srcs = kwargs.pop("srcs", [])
+    srcs = kwargs.pop("srcs", []) + [
+        Label("//:hal_soc_extra_srcs"),
+    ]
     deps = kwargs.pop("deps", []) + [
-        "//:internal_zephyr_soc_mandatory_deps",
-        "//:arch_headers_library",
-        "//:hal_soc_headers_library",
-        "//:arch_specific_deps",
-        "//:offsets_header_lib",
+        Label("//:internal_zephyr_soc_mandatory_deps"),
+        Label("//:arch_headers_library"),
+        Label("//:hal_soc_headers_library"),
+        Label("//:arch_specific_deps"),
+        Label("//:offsets_header_lib"),
     ]
     features = kwargs.pop("features", []) + ["zephyr_warning_suppressions"]
 
@@ -333,16 +335,16 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
     )
 
     deps = [
-        "//include:zephyr",
-        "//:autoconf_library",
-        "//:autoconf_symbols_to_link",
+        Label("//include:zephyr"),
+        Label("//:autoconf_library"),
+        Label("//:autoconf_symbols_to_link"),
         Label("@zephyr_kconfig//:kconfig_warnings"),
-        "//:dts_cc_library",
-        "//arch",
-        "//drivers",
-        "//subsys",
-        "//lib",
-        "//:board_deps",
+        Label("//:dts_cc_library"),
+        Label("//arch"),
+        Label("//drivers"),
+        Label("//subsys"),
+        Label("//lib"),
+        Label("//:board_deps"),
         ":" + name + "_srcs_lib",
     ] + LOCAL_MODULES
 
@@ -367,19 +369,19 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
-        linker_script = "//:soc_linkerscript_template_prefinal",
+        linker_script = Label("//:soc_linkerscript_template_prefinal"),
         deps = [
-            "//:app_smem_unaligned_ld",
-            "//:autoconf_library",
-            "//:device_api_sections_ld",
-            "//:dts_cc_library",
-            "//:extra_linker_includes",
-            "//:generated_linker_snippets",
-            "//:offsets_header_lib",
-            "//include:zephyr",
-            "//arch:linker_includes",
-            "//include:linker_includes",
-            "//soc:linker_includes",
+            Label("//:app_smem_unaligned_ld"),
+            Label("//:autoconf_library"),
+            Label("//:device_api_sections_ld"),
+            Label("//:dts_cc_library"),
+            Label("//:extra_linker_includes"),
+            Label("//:generated_linker_snippets"),
+            Label("//:offsets_header_lib"),
+            Label("//include:zephyr"),
+            Label("//arch:linker_includes"),
+            Label("//include:linker_includes"),
+            Label("//soc:linker_includes"),
         ],
         testonly = testonly,
     )
@@ -399,20 +401,20 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
-        linker_script = "//:soc_linkerscript_template",
+        linker_script = Label("//:soc_linkerscript_template"),
         deps = [
             ":app_smem_aligned_ld_" + name,
             ":kobject_placeholders_" + name,
-            "//:autoconf_library",
-            "//:device_api_sections_ld",
-            "//:dts_cc_library",
-            "//:extra_linker_includes",
-            "//:generated_linker_snippets",
-            "//:offsets_header_lib",
-            "//arch:linker_includes",
-            "//include:linker_includes",
-            "//include:zephyr",
-            "//soc:linker_includes",
+            Label("//:autoconf_library"),
+            Label("//:device_api_sections_ld"),
+            Label("//:dts_cc_library"),
+            Label("//:extra_linker_includes"),
+            Label("//:generated_linker_snippets"),
+            Label("//:offsets_header_lib"),
+            Label("//arch:linker_includes"),
+            Label("//include:linker_includes"),
+            Label("//include:zephyr"),
+            Label("//soc:linker_includes"),
         ],
         testonly = testonly,
     )
@@ -432,18 +434,18 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
-        linker_script = "//:soc_linkerscript_template",
+        linker_script = Label("//:soc_linkerscript_template"),
         deps = [
-            "//:autoconf_library",
-            "//:device_api_sections_ld",
-            "//:dts_cc_library",
-            "//:extra_linker_includes",
-            "//:generated_linker_snippets",
-            "//:offsets_header_lib",
-            "//arch:linker_includes",
-            "//include:linker_includes",
-            "//include:zephyr",
-            "//soc:linker_includes",
+            Label("//:autoconf_library"),
+            Label("//:device_api_sections_ld"),
+            Label("//:dts_cc_library"),
+            Label("//:extra_linker_includes"),
+            Label("//:generated_linker_snippets"),
+            Label("//:offsets_header_lib"),
+            Label("//arch:linker_includes"),
+            Label("//include:linker_includes"),
+            Label("//include:zephyr"),
+            Label("//soc:linker_includes"),
         ],
         testonly = testonly,
     )
@@ -466,21 +468,21 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
-        linker_script = "//:soc_linkerscript_template",
+        linker_script = Label("//:soc_linkerscript_template"),
         deps = [
             ":app_smem_aligned_ld_" + name,
             ":kobject_placeholders_" + name,
             ":kobject_hash_renamed_" + name,
-            "//:autoconf_library",
-            "//:device_api_sections_ld",
-            "//:dts_cc_library",
-            "//:extra_linker_includes",
-            "//:generated_linker_snippets",
-            "//:offsets_header_lib",
-            "//arch:linker_includes",
-            "//include:linker_includes",
-            "//include:zephyr",
-            "//soc:linker_includes",
+            Label("//:autoconf_library"),
+            Label("//:device_api_sections_ld"),
+            Label("//:dts_cc_library"),
+            Label("//:extra_linker_includes"),
+            Label("//:generated_linker_snippets"),
+            Label("//:offsets_header_lib"),
+            Label("//arch:linker_includes"),
+            Label("//include:linker_includes"),
+            Label("//include:zephyr"),
+            Label("//soc:linker_includes"),
         ],
         testonly = testonly,
     )
@@ -496,7 +498,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         deps = deps + [
             ":" + name + "_linker_pre0",
         ] + select({
-            Label("@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true"): ["//arch/common:isr_tables"],
+            Label("@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true"): [Label("//arch/common:isr_tables")],
             "//conditions:default": [],
         }),
         srcs = [],
@@ -509,7 +511,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
     userspace_gperf_hash_files(
         name = "prebuilt_gperf_files_" + name,
         kernel = target_pre0,
-        struct_tags_json = "//:syscall_files",
+        struct_tags_json = Label("//:syscall_files"),
         testonly = testonly,
     )
 
@@ -544,18 +546,19 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
 
     # Base gen_isr_tables command used for all configurations. It is formatted with the
     # name, directory, and options.
+    gen_isr_tables_tool = Label("//scripts/build:gen_isr_tables")
     cmd_base = """
-          ./$(execpath //scripts/build:gen_isr_tables) \\
+          ./$(execpath {tools}) \\
               --kernel $(SRCS) \\
               --intlist-section .intList \\
               --intlist-section intList \\
-              --output-source $(location {0}.{1}/isr_table.c) \\
-              {2} \\
+              --output-source $(location {name}.{dir_suffix}/isr_table.c) \\
+              {options} \\
     """
 
     def _get_gen_isr_tables_cmd(dir_suffix, options):
-        cmd_le = cmd_base.format(name, dir_suffix, options)
-        cmd_be = cmd_base.format(name, dir_suffix, options + " --big-endian")
+        cmd_le = cmd_base.format(tools = gen_isr_tables_tool, name = name, dir_suffix = dir_suffix, options = options)
+        cmd_be = cmd_base.format(tools = gen_isr_tables_tool, name = name, dir_suffix = dir_suffix, options = options + " --big-endian")
         return select({
             Label("@zephyr_kconfig//:CONFIG_BIG_ENDIAN=true"): cmd_be,
             "//conditions:default": cmd_le,
@@ -581,7 +584,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         srcs = [target_pre0],
         outs = no_sw_isr_no_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_no_sw_isr_no_vector", ""),
-        tools = ["//scripts/build:gen_isr_tables"],
+        tools = [gen_isr_tables_tool],
         testonly = kwargs.get("testonly", False),
     )
     native.genrule(
@@ -589,7 +592,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         srcs = [target_pre0],
         outs = no_sw_isr_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_no_sw_isr_vector", "--vector-table"),
-        tools = ["//scripts/build:gen_isr_tables"],
+        tools = [gen_isr_tables_tool],
         testonly = kwargs.get("testonly", False),
     )
     native.genrule(
@@ -597,7 +600,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         srcs = [target_pre0],
         outs = sw_isr_no_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_sw_isr_no_vector", "--sw-isr-table"),
-        tools = ["//scripts/build:gen_isr_tables"],
+        tools = [gen_isr_tables_tool],
         testonly = kwargs.get("testonly", False),
     )
     native.genrule(
@@ -605,7 +608,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         srcs = [target_pre0],
         outs = sw_isr_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_sw_isr_vector", "--sw-isr-table --vector-table"),
-        tools = ["//scripts/build:gen_isr_tables"],
+        tools = [gen_isr_tables_tool],
         testonly = kwargs.get("testonly", False),
     )
 
@@ -664,7 +667,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
     userspace_gperf_hash_files(
         name = "final_gperf_files_" + name,
         kernel = ":" + name + "._pre1.elf",
-        struct_tags_json = "//:syscall_files",
+        struct_tags_json = Label("//:syscall_files"),
         prebuilt = False,
         testonly = testonly,
     )
@@ -776,11 +779,11 @@ _zephyr_app_rule = rule(
         "runners_yaml": attr.label(allow_single_file = True),
         "config_file": attr.label(allow_single_file = True),
         "_bootstrapper_template": attr.label(
-            default = "//bazel:bootstrapper.py.tpl",
+            default = Label("//bazel:bootstrapper.py.tpl"),
             allow_single_file = True,
         ),
         "_flash_utils_bin": attr.label(
-            default = "//bazel/tools/runners:zephyr_flash_utils_bin",
+            default = Label("//bazel/tools/runners:zephyr_flash_utils_bin"),
             executable = True,
             cfg = "exec",
         ),
@@ -855,7 +858,7 @@ def zephyr_app(*, name, app_label = None, **kwargs):
     runners_yaml_name = name + "_runners_yaml"
     zephyr_runners_yaml(
         name = runners_yaml_name,
-        runner_config = "//:board_runner_config",
+        runner_config = Label("//:board_runner_config"),
         elf = ":" + binary_name,
         hex = ":" + hex_target,
         app_label = app_label,
@@ -880,7 +883,7 @@ def zephyr_app(*, name, app_label = None, **kwargs):
 
     copy_file(
         name = name + "_copy_config",
-        src = "//:kconfig_config_file",
+        src = Label("//:kconfig_config_file"),
         out = "zephyr/" + name + ".config",
         testonly = kwargs.get("testonly", False),
     )

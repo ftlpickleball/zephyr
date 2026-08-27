@@ -44,7 +44,7 @@ def ztest(
     runner_script = name + "_runner.py"
     copy_file(
         name = name + "_runner_copy",
-        src = "//bazel/tools/runners:ztest_runner.py",
+        src = Label("//bazel/tools/runners:ztest_runner.py"),
         out = runner_script,
         testonly = True,
     )
@@ -59,7 +59,7 @@ def ztest(
             ":" + bin_name + "_runners_yaml",
         ],
         deps = [
-            "//bazel/tools/runners:ztest_runner",
+            Label("//bazel/tools/runners:ztest_runner"),
         ],
         args = [
             "--binary",
@@ -73,7 +73,7 @@ def ztest(
         ],
         tags = tags,
         visibility = visibility,
-        target_compatible_with = ["//boards:sim"],
+        target_compatible_with = [Label("//boards:sim")],
     )
 
     # 4. Hardware test target (local, no-cache, exclusive)
@@ -86,7 +86,7 @@ def ztest(
             ":" + bin_name + "_runners_yaml",
         ],
         deps = [
-            "//bazel/tools/runners:ztest_runner",
+            Label("//bazel/tools/runners:ztest_runner"),
         ],
         args = [
             "--binary",
@@ -100,7 +100,7 @@ def ztest(
         ],
         tags = tags + ["local", "exclusive"],
         visibility = visibility,
-        target_compatible_with = ["//boards:hw"],
+        target_compatible_with = [Label("//boards:hw")],
     )
 
     # 5. Unified test suite

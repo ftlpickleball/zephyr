@@ -287,11 +287,12 @@ def resolve_module_roots(ctx_or_rctx, state):
 
 def get_repo_root(repo_name):
     """Returns the canonical external repository path prefix."""
-    if repo_name.startswith("@"):
-        repo_name = repo_name[1:]
-    return "external/+_repo_rules+" + repo_name
+    if not repo_name.startswith("@"):
+        repo_name = "@" + repo_name
+    return Label(repo_name + "//:BUILD").workspace_root
 
 def get_zephyr_bazel_root():
     """Returns the root path for zephyr."""
-    return "."
+    workspace_root = Label("//:BUILD.bazel").workspace_root
+    return workspace_root + "/" if workspace_root else ""
 

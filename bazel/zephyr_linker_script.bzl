@@ -92,7 +92,7 @@ zephyr_linker_script = rule(
     attrs = {
         "autoconf_file": attr.label(
             allow_single_file = True,
-            default = "//:autoconf_file",
+            default = Label("//:autoconf_file"),
             doc = "Autoconf.h to include in the linker script.",
         ),
         "defines": attr.string_list(doc = "C preprocessor defines."),

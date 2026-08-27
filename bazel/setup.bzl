@@ -550,6 +550,7 @@ def _zephyr_setup_core_impl(mctx):
         path_str = parts[1]
         if path_str.startswith("DIR;"):
             path_str = path_str[4:]
+        path_str = path_str.split(";")[0]
 
         qualifiers = []
         if len(parts) >= 3:
@@ -871,7 +872,7 @@ def _zephyr_setup_core_impl(mctx):
     )
 
     # Resolve canonical name prefix for this extension's repos
-    repo_prefix = "@@+zephyr_setup_apps+"
+    repo_prefix = str(Label("//:BUILD.bazel")).split("//")[0] + "+zephyr_setup_apps+"
 
     board_id_to_safe = {b: sanitize_board_id(b) for b in board_index.keys()}
     repo_name_to_canonical = {}
@@ -940,7 +941,7 @@ def _zephyr_setup_apps_impl(mctx):
                 board_to_package[b] = pkg
 
     # Resolve canonical name prefix for this extension's repos
-    repo_prefix = "@@+zephyr_setup_apps+"
+    repo_prefix = str(Label("//:BUILD.bazel")).split("//")[0] + "+zephyr_setup_apps+"
 
     # Declare ALL combinations
     all_repo_names = []

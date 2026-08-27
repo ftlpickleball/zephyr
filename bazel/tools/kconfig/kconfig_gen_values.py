@@ -563,7 +563,7 @@ def main():
         found = False
         for root in [board_dir] + args.oot_dts_roots:
             for dirpath, dirs, filenames in kconfig_utils.filtered_walk(root):
-                if f"{board_name}.dts" in filenames:
+                if os.path.basename(dirpath) == board_name or f"{board_name}.dts" in filenames or any(f.startswith(f"{board_name}_") and f.endswith(".dts") for f in filenames):
                     board_dir = os.path.abspath(dirpath)
                     found = True
                     break

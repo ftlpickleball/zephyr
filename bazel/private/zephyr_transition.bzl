@@ -171,7 +171,7 @@ def _zephyr_transition_impl(settings, attr):
     else:
         for k, v in PACKAGE_TO_BOARDS.items():
             k_info = parse_label(k)
-            if k_info.package == target_info.package:
+            if target_info.package == k_info.package or target_info.package.startswith(k_info.package + "/"):
                 pkg = k
                 pkg_boards = v
                 break
