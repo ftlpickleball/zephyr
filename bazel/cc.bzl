@@ -46,7 +46,6 @@ def zephyr_soc_library(*, name, **kwargs):
         Label("//:arch_headers_library"),
         Label("//:hal_soc_headers_library"),
         Label("//:arch_specific_deps"),
-        Label("//:offsets_header_lib"),
     ]
     features = kwargs.pop("features", []) + ["zephyr_warning_suppressions"]
 

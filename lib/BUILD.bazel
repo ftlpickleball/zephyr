@@ -23,5 +23,18 @@ cc_library(
         "@zephyr_kconfig//:CONFIG_NET_BUF=true": [
             "//lib/net_buf",
         ],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NATIVE_LIBC=true": [],
+        "//conditions:default": [":deps_not_native_libc"],
+    }),
+)
+
+cc_library(
+    name = "deps_not_native_libc",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_POSIX_C_LIB_EXT=true": [
+            "//lib/posix/c_lib_ext",
+        ],
+        "//conditions:default": [],
     }),
 )

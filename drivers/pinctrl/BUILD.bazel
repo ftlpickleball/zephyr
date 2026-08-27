@@ -313,7 +313,7 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
-        "//" + package_name() + "/renesas",
+
     ] + select({
         "@zephyr_kconfig//:CONFIG_PINCTRL_BFLB=true": [":pinctrl_config_pinctrl_bflb_deps"],
         "//conditions:default": [],

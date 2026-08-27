@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "c_lib_ext",
+    srcs = [
+        "fnmatch.c",
+        "getentropy.c",
+        "getopt_shim.c",
+    ],
+    hdrs = glob(["**/*.h"]),
+    defines = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_EXTERNAL_LIBC=true": [
+            "_CLOCK_T_DECLARED",
+            "__clock_t_defined",
+            "_CLOCKID_T_DECLARED",
+            "__clockid_t_defined",
+        ],
+    }),
+    deps = [":c_lib_ext_zephyr_includes"],
+)
+
+cc_library(
+    name = "c_lib_ext_zephyr_includes",
+    hdrs = glob(
+        ["getopt/**/*.h"],
+        allow_empty = True,
+    ),
+    strip_include_prefix = "getopt",
+)

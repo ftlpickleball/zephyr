@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "kernel_service",
+    srcs = [
+        "cycles.c",
+        "kernel_shell.c",
+        "sleep.c",
+        "uptime.c",
+        "version.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SYS_HEAP_RUNTIME_STATS=true": [
+            "heap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LOG_RUNTIME_FILTERING=true": [
+            "log-level.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REBOOT=true": [
+            "reboot.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_SHELL_PANIC_CMD=true": [
+            "panic.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL=true": [
+            "thread/thread.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL_LIST=true": [
+            "thread/list.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL_MASK=true": [
+            "thread/mask.c",
+            "thread/pin.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL_STACKS=true": [
+            "thread/stacks.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL_UNWIND=true": [
+            "thread/unwind.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL_SUSPEND=true": [
+            "thread/suspend.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL_RESUME=true": [
+            "thread/resume.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_KERNEL_THREAD_SHELL_KILL=true": [
+            "thread/kill.c",
+        ],
+    }),
+    hdrs = glob(
+        [
+            "*.h",
+            "thread/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = ["."],
+)

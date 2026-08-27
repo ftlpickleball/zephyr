@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "policy",
+    srcs = [
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_PM=true": [":policy_config_pm_deps"],
+        "@zephyr_kconfig//:CONFIG_PM_POLICY_LATENCY_STANDALONE=true": [":policy_config_pm_policy_latency_standalone_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "policy_config_pm_deps",
+    srcs = [
+        "policy_events.c",
+        "policy_latency.c",
+        "policy_state_lock.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_PM_POLICY_DEVICE_CONSTRAINTS=true": [":policy_config_pm_deps_config_pm_policy_device_constraints_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_PM_POLICY_DEFAULT=true": [":policy_config_pm_deps_config_pm_policy_default_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "policy_config_pm_deps_config_pm_policy_device_constraints_deps",
+    srcs = [
+        "policy_device_lock.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "policy_config_pm_deps_config_pm_policy_default_deps",
+    srcs = [
+        "policy_default.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)
+
+zephyr_cc_library(
+    name = "policy_config_pm_policy_latency_standalone_deps",
+    srcs = [
+        "policy_latency.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

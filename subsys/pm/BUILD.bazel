@@ -41,7 +41,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
-    deps = select({
+    deps = [
+        "//subsys/pm/policy",
+    ] + select({
         "@zephyr_kconfig//:CONFIG_PM=true": [":pm_config_pm_deps"],
         "//conditions:default": [],
     }),
@@ -51,7 +53,6 @@ zephyr_cc_library(
     name = "pm_config_pm_deps",
     srcs = [
         "pm.c",
-        "policy.c",
         "state.c",
     ] + select({
         "//conditions:default": [],
