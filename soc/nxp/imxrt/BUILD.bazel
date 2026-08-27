@@ -10,6 +10,7 @@ package(default_visibility = ["//:__subpackages__"])
 filegroup(
     name = "imxrt",
     srcs = [
+        "//:empty_files",
     ] + select({
         ":config_soc_series_imxrt10xx_or_config_soc_series_imxrt11xx": [":imxrt_config_soc_series_imxrt10xx_or_config_soc_series_imxrt11xx_deps"],
         "//conditions:default": [],

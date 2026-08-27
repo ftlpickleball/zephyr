@@ -9,7 +9,7 @@ package(default_visibility = ["//:__subpackages__"])
 
 filegroup(
     name = "common",
-    srcs = [
+    srcs = ["//:empty_files"] + [
     ] + select({
         "@zephyr_kconfig//:CONFIG_RISCV_PRIVILEGED=true": [
             "//" + package_name() + "/riscv-privileged",

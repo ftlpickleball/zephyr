@@ -109,7 +109,7 @@ label_flag(
 
 filegroup(
     name = "empty_overlays",
-    srcs = ["empty.h"],
+    srcs = [],
 )
 
 # Optional flag for clients to pass in any devicetree binding headers.
@@ -123,6 +123,18 @@ label_flag(
 label_flag(
     name = "hal_soc_headers_library",
     build_setting_default = "@rules_cc//:empty_lib",
+)
+
+filegroup(
+    name = "empty_files",
+    srcs = ["empty.h"],
+)
+
+# Optional flag for clients to pass in any sources provided by the HAL to build
+# the SoC directory.
+label_flag(
+    name = "hal_soc_extra_srcs",
+    build_setting_default = ":empty_files",
 )
 
 

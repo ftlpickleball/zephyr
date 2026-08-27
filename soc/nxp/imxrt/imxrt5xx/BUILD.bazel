@@ -10,6 +10,7 @@ package(default_visibility = ["//:__subpackages__"])
 filegroup(
     name = "imxrt5xx",
     srcs = [
+        "//:empty_files",
     ] + ["//soc/nxp/imxrt"],
 )
 
