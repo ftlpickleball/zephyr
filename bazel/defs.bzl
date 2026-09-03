@@ -476,6 +476,20 @@ def _userspace_gperf_hash_files_impl(ctx):
     When attr.prebuilt is False, this generates the real hash table that has
     the correct addresses of kernel objects.
     """
+    gperf_hash_output_src_filename = "zephyr/kobject_prebuilt_hash.c"
+    if not ctx.attr.prebuilt:
+        gperf_hash_output_src_filename = "zephyr/kobject_hash.c"
+    gperf_hash_output_src = ctx.actions.declare_file(gperf_hash_output_src_filename)
+
+    if not ctx.attr.is_userspace:
+        ctx.actions.write(
+            output = gperf_hash_output_src,
+            content = "/* Empty kobject hash source for non-userspace build */\n",
+        )
+        return [
+            DefaultInfo(files = depset([gperf_hash_output_src])),
+        ]
+
     gperf_list_filename = "zephyr/kobject_prebuilt_hash.gperf"
     if not ctx.attr.prebuilt:
         gperf_list_filename = "zephyr/kobject_hash.gperf"
@@ -519,10 +533,6 @@ def _userspace_gperf_hash_files_impl(ctx):
         mnemonic = "GenKobjGperfHashSrcPre",
     )
 
-    gperf_hash_output_src_filename = "zephyr/kobject_prebuilt_hash.c"
-    if not ctx.attr.prebuilt:
-        gperf_hash_output_src_filename = "zephyr/kobject_hash.c"
-    gperf_hash_output_src = ctx.actions.declare_file(gperf_hash_output_src_filename)
     ctx.actions.run(
         inputs = [gperf_hash_output_src_pre],
         outputs = [gperf_hash_output_src],
@@ -546,6 +556,7 @@ def _userspace_gperf_hash_files_impl(ctx):
 userspace_gperf_hash_files = rule(
     implementation = _userspace_gperf_hash_files_impl,
     attrs = {
+        "is_userspace": attr.bool(default = False),
         "struct_tags_json": attr.label(providers = [StructTagsInfo], mandatory = True),
         "kernel": attr.label(
             executable = True,
@@ -610,7 +621,7 @@ def _gen_kobject_placeholders_impl(ctx):
             "--rodata",
             "16",
         ],
-        mnemonic = "GenerateAppSmemLd",
+        mnemonic = "GenKobjectPlaceholders",
     )
 
     compilation_context = cc_common.create_compilation_context(

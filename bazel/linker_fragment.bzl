@@ -273,23 +273,29 @@ def _generate_app_smem_aligned_linker_impl(ctx):
     filename = "app_smem_aligned.ld"
     app_smem_aligned_ld = ctx.actions.declare_file(filename)
 
-    kernel_elf = ctx.executable.kernel
+    if not ctx.attr.is_userspace:
+        ctx.actions.write(
+            output = app_smem_aligned_ld,
+            content = "/* Empty app_smem_aligned.ld when CONFIG_USERSPACE is disabled */\n",
+        )
+    else:
+        kernel_elf = ctx.executable.kernel
+        ctx.actions.run(
+            outputs = [app_smem_aligned_ld],
+            inputs = [kernel_elf],
+            executable = ctx.executable._script,
+            arguments = [
+                "-e",
+                kernel_elf.path,
+                "-o",
+                app_smem_aligned_ld.path,
+                "-l",
+                "libc.a",
+                "z_libc_partition",
+            ],
+            mnemonic = "GenerateAppSmemLd",
+        )
 
-    ctx.actions.run(
-        outputs = [app_smem_aligned_ld],
-        inputs = [kernel_elf],
-        executable = ctx.executable._script,
-        arguments = [
-            "-e",
-            kernel_elf.path,
-            "-o",
-            app_smem_aligned_ld.path,
-            "-l",
-            "libc.a",
-            "z_libc_partition",
-        ],
-        mnemonic = "GenerateAppSmemLd",
-    )
     output_path = app_smem_aligned_ld.path[:-len(filename)]
     return [
         DefaultInfo(files = depset([app_smem_aligned_ld])),
@@ -304,6 +310,7 @@ def _generate_app_smem_aligned_linker_impl(ctx):
 generate_app_smem_aligned_linker = rule(
     implementation = _generate_app_smem_aligned_linker_impl,
     attrs = {
+        "is_userspace": attr.bool(default = False),
         "kernel": attr.label(
             executable = True,
             cfg = "target",

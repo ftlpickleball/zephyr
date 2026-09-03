@@ -511,6 +511,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         name = "prebuilt_gperf_files_" + name,
         kernel = target_pre0,
         struct_tags_json = Label("//:syscall_files"),
+        is_userspace = select({
+            Label("@zephyr_kconfig//:CONFIG_USERSPACE=true"): True,
+            "//conditions:default": False,
+        }),
         testonly = testonly,
     )
 
@@ -534,6 +538,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
     generate_app_smem_aligned_linker(
         name = "app_smem_aligned_ld_" + name,
         kernel = target_pre0,
+        is_userspace = select({
+            Label("@zephyr_kconfig//:CONFIG_USERSPACE=true"): True,
+            "//conditions:default": False,
+        }),
         testonly = testonly,
     )
 
@@ -668,6 +676,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         kernel = ":" + name + "._pre1.elf",
         struct_tags_json = Label("//:syscall_files"),
         prebuilt = False,
+        is_userspace = select({
+            Label("@zephyr_kconfig//:CONFIG_USERSPACE=true"): True,
+            "//conditions:default": False,
+        }),
         testonly = testonly,
     )
 
@@ -695,8 +707,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true": [":" + name + "_linker_final"],
             "//conditions:default": [":" + name + "_linker_final"],
         }) + select({
+            # In upstream CMake (CMakeLists.txt:1522), kobject_hash is only generated
+            # when CONFIG_USERSPACE is enabled. CONFIG_DEVICE_DEPS enables the multi-stage
+            # linking pass for device handle generation (gen_handles.py), not kobject hashing.
             "@zephyr_kconfig//:CONFIG_USERSPACE=true": [":kobject_hash_renamed_" + name],
-            "@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true": [":kobject_hash_renamed_" + name],
             "//conditions:default": [],
         }) + deps + select({
             "@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true": [":{}._isr_tables".format(name)],
