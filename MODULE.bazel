@@ -137,7 +137,7 @@ new_git_repository(
     name = "cmsis_6",
     build_file = "@zephyr//modules/cmsis_6:external.BUILD",
     commit = "30a859f44ef8ab4dc8f84b03ed586fd16ccf9d74",
-    remote = "https://github.com/zephyrproject-rtos/CMSIS_6.git",
+    remote = "https://github.com/zephyrproject-rtos/cmsis_6.git",
 )
 
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
