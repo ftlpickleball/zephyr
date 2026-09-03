@@ -284,6 +284,10 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path):
             "--bindings-dirs",
         ]
         gen_edt_args.extend(bindings_dirs)
+        for bdir in bindings_dirs:
+            vp = os.path.join(bdir, "vendor-prefixes.txt")
+            if os.path.exists(vp):
+                gen_edt_args.extend(["--vendor-prefixes", vp])
         gen_edt_args.extend([
             "--dts-out",
             os.path.join(output_dir, "zephyr.dts.debug"),

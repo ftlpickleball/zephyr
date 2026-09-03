@@ -137,10 +137,15 @@ def _dts_cc_library_impl(ctx):
     bindings_files = []
     bindings_dirs = []
 
+    vendor_prefixes_args = []
     for bindings_file_provider in ctx.attr.bindings:
         provider = bindings_file_provider[DefaultInfo].files.to_list()
         bindings_files.extend(provider)
-        bindings_dirs += [f.dirname for f in provider]
+        for f in provider:
+            if f.basename == "vendor-prefixes.txt":
+                vendor_prefixes_args.extend(["--vendor-prefixes", f.path])
+            else:
+                bindings_dirs.append(f.dirname)
 
     gen_defines_target = ctx.attr._gen_defines[DefaultInfo]
     gen_edt_target = ctx.attr._gen_edt[DefaultInfo]
@@ -156,7 +161,7 @@ def _dts_cc_library_impl(ctx):
             "--dts",
             dts_file.path,
             "--bindings-dirs",
-        ] + depset(bindings_dirs).to_list() + [
+        ] + depset(bindings_dirs).to_list() + vendor_prefixes_args + [
             # "--bindings-dirs",
             # "external/zephyr/dts/bindings",
             "--dts-out",
