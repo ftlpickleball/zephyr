@@ -105,6 +105,14 @@ cc_library(
         ],
         "//conditions:default": [],
     }) + select({
+        "@zephyr_kconfig//:CONFIG_CMSIS_RTOS_V1=true": [
+            ":cmsis_portability_includes",
+        ],
+        "@zephyr_kconfig//:CONFIG_CMSIS_RTOS_V2=true": [
+            ":cmsis_portability_includes",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_ZTEST=true": [
             "//subsys/testsuite:includes",
             "//subsys/testsuite/ztest:includes",
@@ -114,6 +122,17 @@ cc_library(
         "//:autoconf_library",
         "@zephyr_version//:version",
     ],
+)
+
+cc_library(
+    name = "cmsis_portability_includes",
+    hdrs = [
+        "zephyr/portability/cmsis_os.h",
+        "zephyr/portability/cmsis_os2.h",
+        "zephyr/portability/cmsis_types.h",
+    ],
+    includes = ["zephyr/portability"],
+    visibility = ["//visibility:public"],
 )
 
 cc_library(
@@ -146,7 +165,6 @@ cc_library(
     name = "posix_linker_includes",
     hdrs = glob(["zephyr/arch/posix/*.ld"], allow_empty = True),
 )
-
 
 cc_library(
     name = "posix",
