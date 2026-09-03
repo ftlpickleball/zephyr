@@ -18,6 +18,7 @@ zephyr_cc_library(
     ),
     strip_include_prefix = ".",
     deps = [
+        "//" + package_name() + "/buf",
     ] + select({
         "@zephyr_kconfig//:CONFIG_HAS_NRFX=true": [
             "//" + package_name() + "/nrf_usbd_common",
