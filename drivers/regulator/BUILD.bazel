@@ -69,6 +69,11 @@ zephyr_cc_library(
         ],
     }) + select({
         "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_REGULATOR_MAX77675=true": [
+            "regulator_max77675.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_REGULATOR_MODULINO_LATCH_RELAY=true": [
             "regulator_modulino_latch_relay.c",
         ],

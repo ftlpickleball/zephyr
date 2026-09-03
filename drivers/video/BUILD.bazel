@@ -83,6 +83,11 @@ zephyr_cc_library(
         ],
     }) + select({
         "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_VIDEO_OV02C10=true": [
+            "ov02c10.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_VIDEO_OV2640=true": [
             "ov2640.c",
         ],

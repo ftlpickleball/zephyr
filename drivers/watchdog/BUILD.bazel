@@ -73,6 +73,11 @@ zephyr_cc_library(
         ],
     }) + select({
         "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_WDT_CRSAS_MA2=true": [
+            "wdt_crsas_ma2.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_WDT_DW=true": [
             "wdt_dw.c",
             "wdt_dw_common.c",
