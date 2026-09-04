@@ -14,33 +14,43 @@ def _zephyr_linker_fragment_impl(ctx):
     """
     Transitively collects all fragments from its dependencies and merges them with its own.
     """
+    if ctx.files.srcs and not ctx.attr.location:
+        fail("location to insert linker fragment is not specified")
 
-    # Start with the fragments defined directly on this target.
-    direct_fragments = []
-    for src in ctx.files.srcs:
-        if ctx.attr.location == "":
-            fail("location to insert linker fragment is not specified")
-        direct_fragments.append(struct(
+    direct_fragments = [
+        struct(
             file = src,
             location = ctx.attr.location,
             sort_key = ctx.attr.sort_key,
-        ))
+        )
+        for src in ctx.files.srcs
+    ]
 
-    # Create a depset containing this rule's direct fragments.
-    fragments = depset(direct_fragments)
-
-    # Now, collect the depsets from all targets in 'deps' and merge them.
     dep_fragments = []
+    compilation_contexts = []
+    linking_contexts = []
+
     for dep in ctx.attr.deps:
         if LinkerFragmentInfo in dep:
             dep_fragments.append(dep[LinkerFragmentInfo].fragments)
-
-    # The final depset is the union of this rule's fragments and all dependency fragments.
-    # Maybe: depset([fragments], transitive=dep_fragments) ???
-    transitive_fragments = depset(transitive = [fragments] + dep_fragments)
+        if CcInfo in dep:
+            cc_info = dep[CcInfo]
+            compilation_contexts.append(cc_info.compilation_context)
+            if cc_info.linking_context:
+                linking_contexts.append(cc_info.linking_context)
 
     return [
-        LinkerFragmentInfo(fragments = transitive_fragments),
+        LinkerFragmentInfo(
+            fragments = depset(direct = direct_fragments, transitive = dep_fragments),
+        ),
+        CcInfo(
+            compilation_context = cc_common.merge_compilation_contexts(
+                compilation_contexts = compilation_contexts,
+            ),
+            linking_context = cc_common.merge_linking_contexts(
+                linking_contexts = linking_contexts,
+            ),
+        ),
         # Also provide DefaultInfo so this rule can be used in other contexts if needed.
         DefaultInfo(files = depset(ctx.files.srcs)),
     ]
@@ -62,7 +72,6 @@ zephyr_linker_fragment = rule(
         ),
         # This is the key change: it depends on other fragment targets.
         "deps": attr.label_list(
-            providers = [LinkerFragmentInfo],
             doc = "The linker fragment targets that this target depends on.",
         ),
     },
@@ -148,7 +157,6 @@ generate_linker_snippets = rule(
     implementation = _generate_linker_snippets_impl,
     attrs = {
         "targets": attr.label_list(
-            providers = [LinkerFragmentInfo],
             doc = "A list of top-level zephyr_linker_fragment targets to collect from.",
         ),
         "zephyr_root": attr.label(

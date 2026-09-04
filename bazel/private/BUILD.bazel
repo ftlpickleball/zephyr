@@ -1,8 +1,11 @@
 # SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
 # SPDX-License-Identifier: Apache-2.0
 
+load("//bazel/private:linker_fragment_test.bzl", "linker_fragment_test_suite")
 load("//bazel/private:zephyr_transition_test.bzl", "zephyr_transition_test_suite")
 
 exports_files(["zephyr_kconfig_gen_values.bzl"])
 
 zephyr_transition_test_suite()
+
+linker_fragment_test_suite()
