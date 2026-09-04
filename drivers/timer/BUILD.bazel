@@ -64,11 +64,6 @@ zephyr_cc_library(
         ],
     }) + select({
         "//conditions:default": [],
-        "@zephyr_kconfig//:CONFIG_CMSDK_APB_TIMER=true": [
-            "cmsdk_apb_timer.c",
-        ],
-    }) + select({
-        "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_CORTEX_M_SYSTICK=true": [
             "cortex_m_systick.c",
         ],
