@@ -81,6 +81,31 @@ filegroup(
 )
 
 filegroup(
+    name = "cxx_armv7m_hard_fpv4_sp_d16",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv4_sp_d16/include/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "cxx_armv7m_hard_fpv5_d16",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv5_d16/include/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "cxx_armv8m_main_hard_fp",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv8m.main_hard_fp/include/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "cxx_armv8_1m_main_hard_fp_nomve",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fp_nomve/include/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "cxx_armv8_1m_main_hard_fpdp_nomve",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/include/**"], allow_empty = True),
+)
+
+filegroup(
     name = "lib_armv6m_soft_nofp",
     srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/lib/**"], allow_empty = True),
 )
@@ -103,4 +128,29 @@ filegroup(
 filegroup(
     name = "lib_armv8_1m_main_soft_nofp_nomve",
     srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_soft_nofp_nomve/lib/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "lib_armv7m_hard_fpv4_sp_d16",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv4_sp_d16/lib/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "lib_armv7m_hard_fpv5_d16",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv5_d16/lib/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "lib_armv8m_main_hard_fp",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv8m.main_hard_fp/lib/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "lib_armv8_1m_main_hard_fp_nomve",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fp_nomve/lib/**"], allow_empty = True),
+)
+
+filegroup(
+    name = "lib_armv8_1m_main_hard_fpdp_nomve",
+    srcs = glob(["llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/lib/**"], allow_empty = True),
 )

@@ -648,7 +648,7 @@ cc_feature(
 )
 
 cc_args(
-    name = "llvm_multilib_link",
+    name = "llvm_multilib_link_soft_fp",
     actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
     args = select({
         "//constraints/arm:cortex-m0": [
@@ -703,7 +703,67 @@ cc_args(
 )
 
 cc_args(
-    name = "llvm_cxx_multilib_includes",
+    name = "llvm_multilib_link_hard_fp",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = select({
+        "//constraints/arm:cortex-m0": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m0plus": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m1": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m3": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m4": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv4_sp_d16/lib",
+        ],
+        "//constraints/arm:cortex-m7": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv5_d16/lib",
+        ],
+        "//constraints/arm:cortex-m23": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.base_soft_nofp/lib",
+        ],
+        "//constraints/arm:cortex-m33": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.main_hard_fp/lib",
+        ],
+        "//constraints/arm:cortex-m52": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/lib",
+        ],
+        "//constraints/arm:cortex-m55": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/lib",
+        ],
+        "//constraints/arm:cortex-m85": [
+            "-L" + _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/lib",
+        ],
+        "//conditions:default": [],
+    }),
+    data = select({
+        "//constraints/arm:cortex-m0": ["@zephyr_sdk_llvm//:lib_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m0plus": ["@zephyr_sdk_llvm//:lib_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m1": ["@zephyr_sdk_llvm//:lib_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m3": ["@zephyr_sdk_llvm//:lib_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m4": ["@zephyr_sdk_llvm//:lib_armv7m_hard_fpv4_sp_d16"],
+        "//constraints/arm:cortex-m7": ["@zephyr_sdk_llvm//:lib_armv7m_hard_fpv5_d16"],
+        "//constraints/arm:cortex-m23": ["@zephyr_sdk_llvm//:lib_armv8m_base_soft_nofp"],
+        "//constraints/arm:cortex-m33": ["@zephyr_sdk_llvm//:lib_armv8m_main_hard_fp"],
+        "//constraints/arm:cortex-m52": ["@zephyr_sdk_llvm//:lib_armv8_1m_main_hard_fpdp_nomve"],
+        "//constraints/arm:cortex-m55": ["@zephyr_sdk_llvm//:lib_armv8_1m_main_hard_fpdp_nomve"],
+        "//constraints/arm:cortex-m85": ["@zephyr_sdk_llvm//:lib_armv8_1m_main_hard_fpdp_nomve"],
+        "//conditions:default": [],
+    }),
+)
+
+alias(
+    name = "llvm_multilib_link",
+    actual = ":llvm_multilib_link_soft_fp",
+)
+
+cc_args(
+    name = "llvm_cxx_multilib_includes_soft_fp",
     actions = [
         "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
     ],
@@ -779,6 +839,90 @@ cc_args(
         "//constraints/arm:cortex-m85": ["@zephyr_sdk_llvm//:cxx_armv8_1m_main_soft_nofp_nomve"],
         "//conditions:default": [],
     }),
+)
+
+cc_args(
+    name = "llvm_cxx_multilib_includes_hard_fp",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:cpp_compile_actions",
+    ],
+    args = select({
+        "//constraints/arm:cortex-m0": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m0plus": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m1": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv6m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m3": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m4": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv4_sp_d16/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m7": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv7m_hard_fpv5_d16/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m23": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.base_soft_nofp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m33": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8m.main_hard_fp/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m52": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m55": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//constraints/arm:cortex-m85": [
+            "-isystem",
+            _ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT + "/llvm/lib/clang-runtimes/arm-none-eabi/armv8.1m.main_hard_fpdp_nomve/include/c++/v1",
+            "-D_LIBCPP_VERBOSE_ABORT_NOEXCEPT=",
+        ],
+        "//conditions:default": [],
+    }),
+    data = select({
+        "//constraints/arm:cortex-m0": ["@zephyr_sdk_llvm//:cxx_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m0plus": ["@zephyr_sdk_llvm//:cxx_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m1": ["@zephyr_sdk_llvm//:cxx_armv6m_soft_nofp"],
+        "//constraints/arm:cortex-m3": ["@zephyr_sdk_llvm//:cxx_armv7m_soft_nofp"],
+        "//constraints/arm:cortex-m4": ["@zephyr_sdk_llvm//:cxx_armv7m_hard_fpv4_sp_d16"],
+        "//constraints/arm:cortex-m7": ["@zephyr_sdk_llvm//:cxx_armv7m_hard_fpv5_d16"],
+        "//constraints/arm:cortex-m23": ["@zephyr_sdk_llvm//:cxx_armv8m_base_soft_nofp"],
+        "//constraints/arm:cortex-m33": ["@zephyr_sdk_llvm//:cxx_armv8m_main_hard_fp"],
+        "//constraints/arm:cortex-m52": ["@zephyr_sdk_llvm//:cxx_armv8_1m_main_hard_fpdp_nomve"],
+        "//constraints/arm:cortex-m55": ["@zephyr_sdk_llvm//:cxx_armv8_1m_main_hard_fpdp_nomve"],
+        "//constraints/arm:cortex-m85": ["@zephyr_sdk_llvm//:cxx_armv8_1m_main_hard_fpdp_nomve"],
+        "//conditions:default": [],
+    }),
+)
+
+alias(
+    name = "llvm_cxx_multilib_includes",
+    actual = ":llvm_cxx_multilib_includes_soft_fp",
 )
 
 cc_args(
@@ -860,19 +1004,28 @@ cc_toolchain(
         "//constraints/arm:cortex-m85": [":llvm_cortex-m85"],
         "//constraints/arm:none": [],
     }) + select({
-        "@zephyr_kconfig//:CONFIG_FP_HARDABI=true": [":float_abi_hard"],
-        "@zephyr_kconfig//:CONFIG_FP_SOFTABI=true": [":float_abi_softfp"],
-        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FP_HARDABI=true": [
+            ":float_abi_hard",
+            ":llvm_multilib_link_hard_fp",
+            ":llvm_cxx_multilib_includes_hard_fp",
+        ],
+        "@zephyr_kconfig//:CONFIG_FP_SOFTABI=true": [
+            ":float_abi_softfp",
+            ":llvm_multilib_link_soft_fp",
+            ":llvm_cxx_multilib_includes_soft_fp",
+        ],
+        "//conditions:default": [
+            ":llvm_multilib_link_soft_fp",
+            ":llvm_cxx_multilib_includes_soft_fp",
+        ],
     }) + [
         ":thumb_abi",
         ":cortex_common",
         ":warnings",
         ":llvm_flags",
         ":llvm_cmse_flags",
-        ":llvm_cxx_multilib_includes",
         ":llvm_add_stddef",
         ":llvm_picolibc_includes",
-        ":llvm_multilib_link",
         "//toolchain/args:zephyr_mode_defines",
         "//toolchain/args:extra_toolchain_args",
     ],
