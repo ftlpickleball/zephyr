@@ -492,12 +492,14 @@ def _zephyr_setup_core_impl(mctx):
 
         # Watch metadata
         mctx.watch(mctx.path(abs_path_str).get_child("zephyr").get_child("module.yml"))
-        k1 = mctx.path(abs_path_str).get_child("Kconfig")
-        mctx.watch(k1)
-        watched_kconfigs.append(str(k1))
-        k2 = mctx.path(abs_path_str).get_child("zephyr").get_child("Kconfig")
-        mctx.watch(k2)
-        watched_kconfigs.append(str(k2))
+        k_candidates = ["Kconfig", "zephyr/Kconfig", "Kconfig.zephyr"]
+        mod_kconfig = item.get("kconfig")
+        if mod_kconfig and mod_kconfig not in k_candidates:
+            k_candidates.append(mod_kconfig)
+        for k_rel in k_candidates:
+            kp = mctx.path(abs_path_str + "/" + k_rel)
+            mctx.watch(kp)
+            watched_kconfigs.append(str(kp))
 
     # Watch for the creation of new module.yml files in subdirectories,
     # so Bazel knows to re-run the module extension if a new module is added.

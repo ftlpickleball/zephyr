@@ -9,6 +9,7 @@ load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_p
 
 def _gen_zephyr_config_impl(rctx):
     rctx.watch(rctx.attr.state_file)
+    rctx.watch(rctx.path(rctx.attr._kconfig_schema))
     state_file = rctx.path(rctx.attr.state_file)
     state = json.decode(rctx.read(state_file))
 
@@ -82,6 +83,22 @@ def _gen_zephyr_config_impl(rctx):
     if result.return_code != 0:
         fail("Zephyr config generation failed: %s" % result.stderr)
 
+    repo_dir = str(rctx.path("."))
+    repo_dir_real = str(rctx.path(".").realpath)
+    kconfig_list_file = rctx.path("kconfig_list.txt")
+    if kconfig_list_file.exists:
+        for line in rctx.read(kconfig_list_file).splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line == repo_dir or line.startswith(repo_dir + "/"):
+                continue
+            if line == repo_dir_real or line.startswith(repo_dir_real + "/"):
+                continue
+            kpath = rctx.path(line)
+            if kpath.exists:
+                rctx.watch(kpath)
+
     # We need to replace @zc_target with the actual repo name in BUILD.bazel
     # since the script doesn't know it.
     build_bazel = rctx.read("BUILD.bazel")
@@ -100,6 +117,7 @@ gen_zephyr_config = repository_rule(
         "conf_fragments": attr.string_list(),
         "extra_kconfig": attr.string(),
         "_kconfig_gen_values_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_values.py"),
+        "_kconfig_schema": attr.label(default = "@zephyr_kconfig//:BUILD.bazel"),
         "_pip_deps": attr.label_list(
             default = [
                 "@zephyr_pip_deps//pcpp",

@@ -8,6 +8,7 @@ load("//bazel/private:kconfig_args.bzl", "get_kconfig_args")
 load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
 
 def _zephyr_kconfig_schema_impl(rctx):
+    rctx.watch(rctx.attr.state_file)
     state_file = rctx.path(rctx.attr.state_file)
     state = json.decode(rctx.read(state_file))
 
@@ -60,6 +61,22 @@ def _zephyr_kconfig_schema_impl(rctx):
         fail("Kconfig schema generation failed: %s" % result.stderr)
     elif result.stderr:
         print(result.stderr)
+
+    repo_dir = str(rctx.path("."))
+    repo_dir_real = str(rctx.path(".").realpath)
+    kconfig_list_file = rctx.path("kconfig_list.txt")
+    if kconfig_list_file.exists:
+        for line in rctx.read(kconfig_list_file).splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line == repo_dir or line.startswith(repo_dir + "/"):
+                continue
+            if line == repo_dir_real or line.startswith(repo_dir_real + "/"):
+                continue
+            kpath = rctx.path(line)
+            if kpath.exists:
+                rctx.watch(kpath)
 
     local_modules = []
     for m_info in state["modules"].values():

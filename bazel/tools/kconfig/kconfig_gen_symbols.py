@@ -331,6 +331,7 @@ def parse_arch_symbols(
 
     symbols = {}
     warnings_list = []
+    parsed_files = set()
 
     try:
         os.environ["ARCH"] = arch
@@ -366,6 +367,11 @@ def parse_arch_symbols(
             for warning in kconf.warnings:
                 warnings_list.append(warning)
 
+        for path in set(kconf.kconfig_filenames):
+            joined = os.path.join(kconf.srctree, path)
+            parsed_files.add(os.path.abspath(joined))
+            parsed_files.add(os.path.realpath(joined))
+
         for name, sym in kconf.syms.items():
             if sym.type == kconfiglib.UNKNOWN:
                 continue
@@ -381,7 +387,7 @@ def parse_arch_symbols(
         print("DEBUG: Exception parsing arch %s: %s" % (arch, e), file=sys.stderr)
         pass
 
-    return arch, symbols, warnings_list
+    return arch, symbols, warnings_list, parsed_files
 
 
 def parse_kconfig_authoritative(
@@ -394,6 +400,7 @@ def parse_kconfig_authoritative(
     oot_dts_roots,
     symbols,
     warnings_list,
+    kconfig_files,
     jobs=None
 ):
     """Uses kconfiglib to perform an authoritative parse for each architecture in parallel."""
@@ -427,14 +434,15 @@ def parse_kconfig_authoritative(
             ]
             results = [future.result() for future in futures]
 
-    for arch, arch_symbols, arch_warnings in results:
+    for arch, arch_symbols, arch_warnings, arch_kconfig_files in results:
         warnings_list.extend(arch_warnings)
+        kconfig_files.update(arch_kconfig_files)
         for name, stype in arch_symbols.items():
             if name not in symbols or (stype != "bool" and symbols[name] == "bool"):
                 symbols[name] = stype
 
 
-def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, symbol_settings):
+def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, symbol_settings, kconfig_files):
     """Scans files for symbols that might not be visible in the static Kconfig tree."""
     search_dirs = [zephyr_base] + list(board_dirs) + list(modules)
     for d in search_dirs:
@@ -443,8 +451,11 @@ def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, sy
         for root, dirs, files in kconfig_utils.filtered_walk(d):
             for fname in files:
                 if fname == "Kconfig" or fname.startswith("Kconfig."):
+                    fpath = os.path.join(root, fname)
+                    kconfig_files.add(os.path.abspath(fpath))
+                    kconfig_files.add(os.path.realpath(fpath))
                     try:
-                        with open(os.path.join(root, fname), "r", errors="ignore") as f:
+                        with open(fpath, "r", errors="ignore") as f:
                             content = f.read()
                             # config/choice
                             for match in re.finditer(
@@ -595,6 +606,7 @@ def main():
     tmp_dir = os.path.abspath("kconfig_bin")
     symbols = {}
     symbol_settings = collections.defaultdict(set)
+    kconfig_files = set()
 
     # 1. Discover all hardware
     soc_dirs = find_soc_source_directories(zephyr_base, args.modules)
@@ -624,6 +636,7 @@ def main():
         args.oot_dts_roots,
         symbols,
         all_warnings,
+        kconfig_files,
         jobs=args.jobs,
     )
 
@@ -639,7 +652,27 @@ def main():
             f.write("/* No Kconfig warnings */\n")
 
     # 4. Fallback: Scan files for dynamic symbols
-    scan_files_for_dynamic_symbols(zephyr_base, args.board_dirs, args.modules, symbols, symbol_settings)
+    scan_files_for_dynamic_symbols(
+        zephyr_base, args.board_dirs, args.modules, symbols, symbol_settings, kconfig_files
+    )
+
+    excluded_prefixes = (
+        os.path.abspath(output_dir) + "/",
+        os.path.realpath(output_dir) + "/",
+        os.path.abspath(tmp_dir) + "/",
+        os.path.realpath(tmp_dir) + "/",
+    )
+    excluded_exact = {
+        os.path.abspath(output_dir),
+        os.path.realpath(output_dir),
+        os.path.abspath(tmp_dir),
+        os.path.realpath(tmp_dir),
+    }
+    with open(os.path.join(output_dir, "kconfig_list.txt"), "w") as f:
+        for path in sorted(kconfig_files):
+            if path in excluded_exact or path.startswith(excluded_prefixes):
+                continue
+            f.write(path + "\n")
 
     # 5. Generate BUILD.bazel
     write_bazel_build_file(args.output, symbols, symbol_settings)

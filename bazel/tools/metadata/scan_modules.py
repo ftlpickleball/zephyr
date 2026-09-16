@@ -99,24 +99,28 @@ def extract_apparent_name(canonical_name):
     return canonical_name
 
 
-def get_module_name(path):
-    """Checks if path is a module, returns sanitized name if it is."""
+def get_module_info(path):
+    """Checks if path is a module, returns (sanitized name, kconfig) if it is."""
     module_yml = os.path.join(path, "zephyr", "module.yml")
     if not os.path.exists(module_yml):
-        return None
+        return None, None
 
     name = extract_apparent_name(os.path.basename(path))
+    kconfig = None
     try:
         with open(module_yml, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
             if data and isinstance(data, dict):
                 name = data.get("name", name)
+                build_cfg = data.get("build")
+                if isinstance(build_cfg, dict):
+                    kconfig = build_cfg.get("kconfig")
     except Exception as e:
         print(
             f"Warning: failed to parse {module_yml}: {e}", file=sys.stderr
         )
 
-    return sanitize_name(name)
+    return sanitize_name(name), kconfig
 
 
 def check_zephyr_module_target_in_build(build_file, target_name):
@@ -155,7 +159,7 @@ def main(argv=None):
             continue
 
         # Check if the directory itself is a module
-        name = get_module_name(path)
+        name, kconfig = get_module_info(path)
         if name:
             build_file = os.path.join(package_dir, "BUILD.bazel")
             has_zephyr_module_target_in_build = os.path.exists(build_file) and check_zephyr_module_target_in_build(build_file, name)
@@ -166,6 +170,7 @@ def main(argv=None):
                     "name": name,
                     "abs_path": path,
                     "has_zephyr_module_target_in_build": has_zephyr_module_target_in_build,
+                    "kconfig": kconfig,
                 }
             )
             continue
@@ -174,7 +179,7 @@ def main(argv=None):
         try:
             for entry in os.scandir(path):
                 if entry.is_dir() and not entry.name.startswith("."):
-                    name = get_module_name(entry.path)
+                    name, kconfig = get_module_info(entry.path)
                     if name:
                         build_file = os.path.join(entry.path, "BUILD.bazel")
                         has_zephyr_module_target_in_build = os.path.exists(build_file) and check_zephyr_module_target_in_build(build_file, name)
@@ -185,6 +190,7 @@ def main(argv=None):
                                 "name": name,
                                 "abs_path": entry.path,
                                 "has_zephyr_module_target_in_build": has_zephyr_module_target_in_build,
+                                "kconfig": kconfig,
                             }
                         )
         except Exception as e:

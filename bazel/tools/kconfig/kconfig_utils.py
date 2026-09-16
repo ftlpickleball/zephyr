@@ -52,7 +52,23 @@ def generate_kconfig_modules(zephyr_base, extra_modules, output_file):
             if not os.path.isdir(m):
                 continue
             module_name = os.path.basename(m.rstrip('/')).split('+')[-1].replace('-', '_').upper()
+            k_candidates = []
+            module_yml = os.path.join(m, "zephyr", "module.yml")
+            if os.path.exists(module_yml):
+                try:
+                    import yaml
+                    with open(module_yml, "r", encoding="utf-8") as yf:
+                        ydata = yaml.safe_load(yf)
+                        if isinstance(ydata, dict):
+                            build_cfg = ydata.get("build")
+                            if isinstance(build_cfg, dict) and build_cfg.get("kconfig"):
+                                k_candidates.append(build_cfg.get("kconfig"))
+                except Exception:
+                    pass
             for k in ["zephyr/Kconfig", "Kconfig", "Kconfig.zephyr"]:
+                if k not in k_candidates:
+                    k_candidates.append(k)
+            for k in k_candidates:
                 kpath = os.path.join(m, k)
                 if os.path.exists(kpath):
                     f.write(f'osource "{os.path.abspath(kpath)}"\n')
