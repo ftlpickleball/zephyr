@@ -1,0 +1,5 @@
+condition: "CONFIG_SOC_NRF5340_CPUAPP"
+helpers:
+  remote:
+    target: "//samples/sysbuild/hello_world/remote:remote"
+    platform: "//boards/nordic/nrf5340dk:nrf5340_cpunet"

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = ["//samples/sysbuild/hello_world:src/main.c"],
+    visibility = ["//visibility:private"],
+)
+
+zephyr_app(
+    name = "remote",
+    deps = [":main"],
+)

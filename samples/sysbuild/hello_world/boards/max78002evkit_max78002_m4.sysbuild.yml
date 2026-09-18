@@ -1,0 +1,5 @@
+condition: "CONFIG_SOC_MAX78002_M4"
+helpers:
+  remote:
+    target: "//samples/sysbuild/hello_world/remote:remote"
+    platform: "//boards/adi/max78002evkit:max78002_rv32"

@@ -1,0 +1,5 @@
+condition: "CONFIG_SOC_MAX32690_M4"
+helpers:
+  remote:
+    target: "//samples/sysbuild/hello_world/remote:remote"
+    platform: "//boards/adi/max32690evkit:max32690_rv32"
