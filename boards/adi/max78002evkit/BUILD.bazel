@@ -1,0 +1,134 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+load("//bazel:runner.bzl", "zephyr_runner_config")
+
+package(default_visibility = ["//visibility:public"])
+
+dts_library(
+    name = "devicetree_lib_m4",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "max78002evkit_max78002_m4.dts",
+    references = [
+        "max78002evkit.dtsi",
+        "//dts/arm",
+        "//dts/common",
+        "//dts/vendor",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated_m4",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib_m4",
+    target_compatible_with = [":adi_max78002evkit"],
+)
+
+dts_library(
+    name = "devicetree_lib_rv32",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "max78002evkit_max78002_rv32.dts",
+    references = [
+        "max78002evkit.dtsi",
+        "//dts/common",
+        "//dts/vendor",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated_rv32",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib_rv32",
+    target_compatible_with = [":adi_max78002evkit"],
+)
+
+constraint_value(
+    name = "adi_max78002evkit",
+    constraint_setting = "//boards:board_name",
+)
+
+zephyr_runner_config(
+    name = "max78002_m4_runner",
+    args = [
+        "--device=MAX78002",
+        "--reset-after-load",
+    ],
+    runner = "jlink",
+)
+
+zephyr_runner_config(
+    name = "max78002_rv32_runner",
+    args = [
+        "--device=MAX78002",
+        "--reset-after-load",
+    ],
+    runner = "jlink",
+)
+
+cc_library(
+    name = "hal_soc_headers_m4",
+    deps = [
+        "@hal_adi//:max78002_hdrs",
+        "//soc/adi/max32:headers",
+    ],
+)
+
+cc_library(
+    name = "hal_soc_headers_rv32",
+    deps = [
+        "@hal_adi//:max78002_riscv_hdrs",
+        "//soc/adi/max32:headers",
+    ],
+)
+
+platform(
+    name = "max78002_m4",
+    constraint_values = [
+        ":adi_max78002evkit",
+        "@platforms//cpu:armv7e-m",
+        "//constraints/arm:cortex-m4",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_runner_config": "@zephyr//boards/adi/max78002evkit:max78002_m4_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/adi/max78002evkit:devicetree_generated_m4",
+        "@zephyr//:hal_soc_extra_srcs": "@hal_adi//:max78002_arm_srcs",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/adi/max78002evkit:hal_soc_headers_m4",
+        "@zephyr//:soc": "@zephyr//soc/adi/max32",
+    }),
+    parents = ["//platforms:cortex_m"],
+)
+
+platform(
+    name = "max78002_rv32",
+    constraint_values = [
+        ":adi_max78002evkit",
+        "@platforms//cpu:riscv32",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_runner_config": "@zephyr//boards/adi/max78002evkit:max78002_rv32_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/adi/max78002evkit:devicetree_generated_rv32",
+        "@zephyr//:hal_soc_extra_srcs": "@hal_adi//:max78002_riscv_srcs",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/adi/max78002evkit:hal_soc_headers_rv32",
+        "@zephyr//:soc": "@zephyr//soc/adi/max32",
+        "@zephyr//:soc_linkerscript_template": "@zephyr//include/zephyr/arch/riscv:common/linker.ld",
+        "@zephyr//:soc_linkerscript_template_prefinal": "@zephyr//include/zephyr/arch/riscv:common/linker.ld",
+    }),
+    parents = ["//platforms:riscv"],
+)
+
+alias(
+    name = "max78002evkit",
+    actual = ":max78002_m4",
+)
