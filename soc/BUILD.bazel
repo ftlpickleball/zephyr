@@ -33,6 +33,11 @@ cc_library(
             "//soc/raspberrypi/rpi_pico/rp2350:linker_includes",
         ],
         "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_MAX32=true": [
+            "//soc/adi/max32:linker_includes",
+        ],
+        "//conditions:default": [],
     }),
 )
 
@@ -51,6 +56,11 @@ zephyr_linker_fragment(
     }) + select({
         "@zephyr_kconfig//:CONFIG_SOC_RP2350A=true": [
             "//soc/raspberrypi/rpi_pico/rp2350:linker_fragments",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FAMILY_MAX32=true": [
+            "//soc/adi/max32:linker_fragments",
         ],
         "//conditions:default": [],
     }),

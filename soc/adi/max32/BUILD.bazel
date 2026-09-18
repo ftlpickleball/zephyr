@@ -7,6 +7,16 @@ load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
 
 package(default_visibility = ["//:__subpackages__"])
 
+cc_library(
+    name = "headers",
+    hdrs = glob(
+        ["*.h", "common/*.h"],
+        allow_empty = True,
+    ),
+    includes = [".", "common"],
+    visibility = ["//visibility:public"],
+)
+
 zephyr_soc_library(
     name = "max32",
     srcs = [
@@ -24,17 +34,17 @@ zephyr_soc_library(
     }) + select({
         "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_SOC_MAX32657=true": [
-            "${CMAKE_CURRENT_SOURCE_DIR}/max32657/pm_max32657_s2ram.c",
+            "max32657/pm_max32657_s2ram.c",
         ],
     }),
     hdrs = glob(
-        ["*.h"],
+        ["*.h", "common/*.h"],
         allow_empty = True,
     ),
     # This is unfortunate. Zephyr often uses #include <xxx.h> for headers in
     # the SoC directories, and expects the SoC directories to be on the system
     # include paths.
-    includes = ["."],
+    includes = [".", "common"],
     visibility = ["//visibility:public"],
     deps = select({
         "@zephyr_kconfig//:CONFIG_RISCV=true": [":max32_config_riscv_deps"],
@@ -42,7 +52,7 @@ zephyr_soc_library(
     }),
 )
 
-zephyr_soc_library(
+cc_library(
     name = "max32_config_riscv_deps",
     srcs = [
         "soc_irq_rv32.S",
@@ -57,7 +67,12 @@ zephyr_soc_library(
     # include paths.
     includes = ["."],
     visibility = ["//visibility:public"],
-    deps = [],
+    deps = [
+        "//:autoconf_library",
+        "//:hal_soc_headers_library",
+        "//:offsets_header_lib",
+        "//include:zephyr",
+    ],
 )
 
 zephyr_linker_fragment(
