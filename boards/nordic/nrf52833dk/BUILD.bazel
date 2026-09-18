@@ -9,7 +9,7 @@ load("//bazel:runner.bzl", "zephyr_runner_config")
 package(default_visibility = ["//visibility:public"])
 
 dts_library(
-    name = "devicetree_lib",
+    name = "devicetree_lib_nrf52833",
     includes = [
         "//dts:dts_includes",
         "//include:include_includes",
@@ -19,16 +19,44 @@ dts_library(
         "nrf52833dk_nrf52833-pinctrl.dtsi",
         "//dts/arm/nordic",
         "//dts/common",
-        "//dts/vendor/nordic",
+        "//dts/vendor",
         "//include:dt_bindings",
     ],
 )
 
 dts_cc_library(
-    name = "devicetree_generated",
+    name = "devicetree_generated_nrf52833",
     bindings = ["//dts:bindings"],
-    dts_lib = ":devicetree_lib",
+    dts_lib = ":devicetree_lib_nrf52833",
     target_compatible_with = [":nordic_nrf52833dk"],
+)
+
+dts_library(
+    name = "devicetree_lib_nrf52820",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "nrf52833dk_nrf52820.dts",
+    references = [
+        "nrf52833dk_nrf52820-pinctrl.dtsi",
+        "//dts/arm/nordic",
+        "//dts/common",
+        "//dts/vendor",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated_nrf52820",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib_nrf52820",
+    target_compatible_with = [":nordic_nrf52833dk"],
+)
+
+alias(
+    name = "devicetree_generated",
+    actual = ":devicetree_generated_nrf52833",
 )
 
 constraint_value(
@@ -71,10 +99,10 @@ platform(
         "//boards:hw",
     ],
     flags = flags_from_dict({
-        "//:board_runner_config": "//boards/nordic/nrf52833dk:nrf52833_runner",
-        "//:dts_cc_library": "//boards/nordic/nrf52833dk:devicetree_generated",
-        "//:hal_soc_headers_library": "//boards/nordic/nrf52833dk:hal_soc_headers_library",
-        "//:soc": "//soc/nordic/nrf52",
+        "@zephyr//:board_runner_config": "@zephyr//boards/nordic/nrf52833dk:nrf52833_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/nordic/nrf52833dk:devicetree_generated_nrf52833",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/nordic/nrf52833dk:hal_soc_headers_library",
+        "@zephyr//:soc": "@zephyr//soc/nordic/nrf52",
     }),
     parents = ["//platforms:cortex_m"],
 )
@@ -88,10 +116,10 @@ platform(
         "//boards:hw",
     ],
     flags = flags_from_dict({
-        "//:board_runner_config": "//boards/nordic/nrf52833dk:nrf52820_runner",
-        "//:dts_cc_library": "//boards/nordic/nrf52833dk:devicetree_generated",
-        "//:hal_soc_headers_library": "//boards/nordic/nrf52833dk:hal_soc_headers_library",
-        "//:soc": "//soc/nordic/nrf52",
+        "@zephyr//:board_runner_config": "@zephyr//boards/nordic/nrf52833dk:nrf52820_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/nordic/nrf52833dk:devicetree_generated_nrf52820",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/nordic/nrf52833dk:hal_soc_headers_library",
+        "@zephyr//:soc": "@zephyr//soc/nordic/nrf52",
     }),
     parents = ["//platforms:cortex_m"],
 )

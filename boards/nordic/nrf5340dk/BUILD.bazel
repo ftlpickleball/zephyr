@@ -1,0 +1,128 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+load("//bazel:runner.bzl", "zephyr_runner_config")
+
+package(default_visibility = ["//visibility:public"])
+
+dts_library(
+    name = "devicetree_lib_cpuapp",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "nrf5340dk_nrf5340_cpuapp.dts",
+    references = [
+        "nrf5340_cpuapp_common.dtsi",
+        "nrf5340_cpuapp_common-pinctrl.dtsi",
+        "nrf5340dk_common.dtsi",
+        "//dts/arm/nordic",
+        "//dts/common",
+        "//dts/vendor",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated_cpuapp",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib_cpuapp",
+    target_compatible_with = [":nordic_nrf5340dk"],
+)
+
+dts_library(
+    name = "devicetree_lib_cpunet",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "nrf5340dk_nrf5340_cpunet.dts",
+    references = [
+        "nrf5340dk_common.dtsi",
+        "nrf5340dk_nrf5340_cpunet-pinctrl.dtsi",
+        "//dts/arm/nordic",
+        "//dts/common",
+        "//dts/vendor",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated_cpunet",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib_cpunet",
+    target_compatible_with = [":nordic_nrf5340dk"],
+)
+
+constraint_value(
+    name = "nordic_nrf5340dk",
+    constraint_setting = "//boards:board_name",
+)
+
+cc_library(
+    name = "hal_soc_headers_library",
+    deps = [
+        "@hal_nordic//:dt_interface",
+        "//modules/hal_nordic/nrfx:nrfx_hdrs",
+    ],
+)
+
+zephyr_runner_config(
+    name = "nrf5340_cpuapp_runner",
+    args = [
+        "--device=nRF5340_xxAA_APP",
+        "--speed=4000",
+    ],
+    runner = "jlink",
+)
+
+zephyr_runner_config(
+    name = "nrf5340_cpunet_runner",
+    args = [
+        "--device=nRF5340_xxAA_NET",
+        "--speed=4000",
+    ],
+    runner = "jlink",
+)
+
+platform(
+    name = "nrf5340_cpuapp",
+    constraint_values = [
+        ":nordic_nrf5340dk",
+        "@platforms//cpu:armv8-m",
+        "//constraints/arm:cortex-m33",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_runner_config": "@zephyr//boards/nordic/nrf5340dk:nrf5340_cpuapp_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/nordic/nrf5340dk:devicetree_generated_cpuapp",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/nordic/nrf5340dk:hal_soc_headers_library",
+        "@zephyr//:soc": "@zephyr//soc/nordic/nrf53",
+    }),
+    parents = ["//platforms:cortex_m"],
+)
+
+platform(
+    name = "nrf5340_cpunet",
+    constraint_values = [
+        ":nordic_nrf5340dk",
+        "@platforms//cpu:armv8-m",
+        "//constraints/arm:cortex-m33",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_runner_config": "@zephyr//boards/nordic/nrf5340dk:nrf5340_cpunet_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/nordic/nrf5340dk:devicetree_generated_cpunet",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/nordic/nrf5340dk:hal_soc_headers_library",
+        "@zephyr//:soc": "@zephyr//soc/nordic/nrf53",
+    }),
+    parents = ["//platforms:cortex_m"],
+)
+
+alias(
+    name = "nrf5340dk",
+    actual = ":nrf5340_cpuapp",
+)
