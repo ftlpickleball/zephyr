@@ -37,7 +37,9 @@ cc_library(
     ],
     deps = [
         "//:autoconf_library",
+        "//:driver_validation_h",
         "//:dts_cc_library",
+        "//:hal_soc_headers_library",
         "//:heap_constants_lib",
         "//:kobj_types_enum_h",
         "//:syscall_list",
@@ -96,8 +98,17 @@ zephyr_linker_fragment(
 )
 
 zephyr_linker_fragment(
+    name = "vector_table",
+    srcs = ["core/vector_table.ld"],
+    location = "ROM_START",
+    sort_key = "0x0vectors",
+)
+
+zephyr_linker_fragment(
     name = "linker_fragments",
-    deps = select({
+    deps = [
+        ":vector_table",
+    ] + select({
         "@zephyr_kconfig//:CONFIG_RISCV_PMP=true": [":pmp"],
         "//conditions:default": [],
     }),
