@@ -147,6 +147,13 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/hal_adi.git",
 )
 
+new_git_repository(
+    name = "hal_nordic",
+    build_file = "@zephyr//modules/hal_nordic:external.BUILD",
+    commit = "44fd3d44b15cb75f80a25b4679f91d2787e28664",
+    remote = "https://github.com/zephyrproject-rtos/hal_nordic.git",
+)
+
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
 zephyr_setup.env(
     apps_dirs = [
@@ -168,6 +175,7 @@ zephyr_setup.env(
     ],
     modules = [
         "@hal_adi//:zephyr/module.yml",
+        "@hal_nordic//:zephyr/module.yml",
     ],
 )
 use_repo(
