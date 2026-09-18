@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+# Note: hal_adi is registered as a Scan-Only module in MODULE.bazel. Rather than
+# exposing a single 'zephyr_module' target, external.BUILD exports fine-grained
+# per-SoC and per-core libraries and headers. This design isolates mutually
+# incompatible CMSIS includes and TARGET definitions between ARM Cortex-M4 and
+# RISC-V cores across the MAX32 series.
+exports_files(["external.BUILD"])

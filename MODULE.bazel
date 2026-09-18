@@ -140,6 +140,13 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/cmsis_6.git",
 )
 
+new_git_repository(
+    name = "hal_adi",
+    build_file = "@zephyr//modules/hal_adi:external.BUILD",
+    commit = "c8aa8d545635a5821045ab500c70b878bd55f15d",
+    remote = "https://github.com/zephyrproject-rtos/hal_adi.git",
+)
+
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
 zephyr_setup.env(
     apps_dirs = [
@@ -152,6 +159,9 @@ zephyr_setup.env(
         "native_sim/native/64",
         "qemu_cortex_m3",
         "qemu_malta",
+    ],
+    modules = [
+        "@hal_adi//:zephyr/module.yml",
     ],
 )
 use_repo(
