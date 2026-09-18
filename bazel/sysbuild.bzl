@@ -4,7 +4,20 @@
 """Public API for Zephyr Sysbuild in Bazel."""
 
 load("@zephyr_index//:index.bzl", "SYSBUILD_METADATA")
+load("//bazel:naming.bzl", "sanitize_board_id")
 load("//bazel/private:transition_rule.bzl", "transitioned_dep")
+load("//bazel/private:zephyr_transition.bzl", "zephyr_transition")
+
+def _normalize_condition(cond):
+    if not cond:
+        return None
+    if not cond.startswith("@") and not cond.startswith("//"):
+        if not cond.startswith("CONFIG_"):
+            cond = "CONFIG_" + cond
+        if "=" not in cond:
+            cond = cond + "=true"
+        cond = "@zephyr_kconfig//:" + cond
+    return cond
 
 def zephyr_sysbuild(name, main, **kwargs):
     """Defines a multi-image Sysbuild target.
@@ -20,8 +33,11 @@ def zephyr_sysbuild(name, main, **kwargs):
     if "//" in norm_main:
         norm_main = norm_main.split("//")[-1]
     norm_main = norm_main.strip("/").lstrip(":")
+    if not norm_main:
+        norm_main = native.package_name()
 
-    metadata = SYSBUILD_METADATA.get(norm_main, {"helpers": {}, "board_helpers": {}})
+    raw_meta = SYSBUILD_METADATA.get("raw_metadata", SYSBUILD_METADATA)
+    metadata = raw_meta.get(norm_main, {"helpers": {}, "board_helpers": {}})
 
     global_helpers = metadata.get("helpers", {})
     board_helpers = metadata.get("board_helpers", {})
@@ -68,37 +84,72 @@ def zephyr_sysbuild(name, main, **kwargs):
     # Build select() dictionary
     select_dict = {}
 
-    # Global helpers are always included
-    base_helpers = []
-    for helper_name in global_helpers.keys():
+    # Global helpers
+    base_helpers_map = {}
+    conditional_global_helpers = {}
+    for helper_name, helper_config in global_helpers.items():
         target = all_helpers_targets.get(helper_name)
-        if target:
-            base_helpers.append(target)
+        if not target:
+            continue
+        cond = helper_config.get("condition")
+        if cond:
+            normalized_cond = _normalize_condition(cond)
+            if normalized_cond not in conditional_global_helpers:
+                conditional_global_helpers[normalized_cond] = []
+            conditional_global_helpers[normalized_cond].append(target)
+        else:
+            base_helpers_map[helper_name] = target
 
-    select_dict["//conditions:default"] = base_helpers
+    select_dict["//conditions:default"] = list(base_helpers_map.values())
+
+    for cond, targets in conditional_global_helpers.items():
+        if cond in select_dict:
+            for t in targets:
+                if t not in select_dict[cond]:
+                    select_dict[cond].append(t)
+        else:
+            select_dict[cond] = list(base_helpers_map.values()) + targets
 
     # Add board-specific helpers
     for board_id, helpers in board_helpers.items():
-        board_condition = "@zephyr_kconfig//:CONFIG_BOARD_%s=true" % board_id.upper()
+        custom_condition = None
+        for helper_name, helper_config in helpers.items():
+            if helper_config.get("condition"):
+                custom_condition = _normalize_condition(helper_config["condition"])
+                break
 
-        current_board_helpers = list(base_helpers)
+        if custom_condition:
+            board_condition = custom_condition
+        else:
+            board_condition = "@zephyr_kconfig//:CONFIG_BOARD_%s=true" % sanitize_board_id(board_id).upper()
+
+        current_board_helpers_map = dict(base_helpers_map)
         for helper_name in helpers.keys():
             target = all_helpers_targets.get("%s:%s" % (board_id, helper_name))
             if target:
-                current_board_helpers.append(target)
+                current_board_helpers_map[helper_name] = target
 
-        select_dict[board_condition] = current_board_helpers
+        if board_condition in select_dict:
+            for t in current_board_helpers_map.values():
+                if t not in select_dict[board_condition]:
+                    select_dict[board_condition].append(t)
+        else:
+            select_dict[board_condition] = list(current_board_helpers_map.values())
+
+    app_label = kwargs.pop("app_label", None)
+    if not app_label:
+        app_label = "//" + norm_main
+    else:
+        app_label = str(app_label)
 
     # Instantiate the underlying rule
     _zephyr_sysbuild_rule(
         name = name,
+        app_label = app_label,
         main = main,
         helpers = select(select_dict),
         **kwargs
     )
-
-def sanitize_board_id(board_id):
-    return board_id.replace("/", "_").replace("-", "_").replace(".", "_")
 
 def _zephyr_sysbuild_rule_impl(ctx):
     all_files = []
@@ -106,12 +157,51 @@ def _zephyr_sysbuild_rule_impl(ctx):
     for helper in ctx.attr.helpers:
         all_files.extend(helper[DefaultInfo].files.to_list())
 
-    return [DefaultInfo(files = depset(all_files))]
+    runfiles = ctx.runfiles()
+    if ctx.attr.main[DefaultInfo].default_runfiles:
+        runfiles = runfiles.merge(ctx.attr.main[DefaultInfo].default_runfiles)
+    for helper in ctx.attr.helpers:
+        if helper[DefaultInfo].default_runfiles:
+            runfiles = runfiles.merge(helper[DefaultInfo].default_runfiles)
+
+    output_groups = {}
+    targets_with_og = []
+    if OutputGroupInfo in ctx.attr.main:
+        targets_with_og.append(ctx.attr.main)
+    for helper in ctx.attr.helpers:
+        if OutputGroupInfo in helper:
+            targets_with_og.append(helper)
+
+    for target in targets_with_og:
+        og = target[OutputGroupInfo]
+        for field in dir(og):
+            if field.startswith("_"):
+                continue
+            val = getattr(og, field)
+            if type(val) != "depset":
+                continue
+            if field not in output_groups:
+                output_groups[field] = []
+            output_groups[field].append(val)
+
+    providers = [DefaultInfo(
+        files = depset(all_files),
+        runfiles = runfiles,
+    )]
+    if output_groups:
+        merged_groups = {k: depset(transitive = v) for k, v in output_groups.items()}
+        providers.append(OutputGroupInfo(**merged_groups))
+    return providers
 
 _zephyr_sysbuild_rule = rule(
     implementation = _zephyr_sysbuild_rule_impl,
     attrs = {
+        "app_label": attr.string(mandatory = True),
         "main": attr.label(mandatory = True),
         "helpers": attr.label_list(),
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+        ),
     },
+    cfg = zephyr_transition,
 )

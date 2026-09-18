@@ -121,7 +121,15 @@ def main(argv=None):
         if os.path.exists(global_file):
             content = parse_sysbuild_yaml(global_file)
             if content and "helpers" in content:
-                app_graph["helpers"] = content["helpers"]
+                helpers = {
+                    k: (v if isinstance(v, dict) else {})
+                    for k, v in content["helpers"].items()
+                }
+                top_cond = content.get("condition")
+                if top_cond:
+                    for h in helpers.values():
+                        h.setdefault("condition", top_cond)
+                app_graph["helpers"] = helpers
 
         boards_dir = os.path.join(app_path, "boards")
         if os.path.exists(boards_dir):
@@ -131,7 +139,15 @@ def main(argv=None):
                 board_name = filename.replace(".sysbuild.yml", "")
                 content = parse_sysbuild_yaml(board_file)
                 if content and "helpers" in content:
-                    app_graph["board_helpers"][board_name] = content["helpers"]
+                    helpers = {
+                        k: (v if isinstance(v, dict) else {})
+                        for k, v in content["helpers"].items()
+                    }
+                    top_cond = content.get("condition")
+                    if top_cond:
+                        for h in helpers.values():
+                            h.setdefault("condition", top_cond)
+                    app_graph["board_helpers"][board_name] = helpers
 
         if app_graph["helpers"] or app_graph["board_helpers"]:
             raw_metadata[app_pkg] = app_graph

@@ -717,6 +717,9 @@ def _zephyr_setup_core_impl(mctx):
                     mctx.watch(app_path.get_child("Kconfig"))
                     mctx.watch(app_path.get_child("sysbuild.yml"))
                     mctx.watch(app_path.get_child("sysbuild.conf"))
+                    boards_dir = app_path.get_child("boards")
+                    if boards_dir.exists:
+                        mctx.watch(boards_dir)
                     sysbuild_dir = app_path.get_child("sysbuild")
                     if sysbuild_dir.exists:
                         mctx.watch(sysbuild_dir)

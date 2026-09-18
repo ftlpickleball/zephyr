@@ -17,8 +17,15 @@ platform_transition = transition(
 )
 
 def _transitioned_dep_impl(ctx):
-    # Forward DefaultInfo from the actual target
-    return [ctx.attr.dep[DefaultInfo]]
+    # Forward DefaultInfo files and runfiles from the actual target
+    target = ctx.attr.dep[0] if type(ctx.attr.dep) == "list" else ctx.attr.dep
+    providers = [DefaultInfo(
+        files = target[DefaultInfo].files,
+        runfiles = target[DefaultInfo].default_runfiles,
+    )]
+    if OutputGroupInfo in target:
+        providers.append(target[OutputGroupInfo])
+    return providers
 
 transitioned_dep = rule(
     implementation = _transitioned_dep_impl,
@@ -27,5 +34,8 @@ transitioned_dep = rule(
         # Optional to let sysbuild helper domains inherit the platform
         # attribute of the parent domain.
         "platform": attr.string(mandatory = False),
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+        ),
     },
 )

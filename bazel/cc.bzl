@@ -777,7 +777,7 @@ def _zephyr_app_impl(ctx):
 
     return [
         DefaultInfo(
-            files = depset([out_file]),
+            files = depset([out_file] + binary_files),
             executable = out_file,
             runfiles = combined_runfiles,
         ),
