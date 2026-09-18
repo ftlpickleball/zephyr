@@ -167,9 +167,14 @@ cc_args(
         "@rules_cc//cc/toolchains/actions:compile_actions",
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    args = [
-        "-mcpu=cortex-m33",
-    ],
+    args = select({
+        "@zephyr_kconfig//:CONFIG_ARMV8_M_DSP=true": [
+            "-mcpu=cortex-m33",
+        ],
+        "//conditions:default": [
+            "-mcpu=cortex-m33+nodsp",
+        ],
+    }),
 )
 
 cc_args(
@@ -310,8 +315,14 @@ cc_args(
     ],
     args = [
         "--target=armv8m.main-none-eabi",
-        "-mcpu=cortex-m33",
-    ],
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ARMV8_M_DSP=true": [
+            "-mcpu=cortex-m33",
+        ],
+        "//conditions:default": [
+            "-mcpu=cortex-m33+nodsp",
+        ],
+    }),
 )
 
 cc_args(
