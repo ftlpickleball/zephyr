@@ -490,17 +490,23 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
              full_name = "CONFIG_" + sname
 
              if sym.type in [kconfiglib.BOOL, kconfiglib.TRISTATE]:
-                 val = "true" if sym.str_value == "y" else "false"
-                 flags_lines.append('        "--@zephyr_kconfig//:%s=%s",\n' % (full_name, val))
+                 if sym.str_value == "y":
+                     flags_lines.append('        "--@zephyr_kconfig//:%s=true",\n' % full_name)
              elif sym.type == kconfiglib.INT:
                  if sym.str_value:
-                     flags_lines.append('        "--@zephyr_kconfig//:%s=%s",\n' % (full_name, sym.str_value))
+                     try:
+                         val = int(sym.str_value)
+                         if val != 0:
+                             flags_lines.append('        "--@zephyr_kconfig//:%s=%d",\n' % (full_name, val))
+                     except ValueError:
+                         pass
              elif sym.type == kconfiglib.HEX:
                  if sym.str_value:
                      try:
                          val = int(sym.str_value, 16)
-                         flags_lines.append('        "--@zephyr_kconfig//:%s=%d",\n' % (full_name, val))
-                     except:
+                         if val != 0:
+                             flags_lines.append('        "--@zephyr_kconfig//:%s=%d",\n' % (full_name, val))
+                     except ValueError:
                          pass
              elif sym.type == kconfiglib.STRING:
                  if sym.str_value:
