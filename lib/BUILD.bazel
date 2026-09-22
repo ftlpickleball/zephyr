@@ -24,6 +24,11 @@ cc_library(
             "//lib/net_buf",
         ],
     }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_UUID=true": [
+            "//lib/uuid",
+        ],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_NATIVE_LIBC=true": [],
         "//conditions:default": [":deps_not_native_libc"],
     }),
