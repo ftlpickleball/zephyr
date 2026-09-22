@@ -60,6 +60,7 @@ cc_library(
     deps = [
         "@hal_rpi_pico//:rp2040_headers",
         "//modules/hal_rpi_pico:pico_zephyr_compat",
+        "//soc/raspberrypi/rpi_pico/rp2040:rp2040_hdrs",
     ],
 )
 

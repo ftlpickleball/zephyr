@@ -101,5 +101,6 @@ cc_library(
         "@hal_nxp//:mimxrt595s_cm33_hdrs",
         "@hal_nxp//:mimxrt595s_usb_hdrs",
         "@hal_nxp//:mimxrt595s_usb_phy_hdrs",
+        "//soc/nxp/imxrt/imxrt5xx/cm33:cm33_hdrs",
     ],
 )

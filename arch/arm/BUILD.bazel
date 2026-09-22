@@ -28,7 +28,6 @@ cc_library(
         "//:hal_soc_headers_library",
         "//:heap_constants_lib",
         "//:kobj_types_enum_h",
-        "//:soc",
         "//:syscall_list",
         "//include:zephyr",
         "//kernel:headers",

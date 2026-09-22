@@ -69,6 +69,7 @@ cc_library(
     deps = [
         "@hal_nordic//:dt_interface",
         "//modules/hal_nordic/nrfx:nrfx_hdrs",
+        "//soc/nordic/nrf52:nrf52_hdrs",
     ],
 )
 

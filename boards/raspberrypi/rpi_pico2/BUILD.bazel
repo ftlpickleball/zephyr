@@ -60,6 +60,7 @@ cc_library(
     deps = [
         "@hal_rpi_pico//:rp2350_headers",
         "//modules/hal_rpi_pico:pico_zephyr_compat",
+        "//soc/raspberrypi/rpi_pico/rp2350:rp2350_hdrs",
     ],
 )
 

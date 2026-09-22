@@ -41,7 +41,7 @@ def zephyr_soc_library(*, name, **kwargs):
     srcs = kwargs.pop("srcs", []) + [
         Label("//:hal_soc_extra_srcs"),
     ]
-    deps = kwargs.pop("deps", []) + [
+    base_deps = kwargs.pop("deps", []) + [
         Label("//:internal_zephyr_soc_mandatory_deps"),
         Label("//:arch_headers_library"),
         Label("//:hal_soc_headers_library"),
@@ -54,10 +54,26 @@ def zephyr_soc_library(*, name, **kwargs):
     cxxopts = kwargs.pop("cxxopts", [])
     defines = kwargs.pop("defines", [])
     additional_compiler_inputs = kwargs.pop("additional_compiler_inputs", [])
+    hdrs = kwargs.get("hdrs", [])
+    includes = kwargs.get("includes", [])
+    visibility = kwargs.get("visibility", None)
+
+    cc_library(
+        name = name + "_hdrs",
+        hdrs = hdrs,
+        includes = includes,
+        defines = defines,
+        deps = base_deps,
+        visibility = visibility,
+    )
+
     cc_library(
         name = name,
         srcs = srcs,
-        deps = deps,
+        deps = base_deps + [
+            ":" + name + "_hdrs",
+            Label("//:offsets_header_lib"),
+        ],
         implementation_deps = implementation_deps,
         copts = copts,
         cxxopts = cxxopts,

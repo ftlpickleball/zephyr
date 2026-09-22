@@ -39,7 +39,10 @@ cc_library(
 
 cc_library(
     name = "hal_soc_headers_library",
-    deps = ["@hal_atmel//:same70b"],
+    deps = [
+        "@hal_atmel//:same70b",
+        "//soc/atmel/sam/samx7x:samx7x_hdrs",
+    ],
 )
 
 platform(
