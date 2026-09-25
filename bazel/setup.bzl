@@ -769,6 +769,11 @@ def _zephyr_setup_core_impl(mctx):
                     resolved_conf_fragments.append(fragment)
             repo["conf_fragments"] = resolved_conf_fragments
 
+    # board_index maps board IDs to package labels, not paths: in-tree boards are in Zephyr's own
+    # repository, whose canonical name is zephyr_canonical ("@@" when Zephyr is the root module).
+    zephyr_canonical = str(Label("//:BUILD.bazel")).split("//")[0]
+    zephyr_packages_prefix = zephyr_canonical + "//"
+
     surviving_combinations = {}
     for app_pkg, app_path in discovered_apps.items():
         surviving_combinations[app_pkg] = []
@@ -776,7 +781,7 @@ def _zephyr_setup_core_impl(mctx):
         is_oot_app = not app_path.startswith(str(zephyr_root))
 
         for board_id, board_path in board_index.items():
-            is_oot_board = not board_path.startswith(str(zephyr_root))
+            is_oot_board = not board_path.startswith(zephyr_packages_prefix)
 
             # OOT Exemption
             if is_oot_app and is_oot_board:
