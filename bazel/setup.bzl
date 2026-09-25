@@ -712,9 +712,6 @@ def _zephyr_setup_core_impl(mctx):
                     collision_registry[app_hash] = norm_app
                     discovered_apps[norm_app] = str(app_path)
                     discovered_apps_labels[norm_app] = app_pkg
-                    mctx.watch(app_path.get_child("prj.conf"))
-                    mctx.watch(app_path.get_child("app.overlay"))
-                    mctx.watch(app_path.get_child("Kconfig"))
                     mctx.watch(app_path.get_child("sysbuild.yml"))
                     mctx.watch(app_path.get_child("sysbuild.conf"))
                     boards_dir = app_path.get_child("boards")
