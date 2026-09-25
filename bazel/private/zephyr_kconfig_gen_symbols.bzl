@@ -39,10 +39,15 @@ def _zephyr_kconfig_schema_impl(rctx):
 
     kconfig_utils_py = rctx.path(Label("//bazel/tools/kconfig:kconfig_utils.py"))
     rctx.watch(kconfig_utils_py)
-    rctx.watch(rctx.path(Label("//bazel/tools/kconfig:kconfig_utils.py")))
 
     for board_dir in resolved_board_dirs:
-        rctx.watch_tree(rctx.path(board_dir))
+        b_path = rctx.path(board_dir)
+        if not b_path.exists:
+            continue
+        for child in b_path.readdir():
+            name = child.basename
+            if name.startswith("Kconfig") or name.endswith(".Kconfig") or name.endswith(".yml") or name.endswith(".yaml"):
+                rctx.watch(child)
 
     for kconfig in rctx.attr.kconfigs:
         rctx.watch(rctx.path(kconfig))
