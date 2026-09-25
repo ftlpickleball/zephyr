@@ -533,7 +533,7 @@ def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, sy
                                             )
                     except:
                         pass
-                elif fname in ["BUILD.bazel", "BUILD"] or fname.endswith(".bzl"):
+                elif fname in ["BUILD.bazel", "BUILD"] or fname.endswith(".bzl") or fname.endswith(".BUILD"):
                     try:
                         with open(os.path.join(root, fname), "r", errors="ignore") as f:
                             content = f.read()
