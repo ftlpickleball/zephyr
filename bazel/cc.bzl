@@ -41,7 +41,8 @@ def zephyr_soc_library(*, name, **kwargs):
     srcs = kwargs.pop("srcs", []) + [
         Label("//:hal_soc_extra_srcs"),
     ]
-    base_deps = kwargs.pop("deps", []) + [
+    user_deps = kwargs.pop("deps", [])
+    base_deps = user_deps + [
         Label("//:internal_zephyr_soc_mandatory_deps"),
         Label("//:arch_headers_library"),
         Label("//:hal_soc_headers_library"),
@@ -63,7 +64,7 @@ def zephyr_soc_library(*, name, **kwargs):
         hdrs = hdrs,
         includes = includes,
         defines = defines,
-        deps = base_deps,
+        deps = user_deps,
         visibility = visibility,
     )
 

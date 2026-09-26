@@ -27,6 +27,7 @@ def zephyr_sysbuild(name, main, **kwargs):
         main: Label of the main Zephyr application.
         **kwargs: Additional arguments passed to the underlying rule.
     """
+    testonly = kwargs.get("testonly", False)
 
     # Normalize main label to match index keys
     norm_main = str(main).split(":")[0]
@@ -58,6 +59,7 @@ def zephyr_sysbuild(name, main, **kwargs):
                 name = t_name,
                 dep = helper_target,
                 platform = platform,
+                testonly = testonly,
             )
             all_helpers_targets[helper_name] = ":" + t_name
         else:
@@ -78,6 +80,7 @@ def zephyr_sysbuild(name, main, **kwargs):
                 name = t_name,
                 dep = helper_target,
                 platform = platform,
+                testonly = testonly,
             )
             all_helpers_targets["%s:%s" % (board_id, helper_name)] = ":" + t_name
 
