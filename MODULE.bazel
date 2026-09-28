@@ -193,3 +193,12 @@ use_repo(
 )
 
 zephyr_setup_apps = use_extension("//bazel:setup.bzl", "zephyr_setup_apps")
+
+git_repository = use_repo_rule("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
+git_repository(
+    name = "hal_tdk",
+    build_file = "@zephyr//modules/hal_tdk:external.BUILD",
+    commit = "0f209bd0a4b6511c8c6ffddda75da1fe6988df8f",
+    remote = "https://github.com/zephyrproject-rtos/hal_tdk.git",
+)

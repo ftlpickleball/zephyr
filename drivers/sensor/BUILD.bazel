@@ -239,6 +239,11 @@ zephyr_cc_library(
         ],
         "//conditions:default": [],
     }) + select({
+        "@zephyr_kconfig//:CONFIG_ICM45686=true": [
+            "//" + package_name() + "/tdk/icm45686",
+        ],
+        "//conditions:default": [],
+    }) + select({
         ":config_sensor_clock_rtc_or_config_sensor_clock_counter": [":sensor_config_sensor_clock_rtc_or_config_sensor_clock_counter_deps"],
         "@zephyr_kconfig//:CONFIG_SENSOR_CLOCK_SYSTEM=true": [":sensor_config_sensor_clock_system_deps"],
         "//conditions:default": [],
