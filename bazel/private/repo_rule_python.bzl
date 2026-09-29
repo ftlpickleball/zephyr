@@ -93,6 +93,9 @@ def get_python(ctx, extra_import_paths = [], pip_deps = None):
 
     py_env = {
         "PYTHONPATH": pythonpath,
+        # The scripts may live in the workspace (e.g. an override of @zephyr), whose directory
+        # listings can be watched: don't write __pycache__ next to them.
+        "PYTHONDONTWRITEBYTECODE": "1",
     }
 
     python_interpreter = str(ctx.path(python_interpreter_label))
