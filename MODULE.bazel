@@ -154,6 +154,20 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/hal_nordic.git",
 )
 
+new_git_repository(
+    name = "mbedtls",
+    build_file = "@zephyr//modules/mbedtls:external.BUILD",
+    commit = "098e120afb51877ed814bdc04443890ae12e0642",
+    remote = "https://github.com/zephyrproject-rtos/mbedtls.git",
+)
+
+new_git_repository(
+    name = "tf_psa_crypto",
+    build_file = "@zephyr//modules/mbedtls:tf_psa_crypto.BUILD",
+    commit = "fa92349590a54959ee2efc21b668e5afdb144726",
+    remote = "https://github.com/zephyrproject-rtos/tf-psa-crypto.git",
+)
+
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
 zephyr_setup.env(
     apps_dirs = [

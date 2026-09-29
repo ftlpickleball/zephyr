@@ -162,6 +162,11 @@ cc_library(
         ],
         "//conditions:default": [],
     }) + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS_BUILTIN=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_ZBUS=true": [
             "//subsys/zbus",
         ],

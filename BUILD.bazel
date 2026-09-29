@@ -417,5 +417,8 @@ cc_library(
         ":internal_zephyr_mandatory_deps",
         ":internal_zephyr_optional_deps",
         "//include:zephyr",
-    ],
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS_BUILTIN=true": ["@mbedtls//:headers"],
+        "//conditions:default": [],
+    }),
 )

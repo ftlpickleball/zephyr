@@ -1,0 +1,50 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "external.BUILD",
+    "tf_psa_crypto.BUILD",
+])
+
+cc_library(
+    name = "mbedtls_config",
+    hdrs = glob([
+        "configs/*.h",
+        "include/**/*.h",
+    ]),
+    defines = [
+        "MBEDTLS_CONFIG_FILE=CONFIG_MBEDTLS_CONFIG_FILE",
+        "TF_PSA_CRYPTO_CONFIG_FILE=CONFIG_TF_PSA_CRYPTO_CONFIG_FILE",
+    ],
+    includes = [
+        "configs",
+        "include",
+    ],
+    deps = [
+        "//:autoconf_library",
+        "//include:zephyr",
+    ],
+)
+
+zephyr_cc_library(
+    name = "zephyr_mbedtls_support",
+    srcs = [
+        "zephyr_entropy.c",
+        "zephyr_init.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS_DEBUG=true": ["debug.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS_SHELL=true": ["shell.c"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "@mbedtls//:mbedtls_core",
+        "@tf_psa_crypto",
+    ],
+)
