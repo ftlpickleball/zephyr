@@ -6,7 +6,7 @@ if ! command -v bazelisk &> /dev/null; then
   echo "Install bazelisk locally so it does not have to be downloaded on every run." >&2
   BAZELISK_DIR="$(mktemp -d)"
   trap 'rm -rf "${BAZELISK_DIR}"' EXIT
-  cipd install 'fuchsia/third_party/bazelisk/${platform}' latest -root "${BAZELISK_DIR}"
+  cipd ensure -ensure-file - -root "${BAZELISK_DIR}" <<< 'fuchsia/third_party/bazelisk/${platform} latest'
   export PATH="${BAZELISK_DIR}:${PATH}"
 fi
 
