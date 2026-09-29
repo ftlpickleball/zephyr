@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "crc",
+    srcs = [
+        "crc16_sw.c",
+        "crc24_sw.c",
+        "crc32_sw.c",
+        "crc32c_sw.c",
+        "crc32k_4_2_sw.c",
+        "crc4_sw.c",
+        "crc7_sw.c",
+        "crc8_sw.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_CRC_HW_HANDLER=true": [
+            "crc_hardware.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_CRC_SHELL=true": [
+            "crc_shell.c",
+        ],
+        "//conditions:default": [],
+    }),
+)
