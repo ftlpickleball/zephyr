@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "icm45686",
+    srcs = [
+        "icm45686.c",
+        "icm45686_bus.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_SENSOR_ASYNC_API=true": [
+            "icm45686_decoder.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ICM45686_TRIGGER=true": [
+            "icm45686_trigger.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_TDK_APEX=true": [
+            "icm45686_apex.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ICM45686_STREAM=true": [
+            "icm45686_stream.c",
+        ],
+        "//conditions:default": [],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//modules/hal_tdk",
+    ],
+)
