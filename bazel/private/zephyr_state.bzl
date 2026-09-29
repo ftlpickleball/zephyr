@@ -4,14 +4,21 @@
 """Repository rule for the global Zephyr discovery state."""
 
 def _zephyr_state_repo_impl(rctx):
-    rctx.file("BUILD.bazel", 'exports_files(["state.json"])')
+    rctx.file("BUILD.bazel", 'exports_files(["state.json", "context.json"])')
     rctx.file("state.json", rctx.attr.content)
+    rctx.file("context.json", rctx.attr.context)
     return rctx.repo_metadata(reproducible = True)
 
 zephyr_state_repo = repository_rule(
     implementation = _zephyr_state_repo_impl,
     attrs = {
         "content": attr.string(mandatory = True),
+        "context": attr.string(
+            default = "{}",
+            doc = "JSON read by every configuration repository: module roots, OOT DTS roots " +
+                  "and pin files. Kept apart from state.json so that discovering new apps or " +
+                  "boards does not re-run existing configurations.",
+        ),
     },
 )
 

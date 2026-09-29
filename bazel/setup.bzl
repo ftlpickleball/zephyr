@@ -882,14 +882,26 @@ def _zephyr_setup_core_impl(mctx):
         "sysbuild_metadata": sysbuild_metadata,
         "translated_conf": sysbuild_metadata.get("translated_confs", {}),
     }
+    # What every configuration repository needs besides its own attributes. It is a separate file
+    # so that discovering a new app or board (which changes state.json) does not re-run the
+    # existing configurations. Modules are sorted by name within each group: the generators used
+    # to read them from state.json, whose keys json.encode() sorts, and their order is visible in
+    # the generated files.
+    context = {
+        "modules": [
+            {"original": group[name]["original"], "relpath": group[name]["relpath"]}
+            for group in [discovered_modules_labels, discovered_config_only_modules_labels]
+            for name in sorted(group.keys())
+        ],
+        "oot_dts_roots": [str(l) for l in boards_dir_labels],
+        "pin_files": [],
+    }
+    context_json = json.encode(context)
     zephyr_state_repo(
         name = "zephyr_state",
         content = json.encode(state_data),
+        context = context_json,
     )
-    print("DEBUG _zephyr_setup_core_impl: zephyr_state workspace_name =", Label("@zephyr_state//:state.json").workspace_name)
-    print("DEBUG _zephyr_setup_core_impl: BUILD.bazel workspace_name =", Label("//:BUILD.bazel").workspace_name)
-    print("DEBUG _zephyr_setup_core_impl: BUILD.bazel str =", str(Label("//:BUILD.bazel")))
-    print("DEBUG _zephyr_setup_core_impl: zephyr_state str =", str(Label("@zephyr_state//:state.json")))
 
     version_header(
         name = "zephyr_version",
@@ -933,10 +945,17 @@ def _zephyr_setup_core_impl(mctx):
         content = index_content,
     )
 
+    # The order the schema generator used to see these in, from state.json (sorted keys): board
+    # packages by first appearance in board_index, and auto-linked modules by name.
+    board_dirs = {board_index[b]: True for b in sorted(board_index.keys())}.keys()
     zephyr_kconfig_schema(
         name = "zephyr_kconfig",
-        state_file = "@zephyr_state//:state.json",
-        kconfigs = watched_kconfigs,
+        board_dirs = board_dirs,
+        context = context_json,
+        local_modules = [
+            discovered_modules_labels[name]["target"]
+            for name in sorted(discovered_modules_labels.keys())
+        ],
     )
 
     return mctx.extension_metadata(reproducible = True)
@@ -950,7 +969,6 @@ def _get_parent_platform(pkg, board_id):
 def _zephyr_setup_apps_impl(mctx):
     """Implementation of zephyr_setup_apps module extension."""
     state_file = mctx.path(Label("@zephyr_state//:state.json"))
-    print("DEBUG _zephyr_setup_apps_impl: state_file.exists =", state_file.exists, "path =", state_file)
     if not state_file.exists:
         return mctx.extension_metadata(reproducible = True)
     state = json.decode(mctx.read(state_file))
@@ -980,11 +998,9 @@ def _zephyr_setup_apps_impl(mctx):
             repo_name = get_zc_repo_name_from_precomputed(app_hash, board_id_to_safe[board_id])
             pkg = board_to_package.get(board_id)
             if not pkg:
-                print("DEBUG: board_id not in board_to_package:", board_id)
                 continue
 
             parent_platform = _get_parent_platform(pkg, board_id)
-            print("DEBUG: generating repo_name:", repo_name, "for app_pkg:", app_pkg, "board_id:", board_id, "parent_platform:", parent_platform)
 
             app_fragments = state.get("translated_conf", {}).get(app_pkg, {})
             main_fragment = app_fragments.get("main", "")
@@ -998,9 +1014,10 @@ def _zephyr_setup_apps_impl(mctx):
             gen_zephyr_config(
                 name = repo_name,
                 app_label = resolved_app_label,
+                app_dir = discovered_apps.get(app_pkg, ""),
                 board_id = board_id,
+                board_dir = board_index.get(board_id, ""),
                 parent_platform = parent_platform,
-                state_file = "@zephyr_state//:state.json",
                 extra_kconfig = main_fragment,
             )
             all_repo_names.append(repo_name)
@@ -1018,9 +1035,10 @@ def _zephyr_setup_apps_impl(mctx):
         gen_zephyr_config(
             name = repo["name"],
             app_label = repo["app_label"],
+            app_dir = discovered_apps.get(normalize_app_label(Label(repo["app_label"])), ""),
             board_id = board_id,
+            board_dir = board_index.get(board_id, ""),
             parent_platform = parent_platform,
-            state_file = "@zephyr_state//:state.json",
             conf_fragments = repo["conf_fragments"],
             dtc_overlays = repo.get("dtc_overlays", []),
             extra_kconfig = repo.get("extra_kconfig", ""),
