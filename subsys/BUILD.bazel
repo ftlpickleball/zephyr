@@ -167,6 +167,11 @@ cc_library(
         ],
         "//conditions:default": [],
     }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUBOOT_BOOTUTIL_LIB=true": [
+            "@mcuboot//:mcuboot_util",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_ZBUS=true": [
             "//subsys/zbus",
         ],

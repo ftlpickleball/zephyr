@@ -168,11 +168,19 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/tf-psa-crypto.git",
 )
 
+new_git_repository(
+    name = "mcuboot",
+    build_file = "@zephyr//modules/mcuboot:external.BUILD",
+    commit = "6d3b3d2c38ab20c242e5b9abb04d050086383eb2",
+    remote = "https://github.com/zephyrproject-rtos/mcuboot.git",
+)
+
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
 zephyr_setup.env(
     apps_dirs = [
         "//samples",
         "//tests",
+        "@mcuboot//:boot/zephyr",
     ],
     boards_dirs = ["//boards"],
     manual_boards = [
@@ -196,6 +204,7 @@ zephyr_setup.env(
     modules = [
         "@hal_adi//:zephyr/module.yml",
         "@hal_nordic//:zephyr/module.yml",
+        "@mcuboot//:zephyr/module.yml",
     ],
 )
 use_repo(

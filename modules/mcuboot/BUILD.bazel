@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "external.BUILD",
+])
+
+alias(
+    name = "mbedtls",
+    actual = "@mbedtls",
+)
+
+label_flag(
+    name = "mcuboot_hooks",
+    build_setting_default = "//:zephyr_unspecified_backend",
+)
