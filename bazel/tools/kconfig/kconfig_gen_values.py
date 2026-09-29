@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("--app-name", default="zephyr_app")
     parser.add_argument("--toolchain-variant", default=None)
     parser.add_argument("--conf-fragments", nargs="+", default=[])
+    parser.add_argument("--dtc-overlays", nargs="+", default=[])
     return parser.parse_args()
 
 def setup_environment(args, zephyr_base, output_dir, board_dir):
@@ -205,6 +206,9 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir):
         raise RuntimeError(f"Could not find DTS file for board {args.board} in {board_dir}. Tried: {candidates}")
 
     overlays = discover_overlays(args.app_dir, board_name, board_qualifiers, board_revision, board_dir)
+    for extra_overlay in args.dtc_overlays:
+        if os.path.exists(extra_overlay) and extra_overlay not in overlays:
+            overlays.append(extra_overlay)
 
     dts_input_path = os.path.join(output_dir, "dts_input.c")
     os.makedirs(output_dir, exist_ok=True)

@@ -61,6 +61,15 @@ def _gen_zephyr_config_impl(rctx):
         rctx.watch(fragment_path)
         resolved_conf_fragments.append(str(fragment_path))
 
+    resolved_dtc_overlays = []
+    for overlay in rctx.attr.dtc_overlays:
+        if not overlay.startswith("/"):
+            overlay_path = rctx.path(str(rctx.workspace_root) + "/" + overlay)
+        else:
+            overlay_path = rctx.path(overlay)
+        rctx.watch(overlay_path)
+        resolved_dtc_overlays.append(str(overlay_path))
+
     if rctx.attr.extra_kconfig:
         rctx.file("sysbuild_generated.conf", rctx.attr.extra_kconfig)
         resolved_conf_fragments.append(str(rctx.path("sysbuild_generated.conf")))
@@ -77,6 +86,7 @@ def _gen_zephyr_config_impl(rctx):
         app_name = rctx.attr.app_label.name,
         oot_dts_roots = resolved_oot_dts_roots,
         conf_fragments = resolved_conf_fragments,
+        dtc_overlays = resolved_dtc_overlays,
     )
 
     result = python.execute(args)
@@ -115,6 +125,7 @@ gen_zephyr_config = repository_rule(
         "parent_platform": attr.label(mandatory = True),
         "state_file": attr.label(mandatory = True),
         "conf_fragments": attr.string_list(),
+        "dtc_overlays": attr.string_list(),
         "extra_kconfig": attr.string(),
         "_kconfig_gen_values_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_values.py"),
         "_kconfig_schema": attr.label(default = "@zephyr_kconfig//:BUILD.bazel"),

@@ -15,15 +15,24 @@ def normalize_app_label(app_label):
     if type(app_label) == "Label":
         if app_label.package:
             return app_label.package
+        if app_label.workspace_name:
+            return parse_label(app_label).apparent_repo
         return app_label.name
 
     norm_app = str(app_label)
 
     # Discard repo part if present (e.g. @@repo//path -> path)
+    repo_part = ""
     if "//" in norm_app:
-        norm_app = norm_app.split("//")[-1]
+        repo_part, norm_app = norm_app.split("//", 1)
 
-    norm_app = norm_app.strip("/").lstrip(":")
+    norm_app = norm_app.strip("/")
+    if norm_app.startswith(":"):
+        if repo_part:
+            apparent_repo = parse_label(str(app_label)).apparent_repo
+            if apparent_repo:
+                return apparent_repo
+        norm_app = norm_app.lstrip(":")
 
     # If the label has a target name, and it matches the last part of the package name, strip it.
     # e.g., examples/hello_bazel:hello_bazel -> examples/hello_bazel
@@ -33,8 +42,11 @@ def normalize_app_label(app_label):
         for ext in [".elf", "_elf", "_bin", ".bin"]:
             if t_base.endswith(ext):
                 t_base = t_base[:-len(ext)]
-        if pkg.endswith(target) or target == pkg.split("/")[-1] or pkg.endswith(t_base) or t_base == pkg.split("/")[-1]:
+        if target in ["BUILD", "BUILD.bazel"] or pkg.endswith(target) or target == pkg.split("/")[-1] or pkg.endswith(t_base) or t_base == pkg.split("/")[-1]:
             norm_app = pkg
+
+    if not norm_app and repo_part:
+        return parse_label(str(app_label)).apparent_repo
 
     return norm_app
 
@@ -127,6 +139,21 @@ def normalize_repo_name(name):
         return "@@" + name
     return "@" + name
 
+def _extract_apparent_repo(c_name):
+    if "~" in c_name:
+        parts = c_name.split("~")
+        if len(parts) >= 2:
+            return parts[0]
+    elif "+" in c_name:
+        parts = c_name.split("+")
+        if len(parts) >= 4 and parts[1] == "":
+            return parts[3]
+        elif len(parts) >= 3 and parts[0] == "" and parts[1] == "_repo_rules":
+            return parts[2]
+        else:
+            return parts[-1]
+    return c_name
+
 def parse_label(label_or_str):
     """Parses a label or string into its component parts, including the apparent repo name.
 
@@ -151,7 +178,7 @@ def parse_label(label_or_str):
         lbl = label_or_str
         if lbl.workspace_name:
             canonical_repo = "@@" + lbl.workspace_name
-            apparent_repo = lbl.workspace_name
+            apparent_repo = _extract_apparent_repo(lbl.workspace_name)
         else:
             canonical_repo = "@@"
             apparent_repo = ""
@@ -172,20 +199,7 @@ def parse_label(label_or_str):
                 canonical_repo = label_str
 
             c_name = canonical_repo[2:]
-            if "~" in c_name:
-                parts = c_name.split("~")
-                if len(parts) >= 2:
-                    apparent_repo = parts[0]
-            elif "+" in c_name:
-                parts = c_name.split("+")
-                if len(parts) >= 4 and parts[1] == "":
-                    apparent_repo = parts[3]
-                elif len(parts) >= 3 and parts[0] == "" and parts[1] == "_repo_rules":
-                    apparent_repo = parts[2]
-                else:
-                    apparent_repo = parts[-1]
-            else:
-                apparent_repo = c_name
+            apparent_repo = _extract_apparent_repo(c_name)
         elif label_str.startswith("@"):
             # Apparent label
             if "//" in label_str:

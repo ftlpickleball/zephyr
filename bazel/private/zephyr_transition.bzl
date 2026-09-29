@@ -3,8 +3,8 @@
 
 """Incoming transition for Zephyr applications."""
 
-load("//bazel:naming.bzl", "get_zc_repo_name", "parse_label")
-load("@zephyr_index//:index.bzl", "PACKAGE_TO_BOARDS", "REPO_NAME_TO_CANONICAL")
+load("//bazel:naming.bzl", "get_zc_repo_name", "normalize_app_label", "parse_label")
+load("@zephyr_index//:index.bzl", "PACKAGE_TO_BOARDS", "REPO_NAME_TO_CANONICAL", "SYSBUILD_CUSTOM_REPOS")
 
 def _matches_board_base(target_name, b_base):
     """Checks if a user platform target name matches a candidate Zephyr board ID.
@@ -186,7 +186,8 @@ def _zephyr_transition_impl(settings, attr):
     if not board_id:
         fail("Unknown Zephyr board: %s. Valid boards in %s: %s" % (platform_label, pkg, pkg_boards))
 
-    repo_name = get_zc_repo_name(attr.app_label, board_id)
+    app_board_key = "%s:%s" % (normalize_app_label(attr.app_label), board_id)
+    repo_name = SYSBUILD_CUSTOM_REPOS.get(app_board_key) or get_zc_repo_name(attr.app_label, board_id)
     canonical_repo = REPO_NAME_TO_CANONICAL.get(repo_name)
     if not canonical_repo:
         fail("""

@@ -16,7 +16,8 @@ def get_kconfig_args(
         app_name = None,
         board_dirs = [],
         oot_dts_roots = [],
-        conf_fragments = []):
+        conf_fragments = [],
+        dtc_overlays = []):
     args = [
         str(script),
         "--zephyr-base",
@@ -52,5 +53,9 @@ def get_kconfig_args(
     if conf_fragments:
         args.append("--conf-fragments")
         args.extend(conf_fragments)
+
+    if dtc_overlays:
+        args.append("--dtc-overlays")
+        args.extend(dtc_overlays)
 
     return args

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-load("//bazel:naming.bzl", "derive_module_label", "get_app_hash", "get_zc_repo_name_from_precomputed", "parse_label", "sanitize_board_id")
+load("//bazel:naming.bzl", "derive_module_label", "get_app_hash", "get_zc_repo_name_from_precomputed", "normalize_app_label", "parse_label", "sanitize_board_id")
 load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
 load("//bazel/private:zephyr_kconfig_gen_symbols.bzl", "zephyr_kconfig_schema")
 load("//bazel/private:zephyr_kconfig_gen_values.bzl", "gen_zephyr_config")
@@ -418,10 +418,13 @@ def _zephyr_setup_core_impl(mctx):
     modules_labels = []
     manual_boards = []
 
+    zephyr_ws = Label("//:BUILD.bazel").workspace_name
     for mod in mctx.modules:
         for tag in mod.tags.env:
-            if mod.is_root:
-                apps_dir_labels.extend(tag.apps_dirs)
+            for app_lbl in tag.apps_dirs:
+                if mod.is_root or app_lbl.workspace_name != zephyr_ws:
+                    if app_lbl not in apps_dir_labels:
+                        apps_dir_labels.append(app_lbl)
             boards_dir_labels.extend(tag.boards_dirs)
             modules_labels.extend(tag.modules)
             manual_boards.extend(tag.manual_boards)
@@ -698,20 +701,19 @@ def _zephyr_setup_core_impl(mctx):
                 app_path = mctx.path(line).dirname
                 app_pkg = get_package_for_path(mctx, app_path, apps_dir_labels)
                 if app_pkg:
-                    # Robust normalization: strip repo and redundant target name
-                    norm_app = str(app_pkg).split(":")[0]
-                    if "//" in norm_app:
-                        norm_app = norm_app.split("//")[-1]
-                    norm_app = norm_app.strip("/").lstrip(":")
+                    norm_app = normalize_app_label(app_pkg)
 
-                    # Actually let's use the same logic as naming.bzl for the check
-                    h = hash(norm_app)
-                    app_hash = ("%x" % (h & 0xFFFFFFFF))
-                    app_hash = ("00000000" + app_hash)[-8:]
+                    build_dir = find_nearest_build_file(mctx, app_path)
+                    app_dir_label = app_pkg
+                    if build_dir and str(app_path.realpath) != str(build_dir.realpath):
+                        rel_from_build = str(app_path.realpath)[len(str(build_dir.realpath)):].strip("/")
+                        app_dir_label = str(app_pkg).split(":")[0] + ":" + rel_from_build + "/prj.conf"
+
+                    app_hash = get_app_hash(norm_app)
 
                     collision_registry[app_hash] = norm_app
                     discovered_apps[norm_app] = str(app_path)
-                    discovered_apps_labels[norm_app] = app_pkg
+                    discovered_apps_labels[norm_app] = app_dir_label
                     mctx.watch(app_path.get_child("sysbuild.yml"))
                     mctx.watch(app_path.get_child("sysbuild.conf"))
                     boards_dir = app_path.get_child("boards")
@@ -757,10 +759,19 @@ def _zephyr_setup_core_impl(mctx):
     sysbuild_metadata_content = mctx.read(sysbuild_metadata_file)
     sysbuild_metadata = json.decode(sysbuild_metadata_content)
 
-    # Post-process to make conf_fragments relative to workspace root
+    safe_to_board_id = {}
+    for b in board_index.keys():
+        safe_to_board_id[sanitize_board_id(b)] = b
+        _, slash, variant = b.partition("/")
+        if slash:
+            safe_to_board_id.setdefault(sanitize_board_id(variant), b)
+
+    # Post-process to make conf_fragments and dtc_overlays relative to workspace root
     if "custom_repos" in sysbuild_metadata:
         for repo in sysbuild_metadata["custom_repos"]:
             parent_app = repo["parent_app"]
+            if repo["board_id"] not in board_index and repo["board_id"] in safe_to_board_id:
+                repo["board_id"] = safe_to_board_id[repo["board_id"]]
             resolved_conf_fragments = []
             for fragment in repo["conf_fragments"]:
                 if not fragment.startswith("/"):
@@ -768,6 +779,14 @@ def _zephyr_setup_core_impl(mctx):
                 else:
                     resolved_conf_fragments.append(fragment)
             repo["conf_fragments"] = resolved_conf_fragments
+
+            resolved_dtc_overlays = []
+            for overlay in repo.get("dtc_overlays", []):
+                if not overlay.startswith("/"):
+                    resolved_dtc_overlays.append(parent_app + "/" + overlay)
+                else:
+                    resolved_dtc_overlays.append(overlay)
+            repo["dtc_overlays"] = resolved_dtc_overlays
 
     # board_index maps board IDs to package labels, not paths: in-tree boards are in Zephyr's own
     # repository, whose canonical name is zephyr_canonical ("@@" when Zephyr is the root module).
@@ -898,9 +917,9 @@ def _zephyr_setup_core_impl(mctx):
     index_content += "SYSBUILD_METADATA = %r\n" % sysbuild_metadata
     sysbuild_custom_repos = {}
     for repo in custom_repos:
-        key = "%s:%s:%s" % (repo["parent_app"], repo["helper_name"], repo["board_id"])
-        sysbuild_custom_repos[key] = repo["name"]
-        for fragment in repo["conf_fragments"]:
+        app_board_key = "%s:%s" % (normalize_app_label(repo["app_label"]), repo["board_id"])
+        sysbuild_custom_repos.setdefault(app_board_key, repo["name"])
+        for fragment in repo["conf_fragments"] + repo.get("dtc_overlays", []):
             if not fragment.startswith("/"):
                 fragment_path = mctx.path(str(workspace_root) + "/" + fragment)
             else:
@@ -970,9 +989,15 @@ def _zephyr_setup_apps_impl(mctx):
             app_fragments = state.get("translated_conf", {}).get(app_pkg, {})
             main_fragment = app_fragments.get("main", "")
 
+            app_dir_label = discovered_apps.get(app_pkg, "")
+            if app_dir_label.startswith("@") and not app_dir_label.startswith("@@//"):
+                resolved_app_label = app_dir_label.split(":")[0] + ":" + app_pkg
+            else:
+                resolved_app_label = "//" + app_pkg if not app_pkg.startswith("//") else app_pkg
+
             gen_zephyr_config(
                 name = repo_name,
-                app_label = "//" + app_pkg if not app_pkg.startswith("//") else app_pkg,
+                app_label = resolved_app_label,
                 board_id = board_id,
                 parent_platform = parent_platform,
                 state_file = "@zephyr_state//:state.json",
@@ -997,6 +1022,7 @@ def _zephyr_setup_apps_impl(mctx):
             parent_platform = parent_platform,
             state_file = "@zephyr_state//:state.json",
             conf_fragments = repo["conf_fragments"],
+            dtc_overlays = repo.get("dtc_overlays", []),
             extra_kconfig = repo.get("extra_kconfig", ""),
         )
         all_repo_names.append(repo["name"])

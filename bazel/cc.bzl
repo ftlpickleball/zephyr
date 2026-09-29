@@ -179,6 +179,8 @@ def zephyr_module(*, name, config, srcs = [], deps = [], **kwargs):
         else:
             remaining_kwargs[k] = v
 
+    remaining_kwargs.setdefault("visibility", ["//visibility:public"])
+
     zephyr_cc_library(
         name = name,
         srcs = select({
@@ -868,7 +870,8 @@ def zephyr_app(*, name, app_label = None, **kwargs):
         **kwargs: Arguments to pass to _zephyr_cc_binary.
     """
     if not app_label:
-        app_label = "//" + native.package_name()
+        pkg = native.package_name()
+        app_label = ("//" + pkg) if pkg else str(native.package_relative_label(name))
     else:
         app_label = str(app_label)
 

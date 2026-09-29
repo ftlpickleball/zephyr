@@ -195,17 +195,50 @@ def main(argv=None):
                 else:
                     helper_board_id = board_id
 
-                rel_conf_fragment_path = os.path.join(
-                    "sysbuild", f"{helper_name}.conf"
+                target_app_name = (
+                    helper_target.split(":")[-1]
+                    if ":" in helper_target
+                    else os.path.basename(helper_target.rstrip("/"))
                 )
-                conf_fragment_path = os.path.join(
-                    app_path, rel_conf_fragment_path
-                )
-                has_conf_fragment = os.path.exists(conf_fragment_path)
+                image_names = [helper_name]
+                if target_app_name and target_app_name not in image_names:
+                    image_names.append(target_app_name)
+
+                board_candidates = [helper_board_id]
+                safe_helper_board = sanitize_board_id(helper_board_id)
+                if safe_helper_board not in board_candidates:
+                    board_candidates.append(safe_helper_board)
+
+                conf_fragments = []
+                dtc_overlays = []
+                for img_name in image_names:
+                    for rel_cand in [
+                        os.path.join("sysbuild", img_name, "prj.conf"),
+                        *[
+                            os.path.join("sysbuild", img_name, "boards", f"{b}.conf")
+                            for b in board_candidates
+                        ],
+                        os.path.join("sysbuild", f"{img_name}.conf"),
+                    ]:
+                        if os.path.exists(os.path.join(app_path, rel_cand)) and rel_cand not in conf_fragments:
+                            conf_fragments.append(rel_cand)
+
+                    for rel_cand in [
+                        *[
+                            os.path.join("sysbuild", img_name, "boards", f"{b}.overlay")
+                            for b in board_candidates
+                        ],
+                        os.path.join("sysbuild", img_name, "app.overlay"),
+                        os.path.join("sysbuild", f"{img_name}.overlay"),
+                    ]:
+                        if os.path.exists(os.path.join(app_path, rel_cand)) and rel_cand not in dtc_overlays:
+                            dtc_overlays.append(rel_cand)
 
                 helper_fragment = app_fragments.get(helper_name, "")
+                if not helper_fragment and target_app_name:
+                    helper_fragment = app_fragments.get(target_app_name, "")
 
-                if has_conf_fragment or helper_fragment:
+                if conf_fragments or dtc_overlays or helper_fragment:
                     path_str = f"{app_pkg}->{helper_name}"
                     path_hash = hashlib.md5(
                         path_str.encode("utf-8")
@@ -213,15 +246,12 @@ def main(argv=None):
                     safe_board = sanitize_board_id(helper_board_id)
                     repo_name = f"zc_{path_hash}_{safe_board}"
 
-                    conf_fragments = []
-                    if has_conf_fragment:
-                        conf_fragments.append(rel_conf_fragment_path)
-
                     repos_to_declare.append({
                         "name": repo_name,
                         "app_label": helper_target,
                         "board_id": helper_board_id,  # Use helper's board ID
                         "conf_fragments": conf_fragments,
+                        "dtc_overlays": dtc_overlays,
                         "extra_kconfig": helper_fragment,
                         "parent_app": app_pkg,
                         "helper_name": helper_name,
