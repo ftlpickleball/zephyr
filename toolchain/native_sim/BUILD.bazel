@@ -3,26 +3,11 @@
 
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
-load("@rules_cc//cc/toolchains:tool.bzl", "cc_tool")
-load("@rules_cc//cc/toolchains:tool_map.bzl", "cc_tool_map")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
-
-# Use @zephyr_sdk_llvm for native_sim LLVM tools
-
-cc_args(
-    name = "no_canonical_prefixes",
-    actions = [
-        "@rules_cc//cc/toolchains/actions:compile_actions",
-    ],
-    args = [
-        "-no-canonical-prefixes",
-        "--target=x86_64-unknown-linux-gnu",
-    ],
-)
 
 cc_args(
     name = "posix_norelro_args",
@@ -35,31 +20,14 @@ cc_args(
 )
 
 cc_args(
-    name = "linux_link_libs",
+    name = "linux_sys_libs",
     actions = [
         "@rules_cc//cc/toolchains/actions:link_actions",
     ],
-    allowlist_absolute_include_directories = [
-        "/usr/include",
-        "/usr/local/include",
-        "/usr/lib",
-        "/usr/lib/gcc",
-    ],
     args = [
-        "-pthread",
         "-ldl",
         "-lrt",
         "-lm",
-    ],
-)
-
-cc_args(
-    name = "link_with_lld",
-    actions = [
-        "@rules_cc//cc/toolchains/actions:link_actions",
-    ],
-    args = [
-        "-fuse-ld=lld",
     ],
 )
 
@@ -72,14 +40,15 @@ cc_toolchain(
     name = "native_sim_clang",
     args = select({
         "@platforms//os:linux": [
-            ":linux_link_libs",
+            "@pigweed//pw_toolchain/host_clang:linux_link_libs",
+            "@pigweed//pw_toolchain/host_clang:sysroot_root",
+            ":linux_sys_libs",
         ],
         "//conditions:default": [],
     }) + [
-        ":no_canonical_prefixes",
+        "//toolchain/args:no_canonical_prefixes",
         ":posix_norelro_args",
-        ":link_with_lld",
-    ] + [
+        "@pigweed//pw_toolchain/host_clang:link_with_lld",
         "//toolchain/args:zephyr_mode_defines",
         "//toolchain/args:zephyr_clang_optimization_flags",
         "//toolchain/args:common_warnings",
@@ -87,6 +56,7 @@ cc_toolchain(
     ],
     enabled_features = [
         ":supports_pic",
+        "@pigweed//pw_toolchain/cc/feature:rules_rust_unsupported_feature",
         "//toolchain/capability:compiler_is_clang",
         "//toolchain/capability:linker_is_clang",
     ] + [
@@ -136,5 +106,5 @@ cc_toolchain(
         "//toolchain/args/c:c23",
         "//toolchain/args/c:gnu23",
     ],
-    tool_map = "@zephyr_sdk_llvm//:llvm_tools",
+    tool_map = "@llvm_toolchain//:all_tools",
 )

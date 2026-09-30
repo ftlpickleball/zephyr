@@ -11,3 +11,4 @@ if ! command -v bazelisk &> /dev/null; then
 fi
 
 bazelisk build //samples/hello_world --platforms=@zephyr//boards/qemu/cortex_m3:qemu_cortex_m3
+bazelisk build //samples/hello_world --platforms=@zephyr//boards/native/native_sim:native
