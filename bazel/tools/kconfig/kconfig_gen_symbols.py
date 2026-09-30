@@ -444,6 +444,7 @@ def parse_kconfig_authoritative(
 
 def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, symbol_settings, kconfig_files):
     """Scans files for symbols that might not be visible in the static Kconfig tree."""
+    untyped_symbols = set()
     search_dirs = [zephyr_base] + list(board_dirs) + list(modules)
     for d in search_dirs:
         if not os.path.isdir(d):
@@ -496,17 +497,18 @@ def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, sy
                                     stype = "bool"
 
                                 if stype:
-                                    if full_name not in symbols:
+                                    if (
+                                        full_name not in symbols
+                                        or full_name in untyped_symbols
+                                    ):
                                         symbols[full_name] = stype
-                                    else:
-                                        existing_type = symbols[full_name]
-                                        if existing_type != stype:
-                                            raise Exception(
-                                                f"Conflict: Symbol {full_name} defined with types '{existing_type}' and '{stype}'"
-                                            )
+                                        untyped_symbols.discard(full_name)
+                                    elif symbols[full_name] != stype:
+                                        symbols[full_name] = "string"
                                 else:
                                     if full_name not in symbols:
-                                        symbols[full_name] = "bool"
+                                        symbols[full_name] = "string"
+                                        untyped_symbols.add(full_name)
 
                             # Logging Template expansion
                             if "subsys/logging/Kconfig.template.log_config" in content:
@@ -525,12 +527,16 @@ def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, sy
                                         "_LOG_LEVEL",
                                     ]:
                                         full_name = "CONFIG_" + mod_name + suffix
-                                        if full_name not in symbols:
+                                        if (
+                                            full_name not in symbols
+                                            or full_name in untyped_symbols
+                                        ):
                                             symbols[full_name] = (
                                                 "bool"
                                                 if suffix != "_LOG_LEVEL"
                                                 else "int"
                                             )
+                                            untyped_symbols.discard(full_name)
                     except:
                         pass
                 elif fname in ["BUILD.bazel", "BUILD"] or fname.endswith(".bzl") or fname.endswith(".BUILD"):

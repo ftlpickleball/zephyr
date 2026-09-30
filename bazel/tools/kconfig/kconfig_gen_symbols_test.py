@@ -359,6 +359,50 @@ board:
 
         self.kconfig_mock.Kconfig.assert_called()
 
+    @patch("kconfig_utils.generate_kconfig_dts")
+    def test_untyped_kconfig_block_defaults_to_string_and_upgrades(self, mock_gen_dts):
+        mod1 = Path(self.test_dir) / "mod1"
+        mod1.mkdir()
+        (mod1 / "Kconfig").write_text(
+            'config MCUBOOT_LOG_LEVEL\n    default "OFF"\n\n'
+            'config ONLY_UNTYPED_SYM\n    default "FOO"\n'
+        )
+
+        mod2 = Path(self.test_dir) / "mod2"
+        mod2.mkdir()
+        (mod2 / "Kconfig").write_text(
+            'module = MCUBOOT\nsource "subsys/logging/Kconfig.template.log_config"\n'
+        )
+
+        output_file = os.path.join(self.test_dir, "BUILD.bazel")
+        self.kconfig_mock.Kconfig.return_value.syms = {}
+
+        with patch(
+            "sys.argv",
+            [
+                "kconfig_gen_symbols.py",
+                "--zephyr-base",
+                str(self.zephyr_base),
+                "--modules",
+                str(mod1),
+                str(mod2),
+                "--output",
+                output_file,
+            ],
+        ):
+            kconfig_gen_symbols.main()
+
+        content = Path(output_file).read_text()
+        self.assertIn(
+            'int_flag(name = "CONFIG_MCUBOOT_LOG_LEVEL", build_setting_default = 0)',
+            content,
+        )
+        self.assertIn(
+            'string_flag(name = "CONFIG_ONLY_UNTYPED_SYM", build_setting_default = "")',
+            content,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
+
