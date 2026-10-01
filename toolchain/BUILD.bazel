@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("//toolchain:default_test_toolchain.bzl", "default_test_toolchain")
 
 # This file is loaded unconditionally from WORKSPACE in all builds Google-wide.
 #
@@ -40,6 +41,15 @@ config_setting(
 config_setting(
     name = "compiler_is_gcc",
     flag_values = {":zephyr_toolchain_variant": "gcc"},
+)
+
+# Test toolchain for cross-compilation with Bazel 9.
+# Defining this allows running tests on the host even when the target platform
+# is an embedded board.
+default_test_toolchain(
+    name = "cross_test_toolchain",
+    toolchain = "@bazel_tools//tools/test:empty_toolchain",
+    toolchain_type = "@bazel_tools//tools/test:default_test_toolchain_type",
 )
 
 # arc

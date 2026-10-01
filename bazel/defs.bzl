@@ -776,7 +776,7 @@ def _zephyr_offset_header_impl(ctx):
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
-        requested_features = ctx.features,
+        requested_features = ctx.features + ["zephyr_warning_suppressions"],
         unsupported_features = ctx.disabled_features,
     )
 
@@ -791,9 +791,9 @@ def _zephyr_offset_header_impl(ctx):
     for inc in compilation_context.includes.to_list():
         user_compile_flags.append("-I" + inc)
     for inc in compilation_context.quote_includes.to_list():
-        user_compile_flags.append("-I" + inc)
+        user_compile_flags.append("-iquote" + inc)
     for inc in compilation_context.system_includes.to_list():
-        user_compile_flags.append("-I" + inc)
+        user_compile_flags.append("-isystem" + inc)
 
     all_compilation_contexts = [compilation_context]
     if ctx.files.hdrs or ctx.attr.includes:

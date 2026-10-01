@@ -632,15 +632,37 @@ def _zephyr_setup_core_impl(mctx):
         fail("parse_board_metadata.py failed (%d):\n%s" % (board_meta_res.return_code, board_meta_res.stderr))
     board_revisions_map = json.decode(mctx.read(board_revisions_file))
 
+    all_board_root_paths = [zephyr_root]
+    for l in boards_dir_labels:
+        all_board_root_paths.append(get_dir_from_label(mctx, l))
+
     for path_str, bdata in path_str_dict.items():
         path = mctx.path(path_str)
-        for b_yml_name in ["board.yml", "board.yaml"]:
-            b_yml_file = path.get_child(b_yml_name)
-            if b_yml_file.exists:
-                mctx.watch(b_yml_file)
-        rev_dir = path.get_child("revisions")
-        if rev_dir.exists:
-            mctx.watch(rev_dir)
+        realpath_str = str(path.realpath)
+
+        best_root = None
+        best_root_len = -1
+        for root_path in all_board_root_paths:
+            root_real = str(root_path.realpath)
+            if realpath_str.startswith(root_real):
+                if len(root_real) > best_root_len:
+                    best_root_len = len(root_real)
+                    best_root = root_path
+
+        if best_root:
+            rel = realpath_str[best_root_len:].strip("/")
+            watch_path = best_root
+            for part in rel.split("/"):
+                if part:
+                    watch_path = watch_path.get_child(part)
+
+            for b_yml_name in ["board.yml", "board.yaml"]:
+                b_yml_file = watch_path.get_child(b_yml_name)
+                if b_yml_file.exists:
+                    mctx.watch(b_yml_file)
+            rev_dir = watch_path.get_child("revisions")
+            if rev_dir.exists:
+                mctx.watch(rev_dir)
 
         name = bdata["name"]
         qualifiers = bdata["qualifiers"]
