@@ -565,6 +565,86 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
         f.write(')\n\n')
 
 
+def write_deps_files(output_dir, args, board_dir, conf_files):
+    out_real = os.path.realpath(output_dir)
+    deps = set()
+    dep_dirs = set()
+
+    # 1. Kconfig files visited by kconfig.py
+    kconfig_list_path = os.path.join(output_dir, "kconfig_list.txt")
+    if os.path.exists(kconfig_list_path):
+        with open(kconfig_list_path, "r") as f:
+            for line in f:
+                path = line.strip()
+                if path:
+                    real = os.path.realpath(path)
+                    if real != out_real and not real.startswith(out_real + os.sep):
+                        deps.add(real)
+
+    # 2. Conf files and fragments
+    for conf in conf_files:
+        deps.add(os.path.realpath(conf))
+
+    # 3. Application probed candidates (even if non-existent) and boards dir
+    app_dir = getattr(args, "app_dir", None)
+    if app_dir:
+        deps.add(os.path.realpath(os.path.join(app_dir, "prj.conf")))
+        deps.add(os.path.realpath(os.path.join(app_dir, "Kconfig")))
+        deps.add(os.path.realpath(os.path.join(app_dir, "app.overlay")))
+        dep_dirs.add(os.path.realpath(app_dir))
+        dep_dirs.add(os.path.realpath(os.path.join(app_dir, "boards")))
+
+    # 4. Devicetree files and overlays from dts_input.c
+    dts_input_c = os.path.join(output_dir, "dts_input.c")
+    if os.path.exists(dts_input_c):
+        with open(dts_input_c, "r") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith('#include "') and line.endswith('"'):
+                    inc_path = line[len('#include "'):-1]
+                    deps.add(os.path.realpath(inc_path))
+    elif app_dir and board_dir:
+        board_name = os.environ.get("BOARD", "")
+        board_qualifiers = os.environ.get("BOARD_QUALIFIERS", "")
+        board_revision = os.environ.get("BOARD_REVISION", "")
+        for ov in discover_overlays(app_dir, board_name, board_qualifiers, board_revision, board_dir):
+            deps.add(os.path.realpath(ov))
+
+    # 5. Extra DTC overlays from args
+    if hasattr(args, "dtc_overlays") and args.dtc_overlays:
+        for overlay in args.dtc_overlays:
+            deps.add(os.path.realpath(overlay))
+
+    # 6. Board directory and board metadata
+    if board_dir:
+        dep_dirs.add(os.path.realpath(board_dir))
+        for meta in ["board.yml", "board.yaml", "Kconfig"]:
+            meta_path = os.path.join(board_dir, meta)
+            if os.path.exists(meta_path):
+                deps.add(os.path.realpath(meta_path))
+        board_name = os.environ.get("BOARD", "")
+        if board_name:
+            board_kconfig = os.path.join(board_dir, f"Kconfig.{board_name}")
+            if os.path.exists(board_kconfig):
+                deps.add(os.path.realpath(board_kconfig))
+        board_rev_dir = os.path.join(board_dir, "revisions")
+        if os.path.exists(board_rev_dir):
+            dep_dirs.add(os.path.realpath(board_rev_dir))
+
+    # Write deps.txt
+    with open(os.path.join(output_dir, "deps.txt"), "w") as f:
+        for dep in sorted(deps):
+            f.write(dep + "\n")
+
+    # Write dep_dirs.txt
+    with open(os.path.join(output_dir, "dep_dirs.txt"), "w") as f:
+        for d in sorted(dep_dirs):
+            f.write(d + "\n")
+
+
+
+
+
 def main():
     args = parse_args()
 
@@ -644,6 +724,7 @@ def main():
 
     generate_config_c(kconf, output_dir, args)
     generate_bazel_build(args, kconf, output_dir, kconfiglib)
+    write_deps_files(output_dir, args, board_dir, conf_files)
 
 if __name__ == "__main__":
     main()

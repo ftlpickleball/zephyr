@@ -130,6 +130,10 @@ class TestKconfigGenValues(unittest.TestCase):
         content = Path(autoconf_path).read_text()
         self.assertIn('#define APP_NAME "my_custom_app"', content)
 
+        # Verify deps.txt and dep_dirs.txt were generated
+        self.assertTrue(os.path.exists(os.path.join(output_dir, "deps.txt")))
+        self.assertTrue(os.path.exists(os.path.join(output_dir, "dep_dirs.txt")))
+
     @patch('subprocess.run')
     def test_main_failure(self, mock_run):
         output_dir = os.path.join(self.test_dir, "out")
@@ -473,6 +477,108 @@ class TestKconfigGenValues(unittest.TestCase):
         bindings_args = [a for a in args if a == resolved_bdir]
         # Should be deduplicated
         self.assertEqual(len(bindings_args), 1)
+
+    def test_write_deps_files(self):
+        output_dir = os.path.join(self.test_dir, "out")
+        os.makedirs(output_dir, exist_ok=True)
+        app_dir = os.path.join(self.test_dir, "app")
+        app_boards_dir = os.path.join(app_dir, "boards")
+        board_dir = os.path.join(self.test_dir, "board")
+        os.makedirs(app_boards_dir, exist_ok=True)
+        os.makedirs(board_dir, exist_ok=True)
+
+        prj_conf = os.path.join(app_dir, "prj.conf")
+        Path(prj_conf).touch()
+        app_board_conf = os.path.join(app_boards_dir, "my_board.conf")
+        Path(app_board_conf).touch()
+        board_defconfig = os.path.join(board_dir, "my_board_defconfig")
+        Path(board_defconfig).touch()
+        board_yml = os.path.join(board_dir, "board.yml")
+        Path(board_yml).touch()
+        board_kconfig = os.path.join(board_dir, "Kconfig.my_board")
+        Path(board_kconfig).touch()
+        board_rev_dir = os.path.join(board_dir, "revisions")
+        os.makedirs(board_rev_dir, exist_ok=True)
+
+        # kconfig_list.txt with an external kconfig file and a generated file in output_dir
+        kconfig_external = os.path.join(self.test_dir, "Kconfig.external")
+        Path(kconfig_external).touch()
+        kconfig_generated = os.path.join(output_dir, "Kconfig.dts")
+        Path(kconfig_generated).touch()
+        with open(os.path.join(output_dir, "kconfig_list.txt"), "w") as f:
+            f.write(f"{kconfig_external}\n{kconfig_generated}\n")
+
+        # dts_input.c with DTS file and overlay
+        dts_file = os.path.join(board_dir, "my_board.dts")
+        Path(dts_file).touch()
+        overlay_file = os.path.join(app_boards_dir, "my_board.overlay")
+        Path(overlay_file).touch()
+        with open(os.path.join(output_dir, "dts_input.c"), "w") as f:
+            f.write(f'#include "{dts_file}"\n')
+            f.write(f'#include "{overlay_file}"\n')
+
+        extra_overlay = os.path.join(self.test_dir, "extra.overlay")
+        Path(extra_overlay).touch()
+
+        args = MagicMock()
+        args.app_dir = app_dir
+        args.dtc_overlays = [extra_overlay]
+        conf_files = [board_defconfig, prj_conf, app_board_conf]
+
+        with patch.dict(os.environ, {"BOARD": "my_board"}):
+            kconfig_gen_values.write_deps_files(output_dir, args, board_dir, conf_files)
+
+        deps_path = os.path.join(output_dir, "deps.txt")
+        self.assertTrue(os.path.exists(deps_path))
+        deps = set(Path(deps_path).read_text().splitlines())
+
+        self.assertIn(os.path.realpath(board_defconfig), deps)
+        self.assertIn(os.path.realpath(prj_conf), deps)
+        self.assertIn(os.path.realpath(app_board_conf), deps)
+        self.assertIn(os.path.realpath(kconfig_external), deps)
+        self.assertIn(os.path.realpath(dts_file), deps)
+        self.assertIn(os.path.realpath(overlay_file), deps)
+        self.assertIn(os.path.realpath(board_yml), deps)
+        self.assertIn(os.path.realpath(board_kconfig), deps)
+        self.assertIn(os.path.realpath(extra_overlay), deps)
+        # Probed non-existent candidate in app_dir
+        self.assertIn(os.path.realpath(os.path.join(app_dir, "app.overlay")), deps)
+        # Generated files in output_dir should not be in deps
+        self.assertNotIn(os.path.realpath(kconfig_generated), deps)
+
+        dep_dirs_path = os.path.join(output_dir, "dep_dirs.txt")
+        self.assertTrue(os.path.exists(dep_dirs_path))
+        dep_dirs = set(Path(dep_dirs_path).read_text().splitlines())
+
+        self.assertIn(os.path.realpath(board_dir), dep_dirs)
+        self.assertIn(os.path.realpath(board_rev_dir), dep_dirs)
+        self.assertIn(os.path.realpath(app_dir), dep_dirs)
+        self.assertIn(os.path.realpath(app_boards_dir), dep_dirs)
+
+    def test_write_deps_files_discover_overlays_fallback(self):
+        output_dir = os.path.join(self.test_dir, "out_fallback")
+        os.makedirs(output_dir, exist_ok=True)
+        app_dir = os.path.join(self.test_dir, "app_fb")
+        boards_dir = os.path.join(app_dir, "boards")
+        board_dir = os.path.join(self.test_dir, "board_fb")
+        os.makedirs(boards_dir, exist_ok=True)
+        os.makedirs(board_dir, exist_ok=True)
+
+        app_overlay = os.path.join(boards_dir, "my_board.overlay")
+        Path(app_overlay).touch()
+
+        args = MagicMock()
+        args.app_dir = app_dir
+        args.dtc_overlays = []
+
+        with patch.dict(os.environ, {"BOARD": "my_board", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""}):
+            # No dts_input.c created, write_deps_files should fall back to discover_overlays
+            kconfig_gen_values.write_deps_files(output_dir, args, board_dir, [])
+
+        deps_path = os.path.join(output_dir, "deps.txt")
+        self.assertTrue(os.path.exists(deps_path))
+        deps = set(Path(deps_path).read_text().splitlines())
+        self.assertIn(os.path.realpath(app_overlay), deps)
 
 if __name__ == '__main__':
     unittest.main()
