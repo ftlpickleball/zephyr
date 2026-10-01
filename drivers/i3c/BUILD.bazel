@@ -8,6 +8,14 @@ load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
 
+selects.config_setting_group(
+    name = "config_i3c_controller_and_config_i3c_target",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_I3C_CONTROLLER=true",
+        "@zephyr_kconfig//:CONFIG_I3C_TARGET=true",
+    ],
+)
+
 zephyr_cc_library(
     name = "i3c",
     srcs = [
@@ -20,6 +28,15 @@ zephyr_cc_library(
         "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_I3C_CONTROLLER=true": [
             "i3c_common.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        # CMakeLists.txt adds these when CONFIG_I3C_[I2C_]NUM_OF_DESC_MEM_SLABS
+        # is defined and > 0. Both symbols only exist (default 3) when
+        # I3C_CONTROLLER && I3C_TARGET.
+        ":config_i3c_controller_and_config_i3c_target": [
+            "i3c_i2c_mem_slab.c",
+            "i3c_mem_slab.c",
         ],
     }) + select({
         "//conditions:default": [],
