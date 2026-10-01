@@ -244,6 +244,11 @@ zephyr_cc_library(
         ],
         "//conditions:default": [],
     }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LSM6DSV16X=true": [
+            "//" + package_name() + "/st/lsm6dsv16x",
+        ],
+    }) + select({
         ":config_sensor_clock_rtc_or_config_sensor_clock_counter": [":sensor_config_sensor_clock_rtc_or_config_sensor_clock_counter_deps"],
         "@zephyr_kconfig//:CONFIG_SENSOR_CLOCK_SYSTEM=true": [":sensor_config_sensor_clock_system_deps"],
         "//conditions:default": [],

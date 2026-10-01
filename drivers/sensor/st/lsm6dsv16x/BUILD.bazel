@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "lsm6dsv16x",
+    srcs = [
+        "lsm6dsv16x.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LSM6DSV16X_SENSORHUB=true": [
+            "lsm6dsv16x_shub.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LSM6DSV16X_TRIGGER=true": [
+            "lsm6dsv16x_trigger.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SENSOR_ASYNC_API=true": [
+            "lsm6dsv16x_decoder.c",
+            "lsm6dsv16x_rtio.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LSM6DSV16X_STREAM=true": [
+            "lsm6dsv16x_rtio_stream.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//drivers/sensor/st/stmemsc",
+        "@hal_st//:lsm6dsv16x_stdc",
+    ],
+)

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "stmemsc",
+    srcs = [
+        "stmemsc_mdelay.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_I2C=true": ["stmemsc_i2c.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_I3C=true": ["stmemsc_i3c.c"],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SPI=true": ["stmemsc_spi.c"],
+    }),
+    hdrs = ["stmemsc.h"],
+    includes = ["."],
+)
