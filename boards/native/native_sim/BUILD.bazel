@@ -16,6 +16,7 @@ platform(
         "@pigweed//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict({
+        "@rules_rust//rust/settings:extra_rustc_flags": "-Cpanic=abort",
         "@zephyr//:board_deps": "@zephyr//boards/native/native_sim:board_support",
         "@zephyr//:dt_binding_headers_library": "@rules_cc//:empty_lib",
         "@zephyr//:dts_cc_library": "@zephyr//boards/native/native_sim:devicetree_generated",
@@ -34,6 +35,7 @@ platform(
         "@pigweed//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict({
+        "@rules_rust//rust/settings:extra_rustc_flags": "-Cpanic=abort",
         "@zephyr//:board_deps": "@zephyr//boards/native/native_sim:board_support",
         "@zephyr//:dt_binding_headers_library": "@rules_cc//:empty_lib",
         "@zephyr//:dts_cc_library": "@zephyr//boards/native/native_sim:devicetree_generated",
