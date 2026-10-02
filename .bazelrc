@@ -7,7 +7,7 @@ build --strip=never
 
 # Caching & Action environment
 common --experimental_exclude_defines_from_exec_config
-common --experimental_exclude_starlark_flags_from_exec_config
+common --incompatible_exclude_starlark_flags_from_exec_config
 common --incompatible_default_to_explicit_init_py
 
 # Python execution toolchains
