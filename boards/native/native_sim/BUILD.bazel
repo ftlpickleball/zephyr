@@ -13,6 +13,7 @@ platform(
     constraint_values = [
         "@zephyr//boards:sim",
         "@pigweed//pw_build/constraints/rtos:zephyr",
+        "@pigweed//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict({
         "@zephyr//:board_deps": "@zephyr//boards/native/native_sim:board_support",
@@ -30,6 +31,7 @@ platform(
     constraint_values = [
         "@zephyr//boards:sim",
         "@pigweed//pw_build/constraints/rtos:zephyr",
+        "@pigweed//pw_build/constraints/rust:no_std",
     ],
     flags = flags_from_dict({
         "@zephyr//:board_deps": "@zephyr//boards/native/native_sim:board_support",
