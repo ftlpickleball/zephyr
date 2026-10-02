@@ -7,5 +7,7 @@
 pcpp==1.30
 ply>=3.11
 pyusb
+pyelftools
 cryptography
 cbor2
+pyftdi==0.56.0

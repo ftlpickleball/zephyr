@@ -10,6 +10,8 @@ def main():
     runfiles_dir = os.path.join(exec_dir, "{app_name}.runfiles")
     if "RUNFILES_DIR" in os.environ:
         runfiles_dir = os.environ["RUNFILES_DIR"]
+    else:
+        os.environ["RUNFILES_DIR"] = runfiles_dir
 
     yaml_path = "{runners_yaml}"
     binary_path = "{binary}"
