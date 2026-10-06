@@ -6,11 +6,33 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 package(default_visibility = ["//visibility:public"])
 
 exports_files([
+    "hardware_deps.py",
     "parse_board_metadata.py",
     "parse_sysbuild_metadata.py",
     "parse_test_metadata.py",
     "scan_modules.py",
 ])
+
+py_library(
+    name = "hardware_deps_lib",
+    srcs = ["hardware_deps.py"],
+    imports = ["."],
+    deps = ["//bazel/tools/deps:input_recorder_lib"],
+)
+
+py_binary(
+    name = "hardware_deps",
+    srcs = ["hardware_deps.py"],
+    imports = ["."],
+    deps = [":hardware_deps_lib"],
+)
+
+py_test(
+    name = "hardware_deps_test",
+    srcs = ["hardware_deps_test.py"],
+    imports = ["."],
+    deps = [":hardware_deps_lib"],
+)
 
 py_library(
     name = "parse_board_metadata_lib",
