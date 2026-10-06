@@ -1,9 +1,9 @@
 # SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 
-package(default_visibility = ["//bazel:__subpackages__"])
+package(default_visibility = ["//visibility:public"])
 
 exports_files([
     "input_recorder.py",
@@ -19,4 +19,21 @@ py_test(
     name = "input_recorder_test",
     srcs = ["input_recorder_test.py"],
     deps = [":input_recorder_lib"],
+)
+
+# Audits the inputs recorded for the Zephyr repositories and module extensions:
+#   bazel run @zephyr//bazel/tools/deps:audit_recorded_inputs -- $(bazel info output_base)
+py_binary(
+    name = "audit_recorded_inputs",
+    srcs = ["audit_recorded_inputs.py"],
+    imports = ["."],
+)
+
+py_test(
+    name = "audit_recorded_inputs_test",
+    srcs = [
+        "audit_recorded_inputs.py",
+        "audit_recorded_inputs_test.py",
+    ],
+    imports = ["."],
 )
