@@ -86,6 +86,10 @@ def parse_args():
                         devices. The symbol name must point to the first \
                         device in that section.",
     )
+    parser.add_argument(
+        "--edt-pickle",
+        help="Path to edt.pickle file. Defaults to edt.pickle next to --kernel.",
+    )
 
     args = parser.parse_args()
 
@@ -150,7 +154,7 @@ def c_handle_array(dev, handles, dynamic_deps, extra_support_handles=0):
 def main():
     parse_args()
 
-    edtser = os.path.join(os.path.split(args.kernel)[0], "edt.pickle")
+    edtser = args.edt_pickle or os.path.join(os.path.split(args.kernel)[0], "edt.pickle")
     with open(edtser, 'rb') as f:
         edt = pickle.load(f)
 

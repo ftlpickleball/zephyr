@@ -75,3 +75,17 @@ py_binary(
     srcs = ["gen_app_partitions.py"],
     deps = ["@zephyr_pip_deps//pyelftools"],
 )
+
+py_binary(
+    name = "gen_device_deps",
+    srcs = [
+        "gen_device_deps.py",
+        "elf_parser.py",
+    ],
+    imports = ["."],
+    deps = [
+        "//scripts/dts/python-devicetree:devicetree",
+        "@zephyr_pip_deps//packaging",
+        "@zephyr_pip_deps//pyelftools",
+    ],
+)

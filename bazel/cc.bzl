@@ -364,7 +364,12 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         Label("//lib"),
         Label("//:board_deps"),
         ":" + name + "_srcs_lib",
-    ] + LOCAL_MODULES
+    ] + LOCAL_MODULES + select({
+        "//conditions:default": [],
+        # gen_device_deps.py reads _DEVICE_STRUCT_HANDLES_OFFSET and
+        # _DEVICE_STRUCT_PM_OFFSET from the pass-1 ELF.
+        Label("@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true"): [Label("//:offsets_lib")],
+    })
 
     # TODO convert to symbolic macro (https://bazel.build/extending/macros)
     name_pre0 = name + "._pre0.elf"
@@ -379,6 +384,7 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "_ASMLANGUAGE=1",
             "_LINKER=1",
             "LINKER_APP_SMEM_UNALIGNED",
+            "LINKER_DEVICE_DEPS_PASS1=1",
             "CONFIG_STATIC_INIT_GNU=1",  # Hack
         ] + if_compiler_is_clang(
             otherwise = [],
@@ -665,6 +671,37 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         testonly = kwargs.get("testonly", False),
     )
 
+    gen_device_deps_tool = Label("//scripts/build:gen_device_deps")
+    device_deps_out = "{}._device_deps/device_deps.c".format(name)
+    native.genrule(
+        name = name + "_gen_device_deps",
+        srcs = [
+            target_pre0,
+            Label("//:edt_pickle"),
+        ],
+        outs = [device_deps_out],
+        cmd = """
+            ./$(execpath {tool}) \\
+                --kernel $(location {pre0}) \\
+                --edt-pickle $(location {edt_pickle}) \\
+                --zephyr-base . \\
+                --start-symbol _device_list_start \\
+                --output-source $@
+        """.format(
+            tool = gen_device_deps_tool,
+            pre0 = target_pre0,
+            edt_pickle = Label("//:edt_pickle"),
+        ),
+        tools = [gen_device_deps_tool],
+        testonly = kwargs.get("testonly", False),
+    )
+
+    zephyr_cc_library(
+        name = name + "._device_deps",
+        srcs = [":" + device_deps_out],
+        testonly = kwargs.get("testonly", False),
+    )
+
     _zephyr_cc_binary_with_alwayslink_deps(
         name = name + "._pre1.elf",
         deps = [
@@ -677,6 +714,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         ] + deps + select({
             "//conditions:default": [],
             Label("@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true"): [":{}._isr_tables".format(name)],
+        }) + select({
+            "//conditions:default": [],
+            Label("@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true"): [":{}._device_deps".format(name)],
         }),
         linkopts = linkopts + [
             "-Wl,--print-memory-usage",
@@ -728,11 +768,14 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         }) + select({
             # In upstream CMake (CMakeLists.txt:1522), kobject_hash is only generated
             # when CONFIG_USERSPACE is enabled. CONFIG_DEVICE_DEPS enables the multi-stage
-            # linking pass for device handle generation (gen_handles.py), not kobject hashing.
+            # linking pass for device handle generation (gen_device_deps.py), not kobject hashing.
             "@zephyr_kconfig//:CONFIG_USERSPACE=true": [":kobject_hash_renamed_" + name],
             "//conditions:default": [],
         }) + deps + select({
             "@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true": [":{}._isr_tables".format(name)],
+            "//conditions:default": [],
+        }) + select({
+            "@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true": [":{}._device_deps".format(name)],
             "//conditions:default": [],
         }),
         srcs = [],

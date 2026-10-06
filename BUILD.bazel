@@ -103,6 +103,11 @@ label_flag(
 )
 
 label_flag(
+    name = "edt_pickle",
+    build_setting_default = ":empty_files",
+)
+
+label_flag(
     name = "extra_dts_overlays",
     build_setting_default = ":empty_overlays",
 )
