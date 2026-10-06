@@ -729,6 +729,16 @@ def _zephyr_final_binary_impl(ctx):
         feature_configuration = feature_configuration,
         action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
     )
+    link_variables = cc_common.create_link_variables(
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        is_linking_dynamic_library = False,
+    )
+    link_flags = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = CPP_LINK_EXECUTABLE_ACTION_NAME,
+        variables = link_variables,
+    )
 
     output_elf = ctx.actions.declare_file(ctx.label.name)
 
@@ -738,7 +748,7 @@ def _zephyr_final_binary_impl(ctx):
             transitive = [cc_toolchain.all_files],
         ),
         outputs = [output_elf],
-        arguments = [
+        arguments = link_flags + [
             "-T",
             ctx.file.lds.path,
             ctx.executable.pre0_elf.path,
