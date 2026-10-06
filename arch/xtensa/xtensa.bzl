@@ -30,15 +30,26 @@ def _xtensa_zsr_header_impl(ctx):
         action_name = ACTION_NAMES.c_compile,
     )
 
+    c_compile_variables = cc_common.create_compile_variables(
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+    )
+    c_compile_flags = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = ACTION_NAMES.c_compile,
+        variables = c_compile_variables,
+    )
+
     core_isa_dm = ctx.actions.declare_file("include/generated/zephyr/core-isa-dM.h")
 
     # Zephyr uses the Xtensa compiler to preprocess the core-isa header.
     # We do the same. The result, called core-isa-dM.h, will be used to
     # generate zsr.h below.
     command_str = (
-        "{xt_cc} -E -dM -U__XCC__ {core_isa} > {core_isa_dm}"
+        "{xt_cc} {c_flags} -E -dM -U__XCC__ {core_isa} > {core_isa_dm}"
     ).format(
         xt_cc = shell.quote(xt_cc_executable),
+        c_flags = " ".join([shell.quote(f) for f in c_compile_flags]),
         core_isa = shell.quote(core_isa_header.path),
         core_isa_dm = shell.quote(core_isa_dm.path),
     )
