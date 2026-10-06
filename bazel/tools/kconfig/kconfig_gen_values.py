@@ -47,10 +47,6 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
     os.environ["ARCH"] = "*"
     os.environ["HWM_SCHEME"] = "v2"
     os.environ["KCONFIG_FUNCTIONS"] = "kconfigfunctions"
-    os.environ["TOOLCHAIN_HAS_PICOLIBC"] = "y"
-    os.environ["TOOLCHAIN_HAS_NEWLIB"] = "y"
-    os.environ["ZEPHYR_TOOLCHAIN_VARIANT"] = "zephyr"
-
     # Determine toolchain variant similar to Zephyr's FindHostTools.cmake
     toolchain_variant = args.toolchain_variant
     if not toolchain_variant:
@@ -60,8 +56,8 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
         else:
             toolchain_variant = "zephyr"
 
+    os.environ["ZEPHYR_TOOLCHAIN_VARIANT"] = toolchain_variant
     os.environ["TOOLCHAIN_KCONFIG_DIR"] = os.path.join(zephyr_base, "cmake", "toolchain", toolchain_variant)
-    os.environ["TOOLCHAIN_HAS_PICOLIBC"] = "y"
     os.environ["BOARD_DIR"] = os.path.abspath(board_dir)
     os.environ["KCONFIG_BOARD_DIR"] = os.path.abspath(board_dir)
     os.environ["ARCH_DIR"] = "arch"
