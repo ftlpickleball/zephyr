@@ -22,12 +22,20 @@ def _elf_to_hex_impl(ctx):
         feature_configuration = feature_configuration,
         action_name = ACTION_NAMES.objcopy_embed_data,
     )
+    objcopy_flags = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = ACTION_NAMES.objcopy_embed_data,
+        variables = cc_common.create_compile_variables(
+            feature_configuration = feature_configuration,
+            cc_toolchain = cc_toolchain,
+        ),
+    )
 
     ctx.actions.run(
         outputs = [hex_file],
         inputs = depset(direct = [elf], transitive = [cc_toolchain.all_files]),
         executable = objcopy_executable,
-        arguments = ["-O", "ihex", elf.path, hex_file.path],
+        arguments = objcopy_flags + ["-O", "ihex", elf.path, hex_file.path],
         mnemonic = "ElfToHex",
         progress_message = "Converting %s to HEX" % elf.short_path,
     )
