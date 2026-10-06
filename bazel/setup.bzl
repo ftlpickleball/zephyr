@@ -3,6 +3,7 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("//bazel:naming.bzl", "derive_module_label", "get_app_hash", "get_zc_repo_name_from_precomputed", "normalize_app_label", "parse_label", "sanitize_board_id")
+load("//bazel/private:deps.bzl", "find_pin_files", "label_path", "new_tracker", "read_path_list", "readdir", "realpath_of", "repo_root", "watch_deps", "watch_pins", "workspace_relpath")
 load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
 load("//bazel/private:zephyr_kconfig_gen_symbols.bzl", "zephyr_kconfig_schema")
 load("//bazel/private:zephyr_kconfig_gen_values.bzl", "gen_zephyr_config")
@@ -88,7 +89,7 @@ def find_module_root(mctx, start_dir, limit_dir = None):
         current = parent
     return None
 
-def get_dir_from_label(mctx, label):
+def get_dir_from_label(mctx, label, tracker):
     """Resolves a label to a directory path.
 
     If the label points to a file, it returns the directory containing that file.
@@ -97,11 +98,12 @@ def get_dir_from_label(mctx, label):
     Args:
         mctx: The module or repository context.
         label: The label to resolve.
+        tracker: The deps.bzl tracker, to resolve the label without watching it.
 
     Returns:
         A path object pointing to the directory.
     """
-    path = mctx.path(label)
+    path = label_path(tracker, label)
     if not path.exists:
         return path.dirname
 
@@ -110,13 +112,14 @@ def get_dir_from_label(mctx, label):
         return path.dirname
     return path
 
-def get_package_for_path(mctx, path, dir_labels):
+def get_package_for_path(mctx, path, dir_labels, tracker):
     """Resolves the Bazel package for a given absolute path.
 
     Args:
         mctx: The module context.
         path: The absolute path to resolve.
         dir_labels: A list of directory labels that might contain the path.
+        tracker: The deps.bzl tracker, to resolve labels without watching them.
 
     Returns:
         The Bazel package string (e.g., '//arch/arm'), or None.
@@ -128,7 +131,7 @@ def get_package_for_path(mctx, path, dir_labels):
     best_dir_len = -1
 
     for l in dir_labels:
-        dir_path = get_dir_from_label(mctx, l)
+        dir_path = get_dir_from_label(mctx, l, tracker)
         dir_path_str = str(dir_path.realpath)
 
         if path_str.startswith(dir_path_str):
@@ -140,24 +143,18 @@ def get_package_for_path(mctx, path, dir_labels):
             build_dir_str = str(build_dir.realpath)
 
             # Resolve repo root if external
-            repo_root = None
             res_repo = ""
             if l.workspace_name:
-                repo_root = get_dir_from_label(mctx, Label("@@" + l.workspace_name + "//:BUILD.bazel"))
-                if repo_root:
-                    repo_root = repo_root.realpath
+                root = repo_root(tracker, l).realpath
                 res_repo = str(l).split("//")[0]
             else:
                 # Local repo (main workspace)
-                repo_root = mctx.path(Label("//:MODULE.bazel")).dirname.realpath
+                root = tracker["ws_path"].realpath
 
             # The package is relative to the module root
-            module_root = find_module_root(mctx, dir_path, limit_dir = repo_root)
+            module_root = find_module_root(mctx, dir_path, limit_dir = root)
             if not module_root:
-                module_root = repo_root
-
-            if not module_root:
-                continue
+                module_root = root
 
             label_workspace_root = str(module_root.realpath)
 
@@ -394,10 +391,62 @@ zephyr_patch_file = module_extension(
     },
 )
 
+def _run_with_deps(mctx, python, name, script, args, deps_files, deps_dirs):
+    """Runs a discovery script that supports --deps-out/--dirs-out and collects what it read."""
+    deps_out = name + ".deps.txt"
+    dirs_out = name + ".dirs.txt"
+    deps_files.append(realpath_of(script))
+    res = python.execute([str(script)] + args + ["--deps-out", deps_out, "--dirs-out", dirs_out])
+    if res.return_code == 0:
+        deps_files.extend(read_path_list(mctx, mctx.path(deps_out)) or [])
+        deps_dirs.extend(read_path_list(mctx, mctx.path(dirs_out)) or [])
+    return res
+
+def _find_app_dirs(tracker, root, deps_files):
+    """Returns the directories below `root` (inclusive) that contain a prj.conf.
+
+    Equivalent to `find <root> -name out -prune -o -name 'bazel-*' -prune -o -name '.*' -prune
+    -o -name prj.conf -print` (plus pruning `__pycache__`), in a deterministic order. The listing
+    of every directory visited is watched, so adding an application anywhere below `root` re-runs
+    the extension. Symlinked directories are not followed.
+    """
+    if not root.is_dir:
+        deps_files.append(realpath_of(root))
+        return []
+    found = []
+    stack = [(root, str(root.realpath))]
+    # Starlark does not support `while` loops; bound the DFS explicitly.
+    for _ in range(1000000):
+        if not stack:
+            return found
+        d, d_real = stack.pop()
+        subdirs = []
+        for e in sorted(readdir(tracker, d), key = _basename):
+            name = e.basename
+            if name == "out" or name == "__pycache__" or name.startswith("bazel-") or name.startswith("."):
+                continue
+            if name == "prj.conf":
+                found.append(d)
+            elif e.is_dir:
+                e_real = d_real + "/" + name
+                if str(e.realpath) == e_real:
+                    subdirs.append((e, e_real))
+        stack.extend(reversed(subdirs))
+    fail("_find_app_dirs exceeded directory traversal limit under %s" % root)
+
+def _basename(p):
+    return p.basename
+
 def _zephyr_setup_core_impl(mctx):
     """Implementation of zephyr_setup_core module extension."""
-    zephyr_root = mctx.path(Label("//:BUILD.bazel")).dirname
-    workspace_root = mctx.path(Label("@@//:MODULE.bazel")).dirname
+
+    # Resolve external repository roots first so their anchor inputs come before main-workspace
+    # inputs (avoiding extra Skyframe batches) and in-workspace overrides are known to
+    # find_pin_files(). Fetched repositories are covered by watching workspace pin files; mutable
+    # workspace files and directory listings (including in-workspace overrides) are watched at the
+    # end via watch_deps().
+    tracker = new_tracker(mctx)
+    zephyr_root = repo_root(tracker, Label("//:BUILD.bazel"))
     python = get_python(
         mctx,
         extra_import_paths = [
@@ -418,6 +467,7 @@ def _zephyr_setup_core_impl(mctx):
     boards_dir_labels = []
     modules_labels = []
     manual_boards = []
+    pin_labels = []
 
     zephyr_ws = Label("//:BUILD.bazel").workspace_name
     for mod in mctx.modules:
@@ -426,14 +476,36 @@ def _zephyr_setup_core_impl(mctx):
                 if mod.is_root or app_lbl.workspace_name != zephyr_ws:
                     if app_lbl not in apps_dir_labels:
                         apps_dir_labels.append(app_lbl)
+            if mod.is_root:
+                pin_labels.extend(tag.pin_files)
             boards_dir_labels.extend(tag.boards_dirs)
             modules_labels.extend(tag.modules)
             manual_boards.extend(tag.manual_boards)
 
+    for l in modules_labels + boards_dir_labels + apps_dir_labels + pin_labels:
+        repo_root(tracker, l)
+
+    # Fetched repositories get no per-file watches. Their content can only change with their
+    # definitions, which these files pin: MODULE.bazel (and those of in-workspace overrides), the
+    # files they include, and the patches / BUILD overlays / lock files they reference.
+    extra_pins = []
+    for l in pin_labels:
+        rel = workspace_relpath(tracker, realpath_of(label_path(tracker, l)))
+        if rel == None:
+            fail("zephyr_setup.env(pin_files) must be files in the main workspace: %s" % l)
+        extra_pins.append(rel)
+    override_relpaths = [workspace_relpath(tracker, r[:-1]) for r in tracker["local_roots"]]
+    pin_files = find_pin_files(tracker, [""] + override_relpaths, extra_pins)
+    watch_pins(tracker, pin_files)
+
+    # Realpaths reported by the discovery scripts, watched at the end.
+    deps_files = []
+    deps_dirs = []
+
     # Discover Modules
     modules_dirs_map = {}
     for l in modules_labels:
-        p = mctx.path(l)
+        p = label_path(tracker, l)
         if p.basename == "module.yml" and p.dirname.basename == "zephyr":
             mod_root = p.dirname.dirname
         else:
@@ -449,12 +521,11 @@ def _zephyr_setup_core_impl(mctx):
             "package_dir": str(pkg_dir),
         }
 
-    scanner_script = mctx.path(Label("//bazel/tools/metadata:scan_modules.py"))
-    scanner_res = python.execute([
-        str(scanner_script),
+    scanner_script = label_path(tracker, Label("//bazel/tools/metadata:scan_modules.py"))
+    scanner_res = _run_with_deps(mctx, python, "scan_modules", scanner_script, [
         "--modules-dirs-json",
         json.encode(modules_dirs_map),
-    ])
+    ], deps_files, deps_dirs)
     if scanner_res.return_code != 0:
         fail("scan_modules.py failed: %s" % scanner_res.stderr)
     discovered = json.decode(scanner_res.stdout)
@@ -462,11 +533,6 @@ def _zephyr_setup_core_impl(mctx):
     discovered_modules = {}  # name -> root
     discovered_modules_labels = {}
     discovered_config_only_modules_labels = {}
-    watched_kconfigs = []
-
-    # Watch parent directories non-recursively for discovery containers
-    for l in modules_labels:
-        mctx.watch(get_dir_from_label(mctx, l))
 
     for item in discovered:
         name = item["name"]
@@ -494,36 +560,15 @@ def _zephyr_setup_core_impl(mctx):
         else:
             discovered_config_only_modules_labels[name] = module_info
 
-        # Watch metadata
-        mctx.watch(mctx.path(abs_path_str).get_child("zephyr").get_child("module.yml"))
-        k_candidates = ["Kconfig", "zephyr/Kconfig", "Kconfig.zephyr"]
-        mod_kconfig = item.get("kconfig")
-        if mod_kconfig and mod_kconfig not in k_candidates:
-            k_candidates.append(mod_kconfig)
-        for k_rel in k_candidates:
-            kp = mctx.path(abs_path_str + "/" + k_rel)
-            mctx.watch(kp)
-            watched_kconfigs.append(str(kp))
-
-    # Watch for the creation of new module.yml files in subdirectories,
-    # so Bazel knows to re-run the module extension if a new module is added.
-    for l in modules_labels:
-        container = get_dir_from_label(mctx, l)
-        if container.exists:
-            for subdir in container.readdir():
-                mctx.watch(subdir.get_child("zephyr").get_child("module.yml"))
-
     # Discover Boards
     list_boards_py = zephyr_root.get_child("scripts").get_child("list_boards.py")
 
     board_roots = [str(zephyr_root)]
     for l in boards_dir_labels:
-        b_dir = get_dir_from_label(mctx, l)
-        mctx.watch(b_dir)
-        mctx.watch(b_dir.get_child("boards"))
-        mctx.watch(b_dir.get_child("Kconfig"))
+        b_dir = get_dir_from_label(mctx, l, tracker)
         board_roots.append(str(b_dir))
 
+    hw_roots = [str(zephyr_root)] + list(discovered_modules.values())
     cmd = [str(list_boards_py), "--arch-root", str(zephyr_root)]
     cmd.extend(["--soc-root", str(zephyr_root)])
     for m_root in discovered_modules.values():
@@ -538,6 +583,20 @@ def _zephyr_setup_core_impl(mctx):
     if res.return_code != 0:
         fail("list_boards.py failed: %s" % res.stderr)
 
+    # list_boards.py globs board.yml / soc.yml files below these roots: report what it read and
+    # which directories it listed, so that new boards are noticed.
+    hw_deps_script = label_path(tracker, Label("//bazel/tools/metadata:hardware_deps.py"))
+    hw_args = ["--scripts-dir", str(zephyr_root.get_child("scripts"))]
+    for r in board_roots:
+        hw_args.extend(["--board-root", r])
+    for r in hw_roots:
+        hw_args.extend(["--soc-root", r, "--arch-root", r])
+    hw_res = _run_with_deps(mctx, python, "hardware", hw_deps_script, hw_args, deps_files, deps_dirs)
+    if hw_res.return_code != 0:
+        fail("hardware_deps.py failed: %s" % hw_res.stderr)
+
+    zephyr_root_str = str(zephyr_root.realpath)
+    zephyr_canonical = str(Label("//:BUILD.bazel")).split("//")[0]
     board_index = {}
     package_to_boards = {}
     path_str_dict = {}
@@ -566,13 +625,11 @@ def _zephyr_setup_core_impl(mctx):
             qualifiers = [q for q in q_part.split(";") if q]
 
         path = mctx.path(path_str)
-        pkg_label = get_package_for_path(mctx, path, boards_dir_labels)
+        pkg_label = get_package_for_path(mctx, path, boards_dir_labels, tracker)
         pkg_path = ""
         if not pkg_label:
-            zephyr_root_str = str(mctx.path(zephyr_root).realpath)
             realpath_str = str(path.realpath)
             if realpath_str.startswith(zephyr_root_str):
-                zephyr_canonical = str(Label("//:BUILD.bazel")).split("//")[0]
                 build_dir = find_nearest_build_file(mctx, path)
                 if build_dir:
                     build_dir_str = str(build_dir.realpath)
@@ -621,50 +678,18 @@ def _zephyr_setup_core_impl(mctx):
     board_revisions_file = "board_revisions.json"
     mctx.file(boards_json_file, json.encode(path_str_dict))
 
-    board_meta_script = mctx.path(Label("//bazel/tools/metadata:parse_board_metadata.py"))
-    board_meta_res = python.execute([
-        str(board_meta_script),
+    board_meta_script = label_path(tracker, Label("//bazel/tools/metadata:parse_board_metadata.py"))
+    board_meta_res = _run_with_deps(mctx, python, "board_metadata", board_meta_script, [
         "--boards-json",
         boards_json_file,
         "--output-json",
         board_revisions_file,
-    ])
+    ], deps_files, deps_dirs)
     if board_meta_res.return_code != 0:
         fail("parse_board_metadata.py failed (%d):\n%s" % (board_meta_res.return_code, board_meta_res.stderr))
     board_revisions_map = json.decode(mctx.read(board_revisions_file))
 
-    all_board_root_paths = [zephyr_root]
-    for l in boards_dir_labels:
-        all_board_root_paths.append(get_dir_from_label(mctx, l))
-
     for path_str, bdata in path_str_dict.items():
-        path = mctx.path(path_str)
-        realpath_str = str(path.realpath)
-
-        best_root = None
-        best_root_len = -1
-        for root_path in all_board_root_paths:
-            root_real = str(root_path.realpath)
-            if realpath_str.startswith(root_real):
-                if len(root_real) > best_root_len:
-                    best_root_len = len(root_real)
-                    best_root = root_path
-
-        if best_root:
-            rel = realpath_str[best_root_len:].strip("/")
-            watch_path = best_root
-            for part in rel.split("/"):
-                if part:
-                    watch_path = watch_path.get_child(part)
-
-            for b_yml_name in ["board.yml", "board.yaml"]:
-                b_yml_file = watch_path.get_child(b_yml_name)
-                if b_yml_file.exists:
-                    mctx.watch(b_yml_file)
-            rev_dir = watch_path.get_child("revisions")
-            if rev_dir.exists:
-                mctx.watch(rev_dir)
-
         name = bdata["name"]
         qualifiers = bdata["qualifiers"]
         pkg_label = bdata["pkg_label"]
@@ -692,91 +717,58 @@ def _zephyr_setup_core_impl(mctx):
             board_index[mb] = pkg_label
             if pkg_path in package_to_boards and mb not in package_to_boards[pkg_path]:
                 package_to_boards[pkg_path].append(mb)
+
     # Discover Apps
     discovered_apps = {}
     discovered_apps_labels = {}
     collision_registry = {}  # hash -> label
 
     for l in apps_dir_labels:
-        dir_path = get_dir_from_label(mctx, l)
-        dir_path.readdir(watch = "yes")
-        res = mctx.execute([
-            "find",
-            str(dir_path),
-            "-name",
-            "out",
-            "-prune",
-            "-o",
-            "-name",
-            "bazel-*",
-            "-prune",
-            "-o",
-            "-name",
-            ".*",
-            "-prune",
-            "-o",
-            "-name",
-            "prj.conf",
-            "-print",
-        ])
-        if res.return_code == 0:
-            for line in res.stdout.splitlines():
-                app_path = mctx.path(line).dirname
-                app_pkg = get_package_for_path(mctx, app_path, apps_dir_labels)
-                if app_pkg:
-                    norm_app = normalize_app_label(app_pkg)
+        dir_path = get_dir_from_label(mctx, l, tracker)
+        for app_path in _find_app_dirs(tracker, dir_path, deps_files):
+            app_pkg = get_package_for_path(mctx, app_path, apps_dir_labels, tracker)
+            if app_pkg:
+                norm_app = normalize_app_label(app_pkg)
 
-                    build_dir = find_nearest_build_file(mctx, app_path)
-                    app_dir_label = app_pkg
-                    if build_dir and str(app_path.realpath) != str(build_dir.realpath):
-                        rel_from_build = str(app_path.realpath)[len(str(build_dir.realpath)):].strip("/")
-                        app_dir_label = str(app_pkg).split(":")[0] + ":" + rel_from_build + "/prj.conf"
+                build_dir = find_nearest_build_file(mctx, app_path)
+                app_dir_label = app_pkg
+                if build_dir and str(app_path.realpath) != str(build_dir.realpath):
+                    rel_from_build = str(app_path.realpath)[len(str(build_dir.realpath)):].strip("/")
+                    app_dir_label = str(app_pkg).split(":")[0] + ":" + rel_from_build + "/prj.conf"
 
-                    app_hash = get_app_hash(norm_app)
+                app_hash = get_app_hash(norm_app)
 
-                    collision_registry[app_hash] = norm_app
-                    discovered_apps[norm_app] = str(app_path)
-                    discovered_apps_labels[norm_app] = app_dir_label
-                    mctx.watch(app_path.get_child("sysbuild.yml"))
-                    mctx.watch(app_path.get_child("sysbuild.conf"))
-                    boards_dir = app_path.get_child("boards")
-                    if boards_dir.exists:
-                        mctx.watch(boards_dir)
-                    sysbuild_dir = app_path.get_child("sysbuild")
-                    if sysbuild_dir.exists:
-                        mctx.watch(sysbuild_dir)
-                    else:
-                        mctx.watch(app_path)
+                collision_registry[app_hash] = norm_app
+                discovered_apps[norm_app] = str(app_path)
+                discovered_apps_labels[norm_app] = app_dir_label
 
     apps_json_file = "discovered_apps.json"
     test_metadata_file = "test_metadata.json"
     mctx.file(apps_json_file, json.encode(discovered_apps))
 
     # Parse metadata YAML
-    script_path = mctx.path(Label("//bazel/tools/metadata:parse_test_metadata.py"))
-    metadata_res = python.execute([
-        str(script_path),
+    script_path = label_path(tracker, Label("//bazel/tools/metadata:parse_test_metadata.py"))
+    metadata_res = _run_with_deps(mctx, python, "test_metadata", script_path, [
         "--apps-json",
         apps_json_file,
         "--zephyr-root",
         str(zephyr_root),
         "--output-json",
         test_metadata_file,
-    ])
+    ], deps_files, deps_dirs)
     if metadata_res.return_code != 0:
         fail("parse_test_metadata.py failed (%d):\n%s" % (metadata_res.return_code, metadata_res.stderr))
     test_metadata_content = mctx.read(test_metadata_file)
     yaml_metadata = json.decode(test_metadata_content)
 
     sysbuild_metadata_file = "sysbuild_metadata.json"
-    sysbuild_script_path = mctx.path(Label("//bazel/tools/metadata:parse_sysbuild_metadata.py"))
-    sysbuild_res = python.execute([
-        str(sysbuild_script_path),
+    sysbuild_script_path = label_path(tracker, Label("//bazel/tools/metadata:parse_sysbuild_metadata.py"))
+    sysbuild_res = _run_with_deps(mctx, python, "sysbuild_metadata", sysbuild_script_path, [
         "--apps-json",
         apps_json_file,
         "--output-json",
         sysbuild_metadata_file,
-    ])
+    ], deps_files, deps_dirs)
     if sysbuild_res.return_code != 0:
         fail("parse_sysbuild_metadata.py failed (%d):\n%s" % (sysbuild_res.return_code, sysbuild_res.stderr))
     sysbuild_metadata_content = mctx.read(sysbuild_metadata_file)
@@ -813,7 +805,6 @@ def _zephyr_setup_core_impl(mctx):
 
     # board_index maps board IDs to package labels, not paths: in-tree boards are in Zephyr's own
     # repository, whose canonical name is zephyr_canonical ("@@" when Zephyr is the root module).
-    zephyr_canonical = str(Label("//:BUILD.bazel")).split("//")[0]
     zephyr_packages_prefix = zephyr_canonical + "//"
 
     surviving_combinations = {}
@@ -821,6 +812,12 @@ def _zephyr_setup_core_impl(mctx):
         surviving_combinations[app_pkg] = []
         yaml_res = yaml_metadata.get(app_pkg, None)
         is_oot_app = not app_path.startswith(str(zephyr_root))
+
+        # Entries of the app's boards/ directory (None if it does not exist), listed at most once
+        # per app. Its listing is watched, so adding or removing an override re-runs the filter.
+        boards_dir = mctx.path(app_path).get_child("boards")
+        boards_listed = False
+        boards_names = None
 
         for board_id, board_path in board_index.items():
             is_oot_board = not board_path.startswith(zephyr_packages_prefix)
@@ -857,10 +854,14 @@ def _zephyr_setup_core_impl(mctx):
                 continue
 
             # Filesystem
-            boards_dir = mctx.path(app_path).get_child("boards")
-            if boards_dir.exists:
-                # Watch the boards dir so we re-filter if a new file is added.
-                mctx.watch(boards_dir)
+            if not boards_listed:
+                boards_listed = True
+                if boards_dir.is_dir:
+                    boards_names = {e.basename: True for e in readdir(tracker, boards_dir)}
+                else:
+                    # Recorded as a (missing) path, so that creating the directory is noticed.
+                    deps_files.append(realpath_of(boards_dir))
+            if boards_names != None:
                 board_name, qualifiers, board_rev = _parse_board_id(board_id)
                 override_candidates = (
                     _get_override_candidates(board_name, qualifiers, board_rev, "conf") +
@@ -869,9 +870,7 @@ def _zephyr_setup_core_impl(mctx):
 
                 found = False
                 for c in override_candidates:
-                    c_file = boards_dir.get_child(c)
-                    if c_file.exists:
-                        mctx.watch(c_file)
+                    if c in boards_names and boards_dir.get_child(c).exists:
                         found = True
                         break
                 if found:
@@ -882,14 +881,11 @@ def _zephyr_setup_core_impl(mctx):
                     if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
                         surviving_combinations[app_pkg].append(board_id)
                     continue
-            else:
-                # If the boards dir does not exist we must watch the app dir to catch if a boards dir is added.
-                mctx.watch(app_path)
-                if yaml_res == None:
-                    clean_b = board_id.split("/")[0].split("@")[0]
-                    if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
-                        surviving_combinations[app_pkg].append(board_id)
-                    continue
+            elif yaml_res == None:
+                clean_b = board_id.split("/")[0].split("@")[0]
+                if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
+                    surviving_combinations[app_pkg].append(board_id)
+                continue
 
     # Generate Repositories
     state_data = {
@@ -905,6 +901,7 @@ def _zephyr_setup_core_impl(mctx):
         "sysbuild_metadata": sysbuild_metadata,
         "translated_conf": sysbuild_metadata.get("translated_confs", {}),
     }
+
     # What every configuration repository needs besides its own attributes. It is a separate file
     # so that discovering a new app or board (which changes state.json) does not re-run the
     # existing configurations. Modules are sorted by name within each group: the generators used
@@ -917,7 +914,7 @@ def _zephyr_setup_core_impl(mctx):
             for name in sorted(group.keys())
         ],
         "oot_dts_roots": [str(l) for l in boards_dir_labels],
-        "pin_files": [],
+        "pin_files": pin_files,
     }
     context_json = json.encode(context)
     zephyr_state_repo(
@@ -950,16 +947,13 @@ def _zephyr_setup_core_impl(mctx):
     index_content = "PACKAGE_TO_BOARDS = %r\n" % package_to_boards
     index_content += "REPO_NAME_TO_CANONICAL = %r\n" % repo_name_to_canonical
     index_content += "SYSBUILD_METADATA = %r\n" % sysbuild_metadata
+
+    # The custom repos' fragment contents only matter to the configuration repositories, which
+    # watch them. Whether they exist is reported by parse_sysbuild_metadata.py.
     sysbuild_custom_repos = {}
     for repo in custom_repos:
         app_board_key = "%s:%s" % (normalize_app_label(repo["app_label"]), repo["board_id"])
         sysbuild_custom_repos.setdefault(app_board_key, repo["name"])
-        for fragment in repo["conf_fragments"] + repo.get("dtc_overlays", []):
-            if not fragment.startswith("/"):
-                fragment_path = mctx.path(str(workspace_root) + "/" + fragment)
-            else:
-                fragment_path = mctx.path(fragment)
-            mctx.watch(fragment_path)
 
     index_content += "SYSBUILD_CUSTOM_REPOS = %r\n" % sysbuild_custom_repos
 
@@ -980,6 +974,8 @@ def _zephyr_setup_core_impl(mctx):
             for name in sorted(discovered_modules_labels.keys())
         ],
     )
+
+    watch_deps(tracker, files = deps_files, dirs = deps_dirs)
 
     return mctx.extension_metadata(reproducible = True)
 
@@ -1077,6 +1073,12 @@ _env = tag_class(
         "boards_dirs": attr.label_list(),
         "modules": attr.label_list(),
         "manual_boards": attr.string_list(),
+        "pin_files": attr.label_list(
+            doc = "Extra files in the main workspace that pin the content of fetched " +
+                  "repositories (e.g. lock files read by other module extensions). Files " +
+                  "referenced from MODULE.bazel and its includes are found automatically. " +
+                  "Only honored for the root module.",
+        ),
     },
 )
 
