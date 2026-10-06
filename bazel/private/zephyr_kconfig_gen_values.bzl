@@ -55,7 +55,6 @@ def _gen_zephyr_config_impl(rctx):
             overlay_path = rctx.path(str(rctx.workspace_root) + "/" + overlay)
         else:
             overlay_path = rctx.path(overlay)
-        rctx.watch(overlay_path)
         resolved_dtc_overlays.append(str(overlay_path))
 
     if rctx.attr.extra_kconfig:
@@ -92,7 +91,7 @@ def _gen_zephyr_config_impl(rctx):
             legacy = read_path_list(rctx, rctx.path("kconfig_list.txt")) or []
         deps = [realpath_of(rctx.path(line.strip())) for line in legacy]
     deps = deps + [realpath_of(p) for p in [kconfig_gen_values_py, kconfig_utils_py]]
-    deps = deps + [realpath_of(rctx.path(f)) for f in resolved_conf_fragments]
+    deps = deps + [realpath_of(rctx.path(f)) for f in resolved_conf_fragments + resolved_dtc_overlays]
 
     watch_pins(tracker, context["pin_files"])
     watch_deps(tracker, files = deps, dirs = dep_dirs)

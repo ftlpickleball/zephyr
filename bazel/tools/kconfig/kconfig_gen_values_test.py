@@ -41,6 +41,9 @@ class TestKconfigGenValues(unittest.TestCase):
         self.pcpp_mock = MagicMock()
         self.pcpp_mock.__file__ = '/mock/pcpp/__init__.py'
         sys.modules['pcpp'] = self.pcpp_mock
+        # A mock module is not a package: submodules must be mocked too.
+        self.pcmd_mock = MagicMock()
+        sys.modules['pcpp.pcmd'] = self.pcmd_mock
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
@@ -178,7 +181,7 @@ class TestKconfigGenValues(unittest.TestCase):
         os.environ["BOARD"] = "harriet_evb2"
         os.environ["BOARD_QUALIFIERS"] = "mimxrt595s/cm33"
 
-        conf_files = kconfig_gen_values.get_conf_files(args, board_dir)
+        conf_files = kconfig_gen_values.get_conf_files(args, board_dir, tracker=kconfig_utils.InputRecorder())
 
         self.assertIn(defconfig_path, conf_files)
 
@@ -198,7 +201,7 @@ class TestKconfigGenValues(unittest.TestCase):
         os.environ["BOARD"] = "rpi_pico2"
         os.environ["BOARD_QUALIFIERS"] = "rp2350a/m33"
 
-        conf_files = kconfig_gen_values.get_conf_files(args, board_dir)
+        conf_files = kconfig_gen_values.get_conf_files(args, board_dir, tracker=kconfig_utils.InputRecorder())
 
         self.assertIn(conf_path, conf_files)
 
@@ -227,7 +230,7 @@ class TestKconfigGenValues(unittest.TestCase):
         os.environ["BOARD_QUALIFIERS"] = "nrf52840"
         os.environ["BOARD_REVISION"] = "1.0.0"
 
-        conf_files = kconfig_gen_values.get_conf_files(args, board_dir)
+        conf_files = kconfig_gen_values.get_conf_files(args, board_dir, tracker=kconfig_utils.InputRecorder())
 
         self.assertIn(board_defconfig, conf_files)
         self.assertIn(rev_defconfig, conf_files)
@@ -239,7 +242,7 @@ class TestKconfigGenValues(unittest.TestCase):
     def test_discover_overlays_none(self):
         app_dir = os.path.join(self.test_dir, "app")
         os.makedirs(app_dir, exist_ok=True)
-        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "")
+        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "", tracker=kconfig_utils.InputRecorder())
         self.assertEqual(overlays, [])
 
     def test_discover_overlays_app_only(self):
@@ -248,7 +251,7 @@ class TestKconfigGenValues(unittest.TestCase):
         app_overlay = os.path.join(app_dir, "app.overlay")
         Path(app_overlay).touch()
 
-        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "")
+        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "", tracker=kconfig_utils.InputRecorder())
         self.assertEqual(overlays, [app_overlay])
 
     def test_discover_overlays_board_only(self):
@@ -258,7 +261,7 @@ class TestKconfigGenValues(unittest.TestCase):
         board_overlay = os.path.join(boards_dir, "board.overlay")
         Path(board_overlay).touch()
 
-        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "")
+        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "", tracker=kconfig_utils.InputRecorder())
         self.assertEqual(overlays, [board_overlay])
 
     def test_discover_overlays_qualified_board(self):
@@ -271,7 +274,7 @@ class TestKconfigGenValues(unittest.TestCase):
         Path(board_overlay).touch()
         Path(soc_overlay).touch()
 
-        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "/soc")
+        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "/soc", tracker=kconfig_utils.InputRecorder())
         self.assertEqual(overlays, [board_overlay, soc_overlay])
 
     def test_discover_overlays_with_revisions(self):
@@ -292,7 +295,7 @@ class TestKconfigGenValues(unittest.TestCase):
         Path(app_rev_overlay).touch()
         Path(app_overlay).touch()
 
-        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "soc", "1.0.0", board_dir)
+        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "soc", "1.0.0", board_dir, tracker=kconfig_utils.InputRecorder())
         self.assertEqual(overlays, [board_rev_overlay, app_board_overlay, app_rev_overlay, app_overlay])
 
     def test_discover_overlays_all(self):
@@ -308,7 +311,7 @@ class TestKconfigGenValues(unittest.TestCase):
         Path(board_overlay).touch()
         Path(soc_overlay).touch()
 
-        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "/soc")
+        overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "/soc", tracker=kconfig_utils.InputRecorder())
         self.assertEqual(overlays, [board_overlay, soc_overlay, app_overlay])
 
     @patch('subprocess.run')
@@ -338,7 +341,7 @@ class TestKconfigGenValues(unittest.TestCase):
         mock_run.return_value = MagicMock(returncode=0)
 
         merged_dts_path, dts_roots = kconfig_gen_values.preprocess_dts(
-            args, str(self.zephyr_base), output_dir, board_dir
+            args, str(self.zephyr_base), output_dir, board_dir, tracker=kconfig_utils.InputRecorder()
         )
 
         dts_input_path = os.path.join(output_dir, "dts_input.c")
@@ -354,7 +357,7 @@ class TestKconfigGenValues(unittest.TestCase):
         edt_pickle_path = os.path.join(output_dir, "edt.pickle")
 
         kconfig_gen_values.generate_dts_headers(
-            str(self.zephyr_base), output_dir, edt_pickle_path
+            str(self.zephyr_base), output_dir, edt_pickle_path, tracker=kconfig_utils.InputRecorder()
         )
 
         mock_run.assert_called_once()
@@ -407,15 +410,23 @@ class TestKconfigGenValues(unittest.TestCase):
         args = MagicMock()
         args.modules = [module_dir]
 
+        tracker = kconfig_utils.InputRecorder()
         os.environ["BOARD"] = "nrf52840dk"
         with patch('kconfig_utils.generate_aggregation_file') as mock_gen:
-            kconfig_gen_values.generate_kconfig_aggregations(str(self.zephyr_base), args, output_dir, board_dir)
+            kconfig_gen_values.generate_kconfig_aggregations(str(self.zephyr_base), args, output_dir, board_dir, tracker=tracker)
 
             # Verify that generate_aggregation_file was called with the OOT soc directory
             mock_gen.assert_any_call(
                 os.path.join(output_dir, "soc", "Kconfig.defconfig"),
                 [os.path.join(str(self.zephyr_base), "soc/nordic/nrf52"), os.path.join(module_dir, "soc/my_soc")],
-                "SoC defconfigs"
+                "SoC defconfigs",
+                tracker=tracker,
+            )
+            mock_gen.assert_any_call(
+                os.path.join(output_dir, "boards", "Kconfig.nrf52840dk"),
+                [board_dir],
+                "Board v2 Kconfigs",
+                tracker=tracker,
             )
 
     @patch('subprocess.run')
@@ -445,7 +456,7 @@ class TestKconfigGenValues(unittest.TestCase):
         with patch('kconfig_gen_values.discover_overlays') as mock_overlays:
             mock_overlays.return_value = []
             merged_dts_path, dts_roots = kconfig_gen_values.preprocess_dts(
-                args, str(self.zephyr_base), output_dir, board_dir
+                args, str(self.zephyr_base), output_dir, board_dir, tracker=kconfig_utils.InputRecorder()
             )
 
         # Verify dts_roots has no duplicates
@@ -466,7 +477,7 @@ class TestKconfigGenValues(unittest.TestCase):
         dts_roots = [Path(dir1), Path(dir2)]
 
         kconfig_gen_values.generate_edt_pickle(
-            str(self.zephyr_base), output_dir, dts_roots, "merged.dts"
+            str(self.zephyr_base), output_dir, dts_roots, "merged.dts", tracker=kconfig_utils.InputRecorder()
         )
 
         mock_run.assert_called_once()
@@ -478,107 +489,260 @@ class TestKconfigGenValues(unittest.TestCase):
         # Should be deduplicated
         self.assertEqual(len(bindings_args), 1)
 
-    def test_write_deps_files(self):
+    @patch('subprocess.run')
+    def test_main_writes_deps(self, mock_run):
         output_dir = os.path.join(self.test_dir, "out")
-        os.makedirs(output_dir, exist_ok=True)
         app_dir = os.path.join(self.test_dir, "app")
-        app_boards_dir = os.path.join(app_dir, "boards")
+        os.makedirs(app_dir)
+        app_kconfig = os.path.join(app_dir, "Kconfig")
+        Path(app_kconfig).write_text('source "Kconfig.zephyr"\n')
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        (board_dir / "board.yml").write_text("board:\n  name: nrf52840dk\n")
+        (self.zephyr_base / "soc" / "nordic" / "nrf52" / "soc.yml").touch()
+        zephyr_kconfig = str(self.zephyr_base / "Kconfig")
+
+        def run_kconfig(*args, **kwargs):
+            os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
+            Path(output_dir, ".config").write_text("CONFIG_FOO=y\n")
+            Path(output_dir, "zephyr", "autoconf.h").write_text("#define CONFIG_FOO 1\n")
+            # kconfig.py lists every Kconfig file it parsed.
+            Path(output_dir, "kconfig_list.txt").write_text(f"{zephyr_kconfig}\n{app_kconfig}\n")
+            return MagicMock(returncode=0, stderr="")
+        mock_run.side_effect = run_kconfig
+        self.kconfig_mock.Kconfig.return_value.unique_defined_syms = []
+
+        with patch('sys.argv', [
+            'kconfig_gen_values.py',
+            '--zephyr-base', str(self.zephyr_base),
+            '--app-dir', app_dir,
+            '--board', 'nrf52840dk',
+            '--board-dir', str(board_dir),
+            '--parent-platform', '//platforms:test',
+            '--output-dir', output_dir,
+        ]):
+            with patch('kconfig_utils.generate_kconfig_dts'), \
+                 patch('kconfig_gen_values.preprocess_dts') as mock_pre, \
+                 patch('kconfig_gen_values.generate_edt_pickle'):
+                mock_pre.return_value = ("merged.dts", [])
+                kconfig_gen_values.main()
+
+        real = os.path.realpath
+        deps = Path(output_dir, "deps.txt").read_text().splitlines()
+        dep_dirs = Path(output_dir, "dep_dirs.txt").read_text().splitlines()
+        for lines in (deps, dep_dirs):
+            self.assertEqual(lines, sorted(set(lines)))
+            self.assertTrue(all(p == real(p) for p in lines))
+            self.assertFalse([p for p in lines if (p + os.sep).startswith(real(output_dir) + os.sep)])
+
+        self.assertIn(real(zephyr_kconfig), deps)
+        self.assertIn(real(app_kconfig), deps)
+        # Candidates that don't exist: creating app/boards/ with it adds a fragment.
+        self.assertIn(real(os.path.join(app_dir, "boards", "nrf52840dk.conf")), deps)
+        for path in [
+            os.path.join(app_dir, "prj.conf"),
+            str(board_dir / "board.yml"),
+            str(board_dir / "Kconfig"),
+            str(self.zephyr_base / "soc" / "nordic" / "nrf52" / "soc.yml"),
+            str(self.zephyr_base / "scripts" / "kconfig" / "kconfig.py"),
+            kconfig_gen_values.__file__,
+            kconfig_utils.__file__,
+        ]:
+            self.assertIn(real(path), deps)
+        # Directories walked for soc.yml files (scoped to soc/) and listed for arch/ Kconfigs.
+        for path in [self.zephyr_base / "soc", self.zephyr_base / "soc" / "nordic" / "nrf52", self.zephyr_base / "arch"]:
+            self.assertIn(real(str(path)), dep_dirs)
+        self.assertNotIn(real(str(self.zephyr_base)), dep_dirs)
+
+    def test_preprocess_dts_records_include_probes(self):
         board_dir = os.path.join(self.test_dir, "board")
-        os.makedirs(app_boards_dir, exist_ok=True)
-        os.makedirs(board_dir, exist_ok=True)
-
-        prj_conf = os.path.join(app_dir, "prj.conf")
-        Path(prj_conf).touch()
-        app_board_conf = os.path.join(app_boards_dir, "my_board.conf")
-        Path(app_board_conf).touch()
-        board_defconfig = os.path.join(board_dir, "my_board_defconfig")
-        Path(board_defconfig).touch()
-        board_yml = os.path.join(board_dir, "board.yml")
-        Path(board_yml).touch()
-        board_kconfig = os.path.join(board_dir, "Kconfig.my_board")
-        Path(board_kconfig).touch()
-        board_rev_dir = os.path.join(board_dir, "revisions")
-        os.makedirs(board_rev_dir, exist_ok=True)
-
-        # kconfig_list.txt with an external kconfig file and a generated file in output_dir
-        kconfig_external = os.path.join(self.test_dir, "Kconfig.external")
-        Path(kconfig_external).touch()
-        kconfig_generated = os.path.join(output_dir, "Kconfig.dts")
-        Path(kconfig_generated).touch()
-        with open(os.path.join(output_dir, "kconfig_list.txt"), "w") as f:
-            f.write(f"{kconfig_external}\n{kconfig_generated}\n")
-
-        # dts_input.c with DTS file and overlay
-        dts_file = os.path.join(board_dir, "my_board.dts")
-        Path(dts_file).touch()
-        overlay_file = os.path.join(app_boards_dir, "my_board.overlay")
-        Path(overlay_file).touch()
-        with open(os.path.join(output_dir, "dts_input.c"), "w") as f:
-            f.write(f'#include "{dts_file}"\n')
-            f.write(f'#include "{overlay_file}"\n')
-
+        app_dir = os.path.join(self.test_dir, "app")
+        output_dir = os.path.join(self.test_dir, "out")
+        oot_root = os.path.join(self.test_dir, "oot")
+        zephyr_base = str(self.zephyr_base)
+        for d in [board_dir, app_dir, os.path.join(oot_root, "dts"),
+                  os.path.join(zephyr_base, "dts", "common"), os.path.join(zephyr_base, "include", "zephyr")]:
+            os.makedirs(d, exist_ok=True)
+        Path(board_dir, "my_board.dts").write_text(
+            '/dts-v1/;\n#include <common.dtsi>\n#include "local.dtsi"\n/ { model = "test"; };\n'
+        )
+        Path(board_dir, "local.dtsi").write_text("/ { local_node {}; };\n")
+        Path(zephyr_base, "dts", "common", "common.dtsi").write_text("/ { common_node {}; };\n")
         extra_overlay = os.path.join(self.test_dir, "extra.overlay")
-        Path(extra_overlay).touch()
+        Path(extra_overlay).write_text("/ { extra_node {}; };\n")
 
         args = MagicMock()
+        args.board = "my_board"
         args.app_dir = app_dir
+        args.oot_dts_roots = [oot_root]
+        args.modules = []
         args.dtc_overlays = [extra_overlay]
-        conf_files = [board_defconfig, prj_conf, app_board_conf]
+        tracker = kconfig_utils.InputRecorder()
 
-        with patch.dict(os.environ, {"BOARD": "my_board"}):
-            kconfig_gen_values.write_deps_files(output_dir, args, board_dir, conf_files)
+        with patch.dict(sys.modules), \
+             patch.dict(os.environ, {"BOARD": "my_board", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""}):
+            # Preprocess with the real pcpp rather than setUp's mocks.
+            for name in [n for n in sys.modules if n == "pcpp" or n.startswith("pcpp.")]:
+                del sys.modules[name]
+            try:
+                import pcpp.pcmd  # noqa: F401
+            except ImportError:
+                self.skipTest("pcpp is not available")
+            merged_dts_path, _ = kconfig_gen_values.preprocess_dts(args, zephyr_base, output_dir, board_dir, tracker=tracker)
 
-        deps_path = os.path.join(output_dir, "deps.txt")
-        self.assertTrue(os.path.exists(deps_path))
-        deps = set(Path(deps_path).read_text().splitlines())
+        merged = Path(merged_dts_path).read_text()
+        self.assertIn("common_node", merged)
+        self.assertIn("local_node", merged)
+        self.assertIn("extra_node", merged)
 
-        self.assertIn(os.path.realpath(board_defconfig), deps)
-        self.assertIn(os.path.realpath(prj_conf), deps)
-        self.assertIn(os.path.realpath(app_board_conf), deps)
-        self.assertIn(os.path.realpath(kconfig_external), deps)
-        self.assertIn(os.path.realpath(dts_file), deps)
-        self.assertIn(os.path.realpath(overlay_file), deps)
-        self.assertIn(os.path.realpath(board_yml), deps)
-        self.assertIn(os.path.realpath(board_kconfig), deps)
-        self.assertIn(os.path.realpath(extra_overlay), deps)
-        # Probed non-existent candidate in app_dir
-        self.assertIn(os.path.realpath(os.path.join(app_dir, "app.overlay")), deps)
-        # Generated files in output_dir should not be in deps
-        self.assertNotIn(os.path.realpath(kconfig_generated), deps)
+        real = os.path.realpath
+        deps = tracker.files
+        # Every path tried for <common.dtsi>, in -I order: creating one of them
+        # would shadow the header found now.
+        for path in [
+            os.path.join(oot_root, "dts", "common.dtsi"),
+            os.path.join(zephyr_base, "include", "common.dtsi"),
+            os.path.join(zephyr_base, "include", "zephyr", "common.dtsi"),
+            os.path.join(zephyr_base, "dts", "common.dtsi"),
+        ]:
+            self.assertIn(real(path), deps)
+        for path in [
+            os.path.join(zephyr_base, "dts", "common", "common.dtsi"),
+            os.path.join(board_dir, "local.dtsi"),
+            os.path.join(board_dir, "my_board.dts"),
+            extra_overlay,
+        ]:
+            self.assertIn(real(path), deps)
+        # Missing include dirs (creating one adds an include path) and board.yml probes.
+        for path in [
+            os.path.join(oot_root, "include"),
+            os.path.join(oot_root, "dts", "arm"),
+            os.path.join(zephyr_base, "dts", "vendor"),
+            os.path.join(board_dir, "board.yml"),
+            os.path.join(board_dir, "board.yaml"),
+        ]:
+            self.assertIn(real(path), deps)
 
-        dep_dirs_path = os.path.join(output_dir, "dep_dirs.txt")
-        self.assertTrue(os.path.exists(dep_dirs_path))
-        dep_dirs = set(Path(dep_dirs_path).read_text().splitlines())
-
-        self.assertIn(os.path.realpath(board_dir), dep_dirs)
-        self.assertIn(os.path.realpath(board_rev_dir), dep_dirs)
-        self.assertIn(os.path.realpath(app_dir), dep_dirs)
-        self.assertIn(os.path.realpath(app_boards_dir), dep_dirs)
-
-    def test_write_deps_files_discover_overlays_fallback(self):
-        output_dir = os.path.join(self.test_dir, "out_fallback")
-        os.makedirs(output_dir, exist_ok=True)
-        app_dir = os.path.join(self.test_dir, "app_fb")
-        boards_dir = os.path.join(app_dir, "boards")
-        board_dir = os.path.join(self.test_dir, "board_fb")
-        os.makedirs(boards_dir, exist_ok=True)
-        os.makedirs(board_dir, exist_ok=True)
-
-        app_overlay = os.path.join(boards_dir, "my_board.overlay")
-        Path(app_overlay).touch()
-
+    def test_get_conf_files_records_missing_candidates(self):
         args = MagicMock()
-        args.app_dir = app_dir
-        args.dtc_overlays = []
+        args.app_dir = os.path.join(self.test_dir, "app")
+        os.makedirs(args.app_dir)
+        board_dir = os.path.join(self.test_dir, "board")
+        os.makedirs(board_dir)
+        tracker = kconfig_utils.InputRecorder()
 
-        with patch.dict(os.environ, {"BOARD": "my_board", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""}):
-            # No dts_input.c created, write_deps_files should fall back to discover_overlays
-            kconfig_gen_values.write_deps_files(output_dir, args, board_dir, [])
+        with patch.dict(os.environ, {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "nrf52840", "BOARD_REVISION": "1.0.0"}):
+            self.assertEqual(kconfig_gen_values.get_conf_files(args, board_dir, tracker=tracker), [])
 
-        deps_path = os.path.join(output_dir, "deps.txt")
-        self.assertTrue(os.path.exists(deps_path))
-        deps = set(Path(deps_path).read_text().splitlines())
-        self.assertIn(os.path.realpath(app_overlay), deps)
+        real = os.path.realpath
+        deps = tracker.files
+        # app/boards/ doesn't exist; creating it with one of these adds a fragment.
+        for name in ["nrf52840dk.conf", "nrf52840dk_nrf52840.conf", "nrf52840dk@1.0.0.conf"]:
+            path = os.path.join(args.app_dir, "boards", name)
+            self.assertIn(real(path), deps)
+        for path in [
+            os.path.join(board_dir, "nrf52840dk_defconfig"),
+            os.path.join(board_dir, "revisions", "1_0_0_defconfig"),
+            os.path.join(board_dir, "nrf52840dk_nrf52840_1_0_0_defconfig"),
+            os.path.join(args.app_dir, "prj.conf"),
+            os.path.join(args.app_dir, "Kconfig"),
+        ]:
+            self.assertIn(real(path), deps)
+
+    def test_discover_overlays_records_missing_candidates(self):
+        app_dir = os.path.join(self.test_dir, "app")
+        board_dir = os.path.join(self.test_dir, "board_dir")
+        os.makedirs(app_dir)
+        os.makedirs(board_dir)
+        tracker = kconfig_utils.InputRecorder()
+
+        self.assertEqual(kconfig_gen_values.discover_overlays(app_dir, "board", "soc", "1.0.0", board_dir, tracker=tracker), [])
+
+        real = os.path.realpath
+        deps = tracker.files
+        for name in ["board.overlay", "board_soc.overlay", "board_soc@1.0.0.overlay"]:
+            path = os.path.join(app_dir, "boards", name)
+            self.assertIn(real(path), deps)
+        for path in [
+            os.path.join(board_dir, "revisions", "1_0_0.overlay"),
+            os.path.join(board_dir, "board_soc_1_0_0.overlay"),
+            os.path.join(app_dir, "app.overlay"),
+        ]:
+            self.assertIn(real(path), deps)
+
+    @patch('subprocess.run')
+    def test_generate_edt_pickle_records_inputs(self, mock_run):
+        output_dir = os.path.join(self.test_dir, "out")
+        scripts_dts = self.zephyr_base / "scripts" / "dts"
+        package = scripts_dts / "python-devicetree" / "src" / "devicetree"
+        package.mkdir(parents=True)
+        (scripts_dts / "gen_edt.py").touch()
+        (package / "edtlib.py").touch()
+        bindings = self.zephyr_base / "dts" / "bindings"
+        (bindings / "vendor").mkdir(parents=True)
+        (bindings / "vendor" / "foo.yaml").touch()
+        (bindings / "vendor" / "notes.txt").touch()
+        (bindings / "vendor-prefixes.txt").touch()
+        oot_root = Path(self.test_dir) / "oot"
+        oot_root.mkdir()
+
+        tracker = kconfig_utils.InputRecorder()
+        kconfig_gen_values.generate_edt_pickle(
+            str(self.zephyr_base), output_dir, [oot_root, self.zephyr_base], "merged.dts", tracker=tracker
+        )
+
+        cmd = mock_run.call_args[0][0]
+        self.assertIn(str(scripts_dts / "gen_edt.py"), cmd)
+        real = lambda p: os.path.realpath(str(p))
+        self.assertLessEqual({
+            real(bindings / "vendor" / "foo.yaml"),
+            real(bindings / "vendor-prefixes.txt"),
+            real(scripts_dts / "gen_edt.py"),
+            real(scripts_dts / "edtlib_logger.py"),
+            real(package / "edtlib.py"),
+            # Creating these would add or switch a bindings dir.
+            real(oot_root / "zephyr" / "dts" / "bindings"),
+            real(oot_root / "dts" / "bindings"),
+            real(self.zephyr_base / "zephyr" / "dts" / "bindings"),
+        }, tracker.files)
+        self.assertNotIn(real(bindings / "vendor" / "notes.txt"), tracker.files)
+        self.assertEqual(tracker.dirs, {real(bindings), real(bindings / "vendor")})
+
+    def test_generate_kconfig_aggregations_records_inputs(self):
+        board_dir = str(self.zephyr_base / "boards" / "arm" / "nrf52840dk")
+        soc_dir = self.zephyr_base / "soc" / "nordic" / "nrf52"
+        (soc_dir / "soc.yml").touch()
+        (soc_dir / "Kconfig.soc").touch()
+        (self.zephyr_base / "arch" / "arm" / "Kconfig").touch()
+        Path(board_dir, "Kconfig.nrf52840dk").touch()
+        missing_module = os.path.join(self.test_dir, "missing_module")
+        args = MagicMock()
+        args.modules = [missing_module]
+
+        tracker = kconfig_utils.InputRecorder()
+        output_dir = os.path.join(self.test_dir, "out")
+        with patch.dict(os.environ, {"BOARD": "nrf52840dk"}):
+            kconfig_gen_values.generate_kconfig_aggregations(
+                str(self.zephyr_base), args, output_dir, board_dir, tracker=tracker
+            )
+
+        real = lambda p: os.path.realpath(str(p))
+        self.assertLessEqual({
+            real(soc_dir / "soc.yml"),
+            real(soc_dir / "Kconfig.soc"),
+            real(soc_dir / "Kconfig.defconfig"),  # Probed, missing.
+            real(self.zephyr_base / "arch" / "arm" / "Kconfig"),
+            real(os.path.join(board_dir, "Kconfig")),  # Probed, missing.
+            real(os.path.join(board_dir, "Kconfig.nrf52840dk")),
+            real(self.zephyr_base / "modules"),  # Missing: no Kconfig.modules entries.
+            real(os.path.join(missing_module, "soc")),
+        }, tracker.files)
+        self.assertLessEqual({
+            real(self.zephyr_base / "soc"),
+            real(self.zephyr_base / "soc" / "nordic"),
+            real(soc_dir),
+            real(self.zephyr_base / "arch"),
+        }, tracker.dirs)
+        self.assertNotIn(real(self.zephyr_base), tracker.dirs)
 
 if __name__ == '__main__':
     unittest.main()

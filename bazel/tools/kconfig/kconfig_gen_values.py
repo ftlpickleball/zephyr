@@ -76,38 +76,25 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
                     os.environ[f"ZEPHYR_{module_name}_MODULE_DIR"] = m_abs
     os.environ["KCONFIG_ENV_FILE"] = kconfig_env_file
 
-def generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir):
+def generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir, *, tracker):
+    """Generates the soc/, arch/ and boards/ aggregation Kconfigs and Kconfig.modules."""
     # Generate aggregation Kconfig files
     soc_dirs = []
-
-    # Try to find SoC name from board.yml
-    soc_names = []
-    for board_file in ["board.yml", "board.yaml"]:
-        board_yml_path = os.path.join(board_dir, board_file)
-        if os.path.exists(board_yml_path):
-            with open(board_yml_path, 'r') as f:
-                content = f.read()
-                # Simple heuristic to find soc name in board.yml
-                # It looks like:
-                # socs:
-                #   - name: same70q21b
-                matches = re.findall(r"-\s*name:\s*(\S+)", content)
-                if matches:
-                    soc_names.extend(matches)
-            break
-
     soc_roots = [Path(zephyr_base)] + ([Path(m) for m in args.modules] if args.modules else [])
     for sroot in soc_roots:
-        if not sroot.exists():
+        soc_path = sroot / "soc"
+        if not soc_path.is_dir():
+            tracker.add(str(soc_path))
             continue
-        for root, dirs, files in kconfig_utils.filtered_walk(sroot):
+        for root, dirs, files in kconfig_utils.filtered_walk(str(soc_path), tracker=tracker):
             if "soc.yml" in files:
                 soc_dirs.append(root)
+                tracker.add(os.path.join(root, "soc.yml"))
 
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig.defconfig"), soc_dirs, "SoC defconfigs")
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig"), soc_dirs, "SoC Kconfigs")
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig.soc"), soc_dirs, "SoC Kconfigs")
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig.sysbuild"), soc_dirs, "SoC sysbuild Kconfigs")
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig.defconfig"), soc_dirs, "SoC defconfigs", tracker=tracker)
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig"), soc_dirs, "SoC Kconfigs", tracker=tracker)
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig.soc"), soc_dirs, "SoC Kconfigs", tracker=tracker)
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "soc", "Kconfig.sysbuild"), soc_dirs, "SoC sysbuild Kconfigs", tracker=tracker)
 
     shield_defconfig = os.path.join(output_dir, "Kconfig.shield.defconfig")
     os.makedirs(os.path.dirname(shield_defconfig), exist_ok=True)
@@ -116,59 +103,73 @@ def generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir):
 
     arch_dirs = []
     arch_root = os.path.join(zephyr_base, "arch")
-    for d in os.listdir(arch_root):
+    tracker.add_dir(arch_root)
+    for d in sorted(os.listdir(arch_root)):
         if os.path.isdir(os.path.join(arch_root, d)):
             arch_dirs.append(os.path.join(arch_root, d))
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "arch", "Kconfig"), arch_dirs, "Arch Kconfigs")
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "arch", "Kconfig"), arch_dirs, "Arch Kconfigs", tracker=tracker)
 
     board_dirs = [board_dir]
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "boards", "Kconfig.defconfig"), board_dirs, "Board defconfigs")
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "boards", "Kconfig"), board_dirs, "Board Kconfigs")
-    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "boards", "Kconfig.sysbuild"), board_dirs, "Board sysbuild Kconfigs")
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "boards", "Kconfig.defconfig"), board_dirs, "Board defconfigs", tracker=tracker)
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "boards", "Kconfig"), board_dirs, "Board Kconfigs", tracker=tracker)
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "boards", "Kconfig.sysbuild"), board_dirs, "Board sysbuild Kconfigs", tracker=tracker)
 
     board_name = os.environ["BOARD"]
-    board_kconfig_agg = os.path.join(output_dir, "boards", f"Kconfig.{board_name}")
-    os.makedirs(os.path.dirname(board_kconfig_agg), exist_ok=True)
-    with open(board_kconfig_agg, "w") as f:
-        board_kconfig = os.path.join(board_dir, "Kconfig")
-        if not os.path.exists(board_kconfig):
-             board_kconfig = os.path.join(board_dir, f"Kconfig.{board_name}")
-        if os.path.exists(board_kconfig):
-            f.write(f'osource "{os.path.abspath(board_kconfig)}"\n')
+    kconfig_utils.generate_aggregation_file(os.path.join(output_dir, "boards", f"Kconfig.{board_name}"), board_dirs, "Board v2 Kconfigs", tracker=tracker)
 
     kconfig_modules = os.path.join(output_dir, "Kconfig.modules")
-    kconfig_utils.generate_kconfig_modules(zephyr_base, args.modules, kconfig_modules)
+    kconfig_utils.generate_kconfig_modules(zephyr_base, args.modules, kconfig_modules, tracker=tracker)
 
-def discover_overlays(app_dir, board_name, board_qualifiers, board_revision="", board_dir=""):
+def discover_overlays(app_dir, board_name, board_qualifiers, board_revision="", board_dir="", *, tracker):
     overlays = []
 
     # 1. Board-level revision overlays in board_dir
     board_rev_overlays = discovery_utils.get_board_revision_overlays(
         board_dir, board_name, board_qualifiers, board_revision
     )
+    tracker.add(*discovery_utils.get_board_revision_overlay_candidates(
+        board_dir, board_name, board_qualifiers, board_revision
+    ))
     for cand in board_rev_overlays:
         if cand not in overlays:
             overlays.append(cand)
 
     # 2. App-level board overlays in app_dir/boards/ (precedence: base -> qualified -> revision -> qualified revision)
     app_boards_dir = os.path.join(app_dir, "boards")
-    if os.path.exists(app_boards_dir):
-        app_candidates = discovery_utils.get_app_board_override_candidates(
-            board_name, board_qualifiers, board_revision, "overlay"
-        )
-        for cand_file in app_candidates:
-            cand_path = os.path.join(app_boards_dir, cand_file)
-            if os.path.exists(cand_path) and cand_path not in overlays:
-                overlays.append(cand_path)
+    for cand_file in discovery_utils.get_app_board_override_candidates(
+        board_name, board_qualifiers, board_revision, "overlay"
+    ):
+        cand_path = os.path.join(app_boards_dir, cand_file)
+        tracker.add(cand_path)
+        if os.path.exists(cand_path) and cand_path not in overlays:
+            overlays.append(cand_path)
 
     # 3. Default app overlay
     app_overlay = os.path.join(app_dir, "app.overlay")
+    tracker.add(app_overlay)
     if os.path.exists(app_overlay) and app_overlay not in overlays:
         overlays.append(app_overlay)
 
     return overlays
 
-def preprocess_dts(args, zephyr_base, output_dir, board_dir):
+def _make_include_recorder(cmd_preprocessor):
+    """Returns a subclass of pcpp's CmdPreprocessor that records, in
+    'probed_includes', every path it tries to open for an #include, whether
+    or not it exists: creating a missing one would shadow the file used."""
+
+    class IncludeRecorder(cmd_preprocessor):
+        def __init__(self, argv):
+            # CmdPreprocessor.__init__() runs the whole preprocessing.
+            self.probed_includes = []
+            super().__init__(argv)
+
+        def on_file_open(self, is_system_include, includepath):
+            self.probed_includes.append(includepath)
+            return super().on_file_open(is_system_include, includepath)
+
+    return IncludeRecorder
+
+def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
     # Determine input DTS file
     board_name = os.environ["BOARD"]
     board_qualifiers = os.environ.get("BOARD_QUALIFIERS", "")
@@ -184,6 +185,7 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir):
     # In HWM v2, try to find a DTS file matching any SoC in board.yml
     for board_file in ["board.yml", "board.yaml"]:
         board_yml_path = os.path.join(board_dir, board_file)
+        tracker.add(board_yml_path)
         if os.path.exists(board_yml_path):
             with open(board_yml_path, 'r') as f:
                 content = f.read()
@@ -194,6 +196,7 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir):
 
     dts_file = None
     for candidate in candidates:
+        tracker.add(candidate)
         if os.path.exists(candidate):
             dts_file = candidate
             break
@@ -201,8 +204,9 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir):
     if not dts_file:
         raise RuntimeError(f"Could not find DTS file for board {args.board} in {board_dir}. Tried: {candidates}")
 
-    overlays = discover_overlays(args.app_dir, board_name, board_qualifiers, board_revision, board_dir)
-    for extra_overlay in args.dtc_overlays:
+    overlays = discover_overlays(args.app_dir, board_name, board_qualifiers, board_revision, board_dir, tracker=tracker)
+    for extra_overlay in getattr(args, "dtc_overlays", []):
+        tracker.add(extra_overlay)
         if os.path.exists(extra_overlay) and extra_overlay not in overlays:
             overlays.append(extra_overlay)
 
@@ -217,19 +221,15 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir):
     merged_dts_path = os.path.join(output_dir, "zephyr.dts")
 
     # Preprocess DTS using pcpp
-    import pcpp
-    pcmd_path = os.path.join(os.path.dirname(pcpp.__file__), "pcmd.py")
-    pcpp_args = [
-        sys.executable,
-        pcmd_path,
-        dts_input_path,
-    ]
+    from pcpp.pcmd import CmdPreprocessor
 
     raw_roots = [Path(r) for r in args.oot_dts_roots] + [Path(m) for m in args.modules] + [Path(zephyr_base)]
     dts_roots = []
     for r in raw_roots:
         if r not in dts_roots:
             dts_roots.append(r)
+
+    pcpp_cmd_args = ["pcpp", dts_input_path, "-o", merged_dts_path]
     for dts_root in dts_roots:
         directories = [
             "include",
@@ -240,13 +240,25 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir):
         for directory in directories:
             path = dts_root / directory
             if path.exists():
-                pcpp_args.append("-I" + str(path.resolve()))
-    pcpp_args.extend(["-o", merged_dts_path])
+                pcpp_cmd_args.append("-I" + str(path.resolve()))
+            else:
+                # Creating it would add an include path, with headers that
+                # could shadow the ones found now.
+                tracker.add(str(path))
 
-    subprocess.run(pcpp_args, check=True)
+    preprocessor = CmdPreprocessor
+    if isinstance(CmdPreprocessor, type):
+        preprocessor = _make_include_recorder(CmdPreprocessor)
+    cpp = preprocessor(pcpp_cmd_args)
+    for item in getattr(cpp, "include_times", []):
+        if item.included_abspath and os.path.exists(item.included_abspath):
+            tracker.add(item.included_abspath)
+    tracker.add(*getattr(cpp, "probed_includes", []))
+
     return merged_dts_path, dts_roots
 
-def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path):
+def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, tracker):
+    """Runs gen_edt.py (or gen_defines.py) to write edt.pickle."""
     output_edt_pickle_path = os.path.join(output_dir, "edt.pickle")
     output_header = os.path.join(output_dir, "zephyr", "devicetree_generated.h")
     os.makedirs(os.path.dirname(output_header), exist_ok=True)
@@ -258,13 +270,21 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path):
             if str(bdir.resolve()) not in bindings_dirs:
                 bindings_dirs.append(str(bdir.resolve()))
         else:
+            tracker.add(str(bdir))
             bdir = dts_root / "dts" / "bindings"
             if bdir.exists():
                 if str(bdir.resolve()) not in bindings_dirs:
                     bindings_dirs.append(str(bdir.resolve()))
+            else:
+                tracker.add(str(bdir))
 
     gen_edt_py = os.path.join(zephyr_base, "scripts", "dts", "gen_edt.py")
     gen_defines_py = os.path.join(zephyr_base, "scripts", "dts", "gen_defines.py")
+
+    # edtlib loads every binding below each bindings dir.
+    for bdir in bindings_dirs:
+        tracker.add_tree(bdir, kconfig_utils.BINDING_SUFFIXES)
+    tracker.add(gen_edt_py, *kconfig_utils.dts_python_sources(zephyr_base))
 
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join([
@@ -286,6 +306,7 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path):
         gen_edt_args.extend(bindings_dirs)
         for bdir in bindings_dirs:
             vp = os.path.join(bdir, "vendor-prefixes.txt")
+            tracker.add(vp)
             if os.path.exists(vp):
                 gen_edt_args.extend(["--vendor-prefixes", vp])
         gen_edt_args.extend([
@@ -296,6 +317,7 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path):
         ])
         subprocess.run(gen_edt_args, env=env, check=True)
     else:
+        tracker.add(gen_defines_py)
         cmd = [
             sys.executable,
             gen_defines_py,
@@ -318,11 +340,12 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path):
 
     os.environ["EDT_PICKLE"] = output_edt_pickle_path
 
-def generate_dts_headers(zephyr_base, output_dir, edt_pickle_path):
+def generate_dts_headers(zephyr_base, output_dir, edt_pickle_path, *, tracker):
     output_header = os.path.join(output_dir, "zephyr", "devicetree_generated.h")
     if os.path.exists(output_header):
         return
     gen_defines_py = os.path.join(zephyr_base, "scripts", "dts", "gen_defines.py")
+    tracker.add(gen_defines_py, *kconfig_utils.dts_python_sources(zephyr_base))
     os.makedirs(os.path.dirname(output_header), exist_ok=True)
 
     cmd = [
@@ -341,7 +364,7 @@ def generate_dts_headers(zephyr_base, output_dir, edt_pickle_path):
 
     subprocess.run(cmd, env=env, check=True)
 
-def get_conf_files(args, board_dir):
+def get_conf_files(args, board_dir, *, tracker):
     board_name = os.environ["BOARD"]
     board_qualifiers = os.environ.get("BOARD_QUALIFIERS", "").lstrip("/")
     board_revision = os.environ.get("BOARD_REVISION", "")
@@ -351,6 +374,7 @@ def get_conf_files(args, board_dir):
     # 1 & 2. Base and qualified board defconfigs (HWM v2) using shared candidate logic
     for cand in discovery_utils.get_app_board_override_candidates(board_name, board_qualifiers, "", "defconfig", sep="_"):
         cand_path = os.path.join(board_dir, cand)
+        tracker.add(cand_path)
         if os.path.exists(cand_path) and cand_path not in conf_files:
             conf_files.append(cand_path)
 
@@ -358,25 +382,28 @@ def get_conf_files(args, board_dir):
     rev_defconfigs = discovery_utils.get_board_revision_defconfigs(
         board_dir, board_name, board_qualifiers, board_revision
     )
+    tracker.add(*discovery_utils.get_board_revision_defconfig_candidates(
+        board_dir, board_name, board_qualifiers, board_revision
+    ))
     for rev_defconfig in rev_defconfigs:
         if rev_defconfig not in conf_files:
             conf_files.append(rev_defconfig)
 
-    # 4. Base application prj.conf
+    # 4. Base application prj.conf and Kconfig
     prj_conf = os.path.join(args.app_dir, "prj.conf")
+    tracker.add(prj_conf, os.path.join(args.app_dir, "Kconfig"))
     if os.path.exists(prj_conf):
         conf_files.append(prj_conf)
 
     # 5. Application board conf candidates (precedence: base -> qualified -> revision -> qualified revision)
     app_boards_dir = os.path.join(args.app_dir, "boards")
-    if os.path.exists(app_boards_dir):
-        app_candidates = discovery_utils.get_app_board_override_candidates(
-            board_name, board_qualifiers, board_revision, "conf"
-        )
-        for conf_file in app_candidates:
-            conf_path = os.path.join(app_boards_dir, conf_file)
-            if os.path.exists(conf_path) and conf_path not in conf_files:
-                conf_files.append(conf_path)
+    for conf_file in discovery_utils.get_app_board_override_candidates(
+        board_name, board_qualifiers, board_revision, "conf"
+    ):
+        conf_path = os.path.join(app_boards_dir, conf_file)
+        tracker.add(conf_path)
+        if os.path.exists(conf_path) and conf_path not in conf_files:
+            conf_files.append(conf_path)
 
     return conf_files
 
@@ -562,87 +589,6 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
         f.write('    actual = ":zc_target_platform_llvm",\n')
         f.write(')\n\n')
 
-
-def write_deps_files(output_dir, args, board_dir, conf_files):
-    out_real = os.path.realpath(output_dir)
-    deps = set()
-    dep_dirs = set()
-
-    # 1. Kconfig files visited by kconfig.py
-    kconfig_list_path = os.path.join(output_dir, "kconfig_list.txt")
-    if os.path.exists(kconfig_list_path):
-        with open(kconfig_list_path, "r") as f:
-            for line in f:
-                path = line.strip()
-                if path:
-                    real = os.path.realpath(path)
-                    if real != out_real and not real.startswith(out_real + os.sep):
-                        deps.add(real)
-
-    # 2. Conf files and fragments
-    for conf in conf_files:
-        deps.add(os.path.realpath(conf))
-
-    # 3. Application probed candidates (even if non-existent) and boards dir
-    app_dir = getattr(args, "app_dir", None)
-    if app_dir:
-        deps.add(os.path.realpath(os.path.join(app_dir, "prj.conf")))
-        deps.add(os.path.realpath(os.path.join(app_dir, "Kconfig")))
-        deps.add(os.path.realpath(os.path.join(app_dir, "app.overlay")))
-        dep_dirs.add(os.path.realpath(app_dir))
-        dep_dirs.add(os.path.realpath(os.path.join(app_dir, "boards")))
-
-    # 4. Devicetree files and overlays from dts_input.c
-    dts_input_c = os.path.join(output_dir, "dts_input.c")
-    if os.path.exists(dts_input_c):
-        with open(dts_input_c, "r") as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith('#include "') and line.endswith('"'):
-                    inc_path = line[len('#include "'):-1]
-                    deps.add(os.path.realpath(inc_path))
-    elif app_dir and board_dir:
-        board_name = os.environ.get("BOARD", "")
-        board_qualifiers = os.environ.get("BOARD_QUALIFIERS", "")
-        board_revision = os.environ.get("BOARD_REVISION", "")
-        for ov in discover_overlays(app_dir, board_name, board_qualifiers, board_revision, board_dir):
-            deps.add(os.path.realpath(ov))
-
-    # 5. Extra DTC overlays from args
-    if hasattr(args, "dtc_overlays") and args.dtc_overlays:
-        for overlay in args.dtc_overlays:
-            deps.add(os.path.realpath(overlay))
-
-    # 6. Board directory and board metadata
-    if board_dir:
-        dep_dirs.add(os.path.realpath(board_dir))
-        for meta in ["board.yml", "board.yaml", "Kconfig"]:
-            meta_path = os.path.join(board_dir, meta)
-            if os.path.exists(meta_path):
-                deps.add(os.path.realpath(meta_path))
-        board_name = os.environ.get("BOARD", "")
-        if board_name:
-            board_kconfig = os.path.join(board_dir, f"Kconfig.{board_name}")
-            if os.path.exists(board_kconfig):
-                deps.add(os.path.realpath(board_kconfig))
-        board_rev_dir = os.path.join(board_dir, "revisions")
-        if os.path.exists(board_rev_dir):
-            dep_dirs.add(os.path.realpath(board_rev_dir))
-
-    # Write deps.txt
-    with open(os.path.join(output_dir, "deps.txt"), "w") as f:
-        for dep in sorted(deps):
-            f.write(dep + "\n")
-
-    # Write dep_dirs.txt
-    with open(os.path.join(output_dir, "dep_dirs.txt"), "w") as f:
-        for d in sorted(dep_dirs):
-            f.write(d + "\n")
-
-
-
-
-
 def main():
     args = parse_args()
 
@@ -650,11 +596,16 @@ def main():
     output_dir = os.path.abspath(args.output_dir)
     board_dir = os.path.abspath(args.board_dir)
 
+    tracker = kconfig_utils.InputRecorder()
+
     board_name = args.board.split("/")[0]
+    tracker.add(os.path.join(board_dir, "board.yml"), os.path.join(board_dir, f"{board_name}.dts"))
     if not os.path.exists(os.path.join(board_dir, "board.yml")) and not os.path.exists(os.path.join(board_dir, f"{board_name}.dts")):
         found = False
         for root in [board_dir] + args.oot_dts_roots:
-            for dirpath, dirs, filenames in kconfig_utils.filtered_walk(root):
+            if not os.path.isdir(root):
+                tracker.add(root)
+            for dirpath, dirs, filenames in kconfig_utils.filtered_walk(root, tracker=tracker):
                 if os.path.basename(dirpath) == board_name or f"{board_name}.dts" in filenames or any(f.startswith(f"{board_name}_") and f.endswith(".dts") for f in filenames):
                     board_dir = os.path.abspath(dirpath)
                     found = True
@@ -663,28 +614,22 @@ def main():
 
     setup_environment(args, zephyr_base, output_dir, board_dir)
 
-    generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir)
+    generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir, tracker=tracker)
 
-    merged_dts_path, dts_roots = preprocess_dts(args, zephyr_base, output_dir, board_dir)
-    generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path)
-    generate_dts_headers(zephyr_base, output_dir, os.path.join(output_dir, "edt.pickle"))
-    kconfig_utils.generate_kconfig_dts(zephyr_base, os.path.join(output_dir, "Kconfig.dts"), dts_roots)
+    for frag in args.conf_fragments:
+        tracker.add(frag)
 
-    # Re-verify environment for kconfiglib
-    os.environ["ARCH"] = "*"
-    os.environ["ZEPHYR_BASE"] = zephyr_base
+    merged_dts_path, dts_roots = preprocess_dts(args, zephyr_base, output_dir, board_dir, tracker=tracker)
+    generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, tracker=tracker)
+    generate_dts_headers(zephyr_base, output_dir, os.path.join(output_dir, "edt.pickle"), tracker=tracker)
+    kconfig_utils.generate_kconfig_dts(zephyr_base, os.path.join(output_dir, "Kconfig.dts"), dts_roots, tracker=tracker)
 
-    conf_files = get_conf_files(args, board_dir)
+    conf_files = get_conf_files(args, board_dir, tracker=tracker)
     conf_files.extend(args.conf_fragments)
 
     os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
 
-    # Setup base environment variables for kconfig execution
     env = os.environ.copy()
-    env["BOARD_DIR"] = os.path.abspath(board_dir)
-    env["KCONFIG_BOARD_DIR"] = os.path.abspath(board_dir)
-    env["ARCH_DIR"] = "arch"
-    env["SOC_DIR"] = "soc"
 
     kconfig_root = os.path.join(zephyr_base, "Kconfig")
     app_kconfig = os.path.join(args.app_dir, "Kconfig")
@@ -693,6 +638,7 @@ def main():
 
     # Call the definitive Zephyr's kconfig.py
     kconfig_py = os.path.join(zephyr_base, "scripts", "kconfig", "kconfig.py")
+    tracker.add(kconfig_py)
     cmd = [
         sys.executable,
         kconfig_py,
@@ -717,12 +663,25 @@ def main():
 
     # Load final cleanly resolved config
     import kconfiglib
-    kconf = kconfiglib.Kconfig(kconfig_root)
+    # This parse sees the same environment as kconfig.py's, so its 'source'
+    # globs and optional sources are the ones kconfig_list.txt doesn't show.
+    with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
+        kconf = kconfiglib.Kconfig(kconfig_root)
     kconf.load_config(os.path.join(output_dir, ".config"))
 
     generate_config_c(kconf, output_dir, args)
     generate_bazel_build(args, kconf, output_dir, kconfiglib)
-    write_deps_files(output_dir, args, board_dir, conf_files)
+
+    # Record out-of-tree Kconfigs
+    tracker.add_kconfig_sources(os.path.join(output_dir, "kconfig_list.txt"))
+
+    # Python code that ran: this script, its helpers, kconfiglib and
+    # kconfigfunctions, and the devicetree modules loaded from edt.pickle.
+    tracker.add_python_modules(
+        os.path.join(zephyr_base, "scripts"),
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    )
+    tracker.write(output_dir=output_dir)
 
 if __name__ == "__main__":
     main()
