@@ -24,6 +24,7 @@ cc_library(
         "//subsys/fb",
         "//subsys/fs",
         "//subsys/ipc",
+        "//subsys/kvss",
         "//subsys/logging",
         "//subsys/mem_mgmt",
         "//subsys/mgmt",
@@ -134,13 +135,11 @@ cc_library(
             "//subsys/nvmem",
         ],
         "//conditions:default": [],
-
     }) + select({
         "@zephyr_kconfig//:CONFIG_RETENTION=true": [
             "//subsys/retention",
         ],
         "//conditions:default": [],
-
     }) + select({
         "@zephyr_kconfig//:CONFIG_SENSING=true": [
             "//subsys/sensing",
@@ -203,7 +202,6 @@ zephyr_linker_fragment(
             "//subsys/usb/host:linker_fragments",
         ],
         "//conditions:default": [],
-
     }) + select({
         "@zephyr_kconfig//:CONFIG_LWM2M=true": [
             "//subsys/net/lib/lwm2m:linker_fragments",
@@ -271,7 +269,6 @@ cc_library(
             "//subsys/usb/host:linker_includes",
         ],
         "//conditions:default": [],
-
     }) + select({
         "@zephyr_kconfig//:CONFIG_LWM2M=true": [
             "//subsys/net/lib/lwm2m:linker_includes",

@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+cc_library(
+    name = "kvss",
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_NVS=true": [
+            "//subsys/kvss/nvs",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZMS=true": [
+            "//subsys/kvss/zms",
+        ],
+        "//conditions:default": [],
+    }),
+)

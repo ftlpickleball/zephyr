@@ -3,17 +3,26 @@
 # Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
 # in zephyr-bazel.
 
-load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
 
 zephyr_cc_library(
-    name = "settings",
-    srcs = [
-    ],
+    name = "headers",
     hdrs = glob(
-        ["*.h"],
+        [
+            "*.h",
+            "include/**/*.h",
+        ],
         allow_empty = True,
     ),
+    includes = ["include"],
+)
+
+zephyr_cc_library(
+    name = "settings",
+    deps = [
+        ":headers",
+        "//subsys/settings/src",
+    ],
 )

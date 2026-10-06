@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "zms",
+    srcs = [
+        "zms.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_ZMS_LOOKUP_CACHE_FOR_SETTINGS=true": [
+            "//subsys/settings:headers",
+        ],
+        "//conditions:default": [],
+    }),
+)

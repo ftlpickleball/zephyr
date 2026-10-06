@@ -536,6 +536,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         ] + select({
             Label("@zephyr_kconfig//:CONFIG_GEN_ISR_TABLES=true"): [Label("//arch/common:isr_tables")],
             "//conditions:default": [],
+        }) + select({
+            Label("@zephyr_kconfig//:CONFIG_SYMTAB=true"): [Label("//subsys/debug/symtab:symtab_stub")],
+            "//conditions:default": [],
         }),
         srcs = [],
         linkopts = linkopts,
@@ -729,6 +732,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         }) + select({
             "//conditions:default": [],
             Label("@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true"): [":{}._device_deps".format(name)],
+        }) + select({
+            Label("@zephyr_kconfig//:CONFIG_SYMTAB=true"): [Label("//subsys/debug/symtab:symtab_stub")],
+            "//conditions:default": [],
         }),
         linkopts = linkopts + [
             "-Wl,--print-memory-usage",
@@ -739,6 +745,30 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         ],
         features = features,
         **kwargs
+    )
+
+    gen_symtab_tool = Label("//scripts/build:gen_symtab")
+    native.genrule(
+        name = name + "_gen_symtab",
+        srcs = [":" + name + "._pre1.elf"],
+        outs = ["{}._symtab/symtab.c".format(name)],
+        cmd = "./$(execpath {tool}) -k $(SRCS) -o $(location {name}._symtab/symtab.c)".format(
+            tool = gen_symtab_tool,
+            name = name,
+        ),
+        tools = [gen_symtab_tool],
+        tags = ["manual"],
+        testonly = testonly,
+    )
+
+    zephyr_cc_library(
+        name = name + "._symtab",
+        srcs = select({
+            Label("@zephyr_kconfig//:CONFIG_SYMTAB=true"): [":{}._symtab/symtab.c".format(name)],
+            "//conditions:default": [],
+        }),
+        tags = ["manual"],
+        testonly = testonly,
     )
 
     # This requires --strip=never on the bazel build command line.
@@ -788,6 +818,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "//conditions:default": [],
         }) + select({
             "@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true": [":{}._device_deps".format(name)],
+            "//conditions:default": [],
+        }) + select({
+            Label("@zephyr_kconfig//:CONFIG_SYMTAB=true"): [":{}._symtab".format(name)],
             "//conditions:default": [],
         }),
         srcs = [],

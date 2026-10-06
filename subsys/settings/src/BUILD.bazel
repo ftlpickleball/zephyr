@@ -61,6 +61,7 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/settings:headers",
     ] + select({
         "@zephyr_kconfig//:CONFIG_SETTINGS_TFM_PSA=true": [":src_config_settings_tfm_psa_deps"],
         "//conditions:default": [],
@@ -76,4 +77,7 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/settings:headers",
+    ],
 )

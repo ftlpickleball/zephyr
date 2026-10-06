@@ -3,7 +3,6 @@
 # Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
 # in zephyr-bazel.
 
-load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -17,4 +16,8 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/ipc/ipc_service/backends",
+        "//subsys/ipc/ipc_service/lib",
+    ],
 )

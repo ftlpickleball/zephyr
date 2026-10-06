@@ -1,3 +1,4 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:cc.bzl", "zephyr_cc_library")
@@ -26,4 +27,8 @@ zephyr_cc_library(
         ],
         "//conditions:default": [],
     }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
 )

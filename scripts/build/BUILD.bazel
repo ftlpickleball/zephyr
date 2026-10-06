@@ -89,3 +89,9 @@ py_binary(
         "@zephyr_pip_deps//pyelftools",
     ],
 )
+
+py_binary(
+    name = "gen_symtab",
+    srcs = ["gen_symtab.py"],
+    deps = ["@zephyr_pip_deps//pyelftools"],
+)
