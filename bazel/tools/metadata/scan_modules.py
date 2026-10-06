@@ -9,6 +9,8 @@ import os
 import re
 import sys
 
+import input_recorder
+
 try:
     import yaml
 except ImportError:
@@ -23,6 +25,7 @@ def parse_args(argv=None):
         required=True,
         help="JSON string mapping modules_dirs labels to absolute paths",
     )
+    input_recorder.add_arguments(parser)
     return parser.parse_args(argv)
 
 
@@ -31,7 +34,7 @@ def sanitize_name(name):
 
 
 def extract_apparent_name(canonical_name):
-    """Extracts the apparent name from Bazel 8 canonical names.
+    """Extracts the apparent name from Bazel 8+ canonical names.
 
     Examples:
         - "rules_python~1.8.3" -> "rules_python"
@@ -99,9 +102,11 @@ def extract_apparent_name(canonical_name):
     return canonical_name
 
 
-def get_module_info(path):
+def get_module_info(path, deps):
     """Checks if path is a module, returns (sanitized name, kconfig) if it is."""
     module_yml = os.path.join(path, "zephyr", "module.yml")
+    # Read if present; creating it would turn `path` into a module.
+    deps.add_file(module_yml)
     if not os.path.exists(module_yml):
         return None, None
 
@@ -149,6 +154,8 @@ def main(argv=None):
         print(f"Error parsing modules-dirs-json: {e}", file=sys.stderr)
         sys.exit(1)
 
+    deps = input_recorder.InputRecorder(__file__)
+
     discovered = []
 
     for label, info in modules_dirs.items():
@@ -156,12 +163,14 @@ def main(argv=None):
         package_dir = info["package_dir"]
 
         if not os.path.exists(path):
+            deps.add_file(path)
             continue
 
         # Check if the directory itself is a module
-        name, kconfig = get_module_info(path)
+        name, kconfig = get_module_info(path, deps)
         if name:
             build_file = os.path.join(package_dir, "BUILD.bazel")
+            deps.add_file(build_file)
             has_zephyr_module_target_in_build = os.path.exists(build_file) and check_zephyr_module_target_in_build(build_file, name)
             discovered.append(
                 {
@@ -176,12 +185,17 @@ def main(argv=None):
             continue
 
         # Otherwise scan subdirectories (depth 1)
+        if os.path.isdir(path):
+            deps.add_dir(path)
+        else:
+            deps.add_file(path)
         try:
-            for entry in os.scandir(path):
+            for entry in sorted(os.scandir(path), key=lambda e: e.name):
                 if entry.is_dir() and not entry.name.startswith("."):
-                    name, kconfig = get_module_info(entry.path)
+                    name, kconfig = get_module_info(entry.path, deps)
                     if name:
                         build_file = os.path.join(entry.path, "BUILD.bazel")
+                        deps.add_file(build_file)
                         has_zephyr_module_target_in_build = os.path.exists(build_file) and check_zephyr_module_target_in_build(build_file, name)
                         discovered.append(
                             {
@@ -193,10 +207,20 @@ def main(argv=None):
                                 "kconfig": kconfig,
                             }
                         )
+                elif entry.is_symlink() and not entry.name.startswith("."):
+                    # DirectoryListingStateValue records (name, Dirent.Type), so
+                    # a regular file turning into a directory changes the
+                    # listing of `path`, whereas a dangling symlink turning into
+                    # a module directory does not.
+                    deps.add_file(
+                        os.path.join(entry.path, "zephyr", "module.yml")
+                    )
         except Exception as e:
             print(f"Error scanning {path}: {e}", file=sys.stderr)
 
     print(json.dumps(discovered))
+
+    deps.write(args.deps_out, args.dirs_out)
 
 
 if __name__ == "__main__":

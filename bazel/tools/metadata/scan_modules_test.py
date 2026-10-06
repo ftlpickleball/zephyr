@@ -12,6 +12,7 @@ import unittest
 
 # Import the script to test
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+import input_recorder
 import scan_modules
 
 
@@ -230,6 +231,200 @@ class TestScanModules(unittest.TestCase):
             self.assertEqual(cm.exception.code, 1)
             stderr_output = fake_err.getvalue()
             self.assertIn("Error parsing modules-dirs-json", stderr_output)
+
+
+class TestScanModulesDeps(unittest.TestCase):
+    """Tests for --deps-out / --dirs-out."""
+
+    def setUp(self):
+        self.test_dir = tempfile.mkdtemp()
+        self.out_dir = tempfile.mkdtemp()
+        self.script = os.path.realpath(scan_modules.__file__)
+
+    def tearDown(self):
+        shutil.rmtree(self.test_dir)
+        shutil.rmtree(self.out_dir)
+
+    def real(self, *parts):
+        return os.path.realpath(os.path.join(self.test_dir, *parts))
+
+    def write(self, rel_path, content=""):
+        path = os.path.join(self.test_dir, rel_path)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    def run_scan(self, modules_dirs, deps_flags=True):
+        """Returns (stdout, deps lines or None, dirs lines or None)."""
+        from unittest.mock import patch
+        import io
+
+        deps_out = os.path.join(self.out_dir, "deps.txt")
+        dirs_out = os.path.join(self.out_dir, "dirs.txt")
+        argv = ["--modules-dirs-json", json.dumps(modules_dirs)]
+        if deps_flags:
+            argv += ["--deps-out", deps_out, "--dirs-out", dirs_out]
+        with patch("sys.stdout", new=io.StringIO()) as fake_out:
+            scan_modules.main(argv)
+
+        def read_lines(path):
+            if not os.path.exists(path):
+                return None
+            with open(path, encoding="utf-8") as f:
+                content = f.read()
+            if content:
+                self.assertTrue(content.endswith("\n"))
+            lines = content.splitlines()
+            self.assertEqual(lines, sorted(set(lines)))
+            for line in lines:
+                self.assertTrue(os.path.isabs(line), line)
+            return lines
+
+        return fake_out.getvalue(), read_lines(deps_out), read_lines(dirs_out)
+
+    def test_deps_root_module(self):
+        self.write("mod/zephyr/module.yml", "name: my_mod\n")
+        self.write("mod/BUILD.bazel", 'zephyr_module(name = "my_mod")\n')
+        mod = os.path.join(self.test_dir, "mod")
+
+        out, deps, dirs = self.run_scan(
+            {"@mod//": {"root": mod, "package_dir": mod}}
+        )
+
+        self.assertTrue(json.loads(out)[0]["has_zephyr_module_target_in_build"])
+        self.assertEqual(
+            deps,
+            sorted([
+                self.script,
+                os.path.realpath(input_recorder.__file__),
+                self.real("mod", "zephyr", "module.yml"),
+                self.real("mod", "BUILD.bazel"),
+            ]),
+        )
+        # A module root is not scanned for sub-modules.
+        self.assertEqual(dirs, [])
+
+    def test_deps_container(self):
+        self.write("modules/mod1/zephyr/module.yml")  # no BUILD.bazel
+        self.write("modules/mod2/zephyr/module.yml", "name: mod2\n")
+        self.write("modules/mod2/BUILD.bazel", 'zephyr_module(name = "mod2")\n')
+        os.makedirs(os.path.join(self.test_dir, "modules", "not_a_module"))
+        os.makedirs(os.path.join(self.test_dir, "modules", ".hidden", "zephyr"))
+        self.write("modules/README.md")
+        os.symlink(
+            "missing_target",
+            os.path.join(self.test_dir, "modules", "dangling_link"),
+        )
+        container = os.path.join(self.test_dir, "modules")
+
+        out, deps, dirs = self.run_scan(
+            {"//modules": {"root": container, "package_dir": container}}
+        )
+
+        self.assertEqual(
+            [m["name"] for m in json.loads(out)], ["mod1", "mod2"]
+        )
+        self.assertEqual(
+            deps,
+            sorted([
+                self.script,
+                os.path.realpath(input_recorder.__file__),
+                # The container itself is not a module.
+                self.real("modules", "zephyr", "module.yml"),
+                self.real("modules", "mod1", "zephyr", "module.yml"),
+                # Missing candidate: creating it would autolink mod1.
+                self.real("modules", "mod1", "BUILD.bazel"),
+                self.real("modules", "mod2", "zephyr", "module.yml"),
+                self.real("modules", "mod2", "BUILD.bazel"),
+                # Missing candidates: creating them would add modules.
+                self.real("modules", "not_a_module", "zephyr", "module.yml"),
+                self.real("modules", "missing_target", "zephyr", "module.yml"),
+            ]),
+        )
+        self.assertEqual(dirs, [self.real("modules")])
+
+    def test_deps_missing_root(self):
+        missing = os.path.join(self.test_dir, "missing")
+
+        out, deps, dirs = self.run_scan(
+            {"@missing//": {"root": missing, "package_dir": missing}}
+        )
+
+        self.assertEqual(json.loads(out), [])
+        self.assertEqual(
+            deps,
+            sorted([
+                self.script,
+                os.path.realpath(input_recorder.__file__),
+                self.real("missing"),
+            ]),
+        )
+        self.assertEqual(dirs, [])
+
+    def test_deps_realpath_sorted_unique(self):
+        self.write("real/b_mod/zephyr/module.yml")
+        self.write("real/a_mod/zephyr/module.yml")
+        real = os.path.join(self.test_dir, "real")
+        link = os.path.join(self.test_dir, "link")
+        os.symlink(real, link)
+
+        _, deps, dirs = self.run_scan({
+            "//link": {"root": link, "package_dir": link},
+            "//real": {"root": real, "package_dir": real},
+        })
+
+        # Both labels resolve to the same files: listed once, by realpath.
+        self.assertEqual(
+            deps,
+            sorted([
+                self.script,
+                os.path.realpath(input_recorder.__file__),
+                self.real("real", "zephyr", "module.yml"),
+                self.real("real", "a_mod", "zephyr", "module.yml"),
+                self.real("real", "a_mod", "BUILD.bazel"),
+                self.real("real", "b_mod", "zephyr", "module.yml"),
+                self.real("real", "b_mod", "BUILD.bazel"),
+            ]),
+        )
+        self.assertEqual(dirs, [self.real("real")])
+
+    def test_output_unchanged_by_deps_flags(self):
+        self.write("modules/mod1/zephyr/module.yml", "name: mod-1\n")
+        self.write("modules/mod1/BUILD.bazel", 'zephyr_module(name = "mod_1")\n')
+        self.write("root_mod/zephyr/module.yml")
+        container = os.path.join(self.test_dir, "modules")
+        root_mod = os.path.join(self.test_dir, "root_mod")
+        modules_dirs = {
+            "//modules": {"root": container, "package_dir": container},
+            "@root_mod//": {"root": root_mod, "package_dir": root_mod},
+        }
+
+        out_without, deps, dirs = self.run_scan(modules_dirs, deps_flags=False)
+        self.assertIsNone(deps)
+        self.assertIsNone(dirs)
+        out_with, deps, dirs = self.run_scan(modules_dirs)
+        self.assertEqual(out_with, out_without)
+        self.assertTrue(deps)
+        self.assertTrue(dirs)
+
+    def test_deps_out_only(self):
+        from unittest.mock import patch
+        import io
+
+        deps_out = os.path.join(self.out_dir, "deps.txt")
+        missing = os.path.join(self.test_dir, "missing")
+        argv = [
+            "--modules-dirs-json",
+            json.dumps({"@m//": {"root": missing, "package_dir": missing}}),
+            "--deps-out",
+            deps_out,
+        ]
+        with patch("sys.stdout", new=io.StringIO()):
+            scan_modules.main(argv)
+
+        with open(deps_out, encoding="utf-8") as f:
+            self.assertIn(self.real("missing") + "\n", f.read())
+        self.assertEqual(os.listdir(self.out_dir), ["deps.txt"])
 
 
 if __name__ == "__main__":

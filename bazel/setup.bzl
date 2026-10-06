@@ -402,6 +402,7 @@ def _zephyr_setup_core_impl(mctx):
         mctx,
         extra_import_paths = [
             str(zephyr_root.get_child("scripts")),
+            str(zephyr_root.get_child("bazel/tools/deps")),
         ],
         pip_deps = [
             Label("@zephyr_pip_deps//pyyaml"),
