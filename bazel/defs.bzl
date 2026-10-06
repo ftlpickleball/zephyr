@@ -75,9 +75,20 @@ def _dts_library_impl(ctx):
     # Add package-relative include path
     include_paths.append("-I" + package_path)
 
+    c_compile_variables = cc_common.create_compile_variables(
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+    )
+    c_compile_flags = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = C_COMPILE_ACTION_NAME,
+        variables = c_compile_variables,
+    )
+
     inputs = [ctx.file.overlay] + ctx.files.references
 
     args = ctx.actions.args()
+    args.add_all(c_compile_flags)
     args.add("-E")  # Preprocess only
     args.add("-nostdinc")
     args.add("-undef")
@@ -97,10 +108,7 @@ def _dts_library_impl(ctx):
         env = cc_common.get_environment_variables(
             feature_configuration = feature_configuration,
             action_name = C_COMPILE_ACTION_NAME,
-            variables = cc_common.create_compile_variables(
-                feature_configuration = feature_configuration,
-                cc_toolchain = cc_toolchain,
-            ),
+            variables = c_compile_variables,
         ),
     )
 
