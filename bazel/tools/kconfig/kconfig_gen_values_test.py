@@ -340,6 +340,19 @@ class TestKconfigGenValues(unittest.TestCase):
 
         mock_run.return_value = MagicMock(returncode=0)
 
+        abs_dts_path = os.path.join(self.test_dir, "some_included.dts")
+        def fake_preprocessor(cmd_args):
+            out_idx = cmd_args.index("-o") + 1
+            out_path = cmd_args[out_idx]
+            os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+            with open(out_path, "w") as f:
+                f.write(f'#line 1 "{abs_dts_path}"\n/dts-v1/;\n#line 10 "rel_file.dtsi"\n')
+            mock_cpp = MagicMock()
+            mock_cpp.include_times = []
+            mock_cpp.probed_includes = []
+            return mock_cpp
+        self.pcmd_mock.CmdPreprocessor.side_effect = fake_preprocessor
+
         merged_dts_path, dts_roots = kconfig_gen_values.preprocess_dts(
             args, str(self.zephyr_base), output_dir, board_dir, tracker=kconfig_utils.InputRecorder()
         )
@@ -348,8 +361,17 @@ class TestKconfigGenValues(unittest.TestCase):
         self.assertTrue(os.path.exists(dts_input_path))
 
         content = Path(dts_input_path).read_text()
-        self.assertIn(f'#include "{os.path.abspath(base_dts)}"', content)
-        self.assertIn(f'#include "{os.path.abspath(app_overlay)}"', content)
+        self.assertIn(f'#include "{os.path.relpath(base_dts, output_dir)}"', content)
+        self.assertIn(f'#include "{os.path.relpath(app_overlay, output_dir)}"', content)
+        self.assertNotIn(self.test_dir, content)
+
+        # Verify zephyr.dts #line directives were relativized
+        self.assertTrue(os.path.exists(merged_dts_path))
+        dts_content = Path(merged_dts_path).read_text()
+        rel_dts_path = os.path.relpath(abs_dts_path, output_dir)
+        self.assertIn(f'#line 1 "{rel_dts_path}"', dts_content)
+        self.assertIn('#line 10 "rel_file.dtsi"', dts_content)
+        self.assertNotIn(self.test_dir, dts_content)
 
     @patch('subprocess.run')
     def test_generate_dts_headers(self, mock_run):
@@ -365,9 +387,10 @@ class TestKconfigGenValues(unittest.TestCase):
         cmd = args[0]
         self.assertIn(os.path.join(str(self.zephyr_base), "scripts", "dts", "gen_defines.py"), cmd)
         self.assertIn("--edt-pickle", cmd)
-        self.assertIn(edt_pickle_path, cmd)
+        self.assertIn(os.path.relpath(edt_pickle_path, output_dir), cmd)
         self.assertIn("--header-out", cmd)
-        self.assertIn(os.path.join(output_dir, "zephyr", "devicetree_generated.h"), cmd)
+        self.assertIn(os.path.relpath(os.path.join(output_dir, "zephyr", "devicetree_generated.h"), output_dir), cmd)
+        self.assertEqual(kwargs.get("cwd"), output_dir)
 
     def test_setup_environment_with_bzlmod_modules(self):
         args = MagicMock()
@@ -481,13 +504,16 @@ class TestKconfigGenValues(unittest.TestCase):
         )
 
         mock_run.assert_called_once()
-        args = mock_run.call_args[0][0]
+        args, kwargs = mock_run.call_args
+        cmd = args[0]
 
         # Count occurrences of bindings dir in arguments
-        resolved_bdir = str(Path(dir1).resolve() / "dts" / "bindings")
-        bindings_args = [a for a in args if a == resolved_bdir]
-        # Should be deduplicated
+        rel_bdir = os.path.relpath(str(Path(dir1).resolve() / "dts" / "bindings"), output_dir)
+        bindings_args = [a for a in cmd if a == rel_bdir]
+        # Should be deduplicated and relative to output_dir
         self.assertEqual(len(bindings_args), 1)
+        self.assertFalse(os.path.isabs(rel_bdir))
+        self.assertEqual(kwargs.get("cwd"), output_dir)
 
     @patch('subprocess.run')
     def test_main_writes_deps(self, mock_run):
