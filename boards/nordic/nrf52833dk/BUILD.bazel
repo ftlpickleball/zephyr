@@ -67,9 +67,9 @@ constraint_value(
 cc_library(
     name = "hal_soc_headers_library",
     deps = [
-        "@hal_nordic//:dt_interface",
         "//modules/hal_nordic/nrfx:nrfx_hdrs",
         "//soc/nordic/nrf52:nrf52_hdrs",
+        "@hal_nordic//:dt_interface",
     ],
 )
 
