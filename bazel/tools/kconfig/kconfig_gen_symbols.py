@@ -219,6 +219,7 @@ def discover_board_variants(board_dirs, soc_to_clusters, symbols, tracker):
 
 def setup_kconfig_environment(zephyr_base, tmp_dir, modules=None):
     """Sets up environment variables required for Kconfig parsing."""
+    kconfig_utils.sanitize_host_env()
     os.environ["ZEPHYR_BASE"] = zephyr_base
     os.environ["srctree"] = zephyr_base
     os.environ["KCONFIG_BINARY_DIR"] = tmp_dir

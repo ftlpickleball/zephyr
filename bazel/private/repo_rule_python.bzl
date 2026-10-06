@@ -96,6 +96,9 @@ def get_python(ctx, extra_import_paths = [], pip_deps = None):
         # The scripts may live in the workspace (e.g. an override of @zephyr), whose directory
         # listings can be watched: don't write __pycache__ next to them.
         "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "PYTHONHASHSEED": "0",
+        "PYTHONUTF8": "1",
     }
 
     python_interpreter = str(ctx.path(python_interpreter_label))
@@ -105,7 +108,7 @@ def get_python(ctx, extra_import_paths = [], pip_deps = None):
         environment.update(**py_env)
 
         return ctx.execute(
-            [python_interpreter] + args,
+            [python_interpreter, "-B", "-s"] + args,
             environment = environment,
             **kwargs
         )

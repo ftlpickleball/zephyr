@@ -32,6 +32,7 @@ def parse_args():
     return parser.parse_args()
 
 def setup_environment(args, zephyr_base, output_dir, board_dir):
+    kconfig_utils.sanitize_host_env()
     os.environ["srctree"] = zephyr_base
     os.environ["ZEPHYR_BASE"] = zephyr_base
     os.environ["KCONFIG_BINARY_DIR"] = output_dir
@@ -257,6 +258,17 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
 
     return merged_dts_path, dts_roots
 
+def _dts_subprocess_env(zephyr_base):
+    env = os.environ.copy()
+    env["PYTHONPATH"] = os.pathsep.join(
+        p for p in [
+            os.path.join(zephyr_base, "scripts", "dts"),
+            os.path.join(zephyr_base, "scripts", "dts", "python-devicetree", "src"),
+            env.get("PYTHONPATH", ""),
+        ] if p
+    )
+    return env
+
 def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, tracker):
     """Runs gen_edt.py (or gen_defines.py) to write edt.pickle."""
     output_edt_pickle_path = os.path.join(output_dir, "edt.pickle")
@@ -286,16 +298,13 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
         tracker.add_tree(bdir, kconfig_utils.BINDING_SUFFIXES)
     tracker.add(gen_edt_py, *kconfig_utils.dts_python_sources(zephyr_base))
 
-    env = os.environ.copy()
-    env["PYTHONPATH"] = os.pathsep.join([
-        os.path.join(zephyr_base, "scripts", "dts"),
-        os.path.join(zephyr_base, "scripts", "dts", "python-devicetree", "src"),
-        env.get("PYTHONPATH", ""),
-    ])
+    env = _dts_subprocess_env(zephyr_base)
 
     if os.path.exists(gen_edt_py):
         gen_edt_args = [
             sys.executable,
+            "-B",
+            "-s",
             gen_edt_py,
             "--edt-pickle-out",
             output_edt_pickle_path,
@@ -320,6 +329,8 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
         tracker.add(gen_defines_py)
         cmd = [
             sys.executable,
+            "-B",
+            "-s",
             gen_defines_py,
             "--dts",
             merged_dts_path,
@@ -350,19 +361,14 @@ def generate_dts_headers(zephyr_base, output_dir, edt_pickle_path, *, tracker):
 
     cmd = [
         sys.executable,
+        "-B",
+        "-s",
         gen_defines_py,
         "--edt-pickle", edt_pickle_path,
         "--header-out", output_header,
     ]
 
-    env = os.environ.copy()
-    env["PYTHONPATH"] = os.pathsep.join([
-        os.path.join(zephyr_base, "scripts", "dts"),
-        os.path.join(zephyr_base, "scripts", "dts", "python-devicetree", "src"),
-        env.get("PYTHONPATH", ""),
-    ])
-
-    subprocess.run(cmd, env=env, check=True)
+    subprocess.run(cmd, env=_dts_subprocess_env(zephyr_base), check=True)
 
 def get_conf_files(args, board_dir, *, tracker):
     board_name = os.environ["BOARD"]
@@ -641,6 +647,8 @@ def main():
     tracker.add(kconfig_py)
     cmd = [
         sys.executable,
+        "-B",
+        "-s",
         kconfig_py,
         "--handwritten-input-configs",
         kconfig_root,

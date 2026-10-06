@@ -192,6 +192,22 @@ def generate_kconfig_modules(zephyr_base, extra_modules, output_file, tracker = 
     default y
 """)
 
+def sanitize_host_env(env=None):
+    """Strips host Kconfig/Zephyr/Python environment variables and pins UTF-8/hash seed."""
+    target = os.environ if env is None else env
+    for key in list(target.keys()):
+        if (
+            key.startswith(("KCONFIG_", "ZEPHYR_", "CONFIG_"))
+            or key in ("PYTHONSTARTUP", "PYTHONUSERBASE")
+        ):
+            del target[key]
+    target["PYTHONDONTWRITEBYTECODE"] = "1"
+    target["PYTHONNOUSERSITE"] = "1"
+    target["PYTHONHASHSEED"] = "0"
+    target["PYTHONUTF8"] = "1"
+    return target
+
+
 def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
     """Generates Kconfig.dts from DT bindings.
 
@@ -211,14 +227,18 @@ def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
     gen_driver_kconfig_dts_py = os.path.join(zephyr_base, "scripts", "dts", "gen_driver_kconfig_dts.py")
     cmd = [
         sys.executable,
+        "-B",
+        "-s",
         gen_driver_kconfig_dts_py,
         "--kconfig-out", output_file,
         "--bindings-dirs"
     ] + bindings_dirs
 
     env = os.environ.copy()
-    # Ensure kconfiglib is available for the script
-    env["PYTHONPATH"] = os.path.join(zephyr_base, "scripts", "kconfig") + ":" + env.get("PYTHONPATH", "")
+    # Ensure kconfiglib is available for the script without trailing empty path entries
+    env["PYTHONPATH"] = os.pathsep.join(
+        p for p in [os.path.join(zephyr_base, "scripts", "kconfig"), env.get("PYTHONPATH", "")] if p
+    )
 
     if tracker is not None:
         tracker.add(gen_driver_kconfig_dts_py)

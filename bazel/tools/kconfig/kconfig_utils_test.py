@@ -225,10 +225,33 @@ class TestKconfigUtils(unittest.TestCase):
 
         mock_run.assert_called_once()
         args = mock_run.call_args[0][0]
-        self.assertIn(sys.executable, args)
+        env = mock_run.call_args[1]["env"]
+        self.assertEqual(args[:3], [sys.executable, "-B", "-s"])
         self.assertIn(os.path.join(zephyr_base, "scripts", "dts", "gen_driver_kconfig_dts.py"), args)
         self.assertIn("--kconfig-out", args)
         self.assertIn(output_file, args)
+        self.assertFalse(env["PYTHONPATH"].endswith(":"))
+
+    def test_sanitize_host_env(self):
+        env = {
+            "PATH": "/usr/bin",
+            "KCONFIG_WARN_UNDEF": "y",
+            "ZEPHYR_FOO_MODULE_DIR": "/stale/foo",
+            "CONFIG_BAR": "y",
+            "PYTHONSTARTUP": "/home/user/.pystartup",
+            "PYTHONUSERBASE": "/home/user/.local",
+        }
+        kconfig_utils.sanitize_host_env(env)
+        self.assertEqual(env["PATH"], "/usr/bin")
+        self.assertNotIn("KCONFIG_WARN_UNDEF", env)
+        self.assertNotIn("ZEPHYR_FOO_MODULE_DIR", env)
+        self.assertNotIn("CONFIG_BAR", env)
+        self.assertNotIn("PYTHONSTARTUP", env)
+        self.assertNotIn("PYTHONUSERBASE", env)
+        self.assertEqual(env["PYTHONDONTWRITEBYTECODE"], "1")
+        self.assertEqual(env["PYTHONNOUSERSITE"], "1")
+        self.assertEqual(env["PYTHONHASHSEED"], "0")
+        self.assertEqual(env["PYTHONUTF8"], "1")
 
     def test_filtered_walk(self):
         sub1 = os.path.join(self.test_dir, "sub1")
