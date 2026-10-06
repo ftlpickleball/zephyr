@@ -350,6 +350,9 @@ cc_library(
         "@zephyr_kconfig//:CONFIG_ARCH_POSIX=true": [
             "//arch/posix:headers",
         ],
+        "@zephyr_kconfig//:CONFIG_XTENSA=true": [
+            "//arch/xtensa:headers",
+        ],
     }),
 )
 
