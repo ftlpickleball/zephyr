@@ -1,10 +1,9 @@
 # SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
 # SPDX-License-Identifier: Apache-2.0
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("//bazel:naming.bzl", "derive_module_label", "get_app_hash", "get_zc_repo_name_from_precomputed", "normalize_app_label", "parse_label", "sanitize_board_id")
 load("//bazel/private:deps.bzl", "find_pin_files", "label_path", "new_tracker", "read_path_list", "readdir", "realpath_of", "repo_root", "watch_deps", "watch_pins", "workspace_relpath")
-load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
+load("//bazel/private:repo_rule_python.bzl", "get_python")
 load("//bazel/private:zephyr_kconfig_gen_symbols.bzl", "zephyr_kconfig_schema")
 load("//bazel/private:zephyr_kconfig_gen_values.bzl", "gen_zephyr_config")
 load("//bazel/private:zephyr_state.bzl", "zephyr_index_repo", "zephyr_state_repo")
@@ -211,56 +210,6 @@ def get_package_for_path(mctx, path, dir_labels, tracker, cache = None):
 
 # --- Repository Rules ---
 
-def _create_zephyr_patch_file_impl(rctx):
-    """Implementation of create_zephyr_patch_file."""
-    script_path = Label("//:generate_diff.py")
-    rctx.watch(rctx.path(script_path))
-
-    bazel_overlay_path = rctx.path(Label("//:bazel_overlay"))
-    rctx.watch_tree(bazel_overlay_path)
-    third_party_zephyr_path = rctx.path(Label("//:third_party/zephyr"))
-    rctx.watch_tree(third_party_zephyr_path)
-    output_file = rctx.attr.filename
-    output_file_path = rctx.path(output_file)
-
-    rctx.file(output_file)
-    rctx.file("BUILD")
-
-    args = [
-        script_path,
-        "--root-dir",
-        bazel_overlay_path,
-        third_party_zephyr_path,
-        "-o",
-        output_file_path,
-    ]
-    if rctx.attr.debug:
-        print(args)
-    python = get_python(rctx)
-    result = python.execute(args)
-    if result.return_code != 0:
-        fail("Failed to generate zephyr-bazel diff file (%s):\n%s" % (result.return_code, result.stderr))
-
-    if rctx.attr.debug:
-        print("Generated %s" % (output_file_path))
-    return [
-        DefaultInfo(
-            files = depset([output_file_path, rctx.path("BUILD")]),
-        ),
-    ]
-
-create_zephyr_patch_file = repository_rule(
-    implementation = _create_zephyr_patch_file_impl,
-    attrs = {
-        "debug": attr.bool(default = False),
-        "filename": attr.string(
-            default = "patch.diff",
-            mandatory = True,
-        ),
-    } | COMMON_PY_REPO_RULE_ATTRS,
-    local = True,
-)
-
 def _version_header_impl(ctx):
     """Implementation of version_header."""
     version_file = ctx.attr.version_file
@@ -353,65 +302,6 @@ version_header = repository_rule(
 )
 
 # --- Module Extensions ---
-
-def _zephyr_patch_file_impl(module_ctx):
-    """Implementation of zephyr_patch_file module extension."""
-    create_zephyr_patch_file(
-        name = "zephyr-patch",
-        filename = "patch.diff",
-        # This is optional, use it to see what's going on under the hood
-        debug = True,
-    )
-
-    remote = "https://pigweed.googlesource.com/third_party/github/zephyrproject-rtos/zephyr"
-    commit = None
-    patches = ["@zephyr-patch//:patch.diff"]
-
-    for mod in module_ctx.modules:
-        for tag in mod.tags.checkout:
-            if not commit:
-                commit = tag.commit
-            if tag.remote:
-                remote = tag.remote
-            for p in tag.patches:
-                if p not in patches:
-                    patches.append(p)
-
-    if not commit:
-        fail("No commit specified for zephyr_patch_file.checkout")
-
-    git_repository(
-        name = "zephyr",
-        remote = remote,
-        commit = commit,
-        patches = patches,
-        patch_args = ["-p1"],
-    )
-
-    version_header(
-        name = "zephyr_version",
-        version_file = "//:VERSION",
-        version_template = "//:version.h.in",
-    )
-
-    return module_ctx.extension_metadata(reproducible = True)
-
-_zephyr_checkout = tag_class(
-    attrs = {
-        "commit": attr.string(
-            mandatory = True,
-        ),
-        "remote": attr.string(),
-        "patches": attr.label_list(),
-    },
-)
-
-zephyr_patch_file = module_extension(
-    implementation = _zephyr_patch_file_impl,
-    tag_classes = {
-        "checkout": _zephyr_checkout,
-    },
-)
 
 def _run_with_deps(mctx, python, name, script, args, deps_files, deps_dirs):
     """Runs a discovery script that supports --deps-out/--dirs-out and collects what it read."""
@@ -1114,33 +1004,4 @@ zephyr_setup = module_extension(
 
 zephyr_setup_apps = module_extension(
     implementation = _zephyr_setup_apps_impl,
-)
-
-###############################################################################
-
-def _print_file_impl(ctx):
-    """Implementation of print_file."""
-
-    # Get the input file
-    input_file = ctx.file.file
-
-    # Create an empty output file
-    output_file = ctx.actions.declare_file(ctx.label.name + ".out")
-
-    # Create a shell action to print the file
-    ctx.actions.run_shell(
-        outputs = [output_file],
-        inputs = [input_file],
-        command = "cat {} > {}".format(input_file.path, output_file.path),
-    )
-
-    # Return DefaultInfo to signal dependencies on the input file
-    return DefaultInfo(files = depset([output_file]))
-
-# Define the rule
-print_file = rule(
-    implementation = _print_file_impl,
-    attrs = {
-        "file": attr.label(allow_single_file = True, mandatory = True),
-    },
 )
