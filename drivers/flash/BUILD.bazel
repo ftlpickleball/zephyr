@@ -407,6 +407,9 @@ zephyr_cc_library(
     }) + select({
         "@zephyr_kconfig//:CONFIG_SOC_FLASH_RENESAS_RA_HP=true": [":flash_config_soc_flash_renesas_ra_hp_deps"],
         "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI=true": ["//drivers/mspi"],
+        "//conditions:default": [],
     }),
 )
 

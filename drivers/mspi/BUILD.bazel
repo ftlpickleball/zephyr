@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+selects.config_setting_group(
+    name = "mspi_stm32_common",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_MSPI_STM32_OSPI=true",
+        "@zephyr_kconfig//:CONFIG_MSPI_STM32_QSPI=true",
+        "@zephyr_kconfig//:CONFIG_MSPI_STM32_XSPI=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "mspi",
+    srcs = select({
+        "@zephyr_kconfig//:CONFIG_MSPI_AMBIQ_AP3=true": [
+            "mspi_ambiq_ap3.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI_AMBIQ_AP5=true": [
+            "mspi_ambiq_ap5.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI_AMBIQ_TIMING_SCAN=true": [
+            "mspi_ambiq_timing_scan.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI_DW=true": [
+            "mspi_dw.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI_EMUL=true": [
+            "mspi_emul.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        ":mspi_stm32_common": [
+            "mspi_stm32_common.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI_STM32_OSPI=true": [
+            "mspi_stm32_ospi.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI_STM32_QSPI=true": [
+            "mspi_stm32_qspi.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MSPI_STM32_XSPI=true": [
+            "mspi_stm32_xspi.c",
+        ],
+        "//conditions:default": [],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+)
+
+filegroup(
+    name = "syscall_client_files",
+    srcs = [
+        "//include:zephyr/drivers/mspi.h",
+    ],
+)

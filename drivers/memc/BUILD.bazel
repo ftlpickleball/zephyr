@@ -141,4 +141,8 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_MEMC_MSPI=true": ["//drivers/mspi"],
+        "//conditions:default": [],
+    }),
 )

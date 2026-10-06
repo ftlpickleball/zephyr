@@ -176,7 +176,6 @@ cc_library(
             "//drivers/gpio",
         ],
         "//conditions:default": [],
-
     }) + select({
         "@zephyr_kconfig//:CONFIG_HDLC_RCP_IF=true": [
             "//drivers/hdlc_rcp_if",
@@ -387,7 +386,6 @@ cc_library(
             "//drivers/spi",
         ],
         "//conditions:default": [],
-
     }) + select({
         "@zephyr_kconfig//:CONFIG_SYSCON=true": [
             "//drivers/syscon",
@@ -398,7 +396,6 @@ cc_library(
             "//drivers/timer",
         ],
         "//conditions:default": [],
-
     }) + select({
         "@zephyr_kconfig//:CONFIG_VIDEO=true": [
             "//drivers/video",
@@ -462,6 +459,7 @@ filegroup(
         "//drivers/mbox:syscall_client_files",
         "//drivers/misc/devmux:syscall_client_files",
         "//drivers/misc/timeaware_gpio:syscall_client_files",
+        "//drivers/mspi:syscall_client_files",
         "//drivers/peci:syscall_client_files",
         "//drivers/ps2:syscall_client_files",
         "//drivers/ptp_clock:syscall_client_files",
