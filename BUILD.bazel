@@ -22,6 +22,16 @@ cc_toolchain_feature_is_enabled(
     feature_name = "compiler_is_clang",
 )
 
+cc_toolchain_feature_is_enabled(
+    name = "linker_is_gcc",
+    feature_name = "linker_is_gcc",
+)
+
+cc_toolchain_feature_is_enabled(
+    name = "linker_is_clang",
+    feature_name = "linker_is_clang",
+)
+
 cc_library(
     name = "syscall_tracing",
     hdrs = [

@@ -30,6 +30,18 @@ def if_compiler_is_gcc(then, *, otherwise = []):
         "//conditions:default": otherwise,
     })
 
+def if_linker_is_clang(then, *, otherwise = []):
+    return select({
+        Label("//:linker_is_clang"): then,
+        "//conditions:default": otherwise,
+    })
+
+def if_linker_is_gcc(then, *, otherwise = []):
+    return select({
+        Label("//:linker_is_gcc"): then,
+        "//conditions:default": otherwise,
+    })
+
 def zephyr_soc_library(*, name, **kwargs):
     """
     A macro that builds a SOC with Zephyr-specific dependencies and options.
@@ -386,10 +398,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "LINKER_APP_SMEM_UNALIGNED",
             "LINKER_DEVICE_DEPS_PASS1=1",
             "CONFIG_STATIC_INIT_GNU=1",  # Hack
-        ] + if_compiler_is_clang(
+        ] + if_linker_is_clang(
             otherwise = [],
             then = ["__LLD_LINKER_CMD__=1"],
-        ) + if_compiler_is_gcc(
+        ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
@@ -418,10 +430,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "_LINKER=1",
             "CONFIG_STATIC_INIT_GNU=1",  # Hack
             "LINKER_ZEPHYR_PREBUILT=1",  # Controls the behavior of kobject-xxx.ld
-        ] + if_compiler_is_clang(
+        ] + if_linker_is_clang(
             otherwise = [],
             then = ["__LLD_LINKER_CMD__=1"],
-        ) + if_compiler_is_gcc(
+        ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
@@ -451,10 +463,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "_LINKER=1",
             "CONFIG_STATIC_INIT_GNU=1",  # Hack
             "LINKER_ZEPHYR_FINAL=1",
-        ] + if_compiler_is_clang(
+        ] + if_linker_is_clang(
             otherwise = [],
             then = ["__LLD_LINKER_CMD__=1"],
-        ) + if_compiler_is_gcc(
+        ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
@@ -485,10 +497,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "_LINKER=1",
             "CONFIG_STATIC_INIT_GNU=1",  # Hack
             "LINKER_ZEPHYR_FINAL=1",
-        ] + if_compiler_is_clang(
+        ] + if_linker_is_clang(
             otherwise = [],
             then = ["__LLD_LINKER_CMD__=1"],
-        ) + if_compiler_is_gcc(
+        ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
         ),
