@@ -106,13 +106,45 @@ def get_dir_from_label(mctx, label, tracker):
     path = label_path(tracker, label)
     if not path.exists:
         return path.dirname
+    if path.is_dir:
+        return path
+    return path.dirname
 
-    # Use execute to check if it's a file, as Starlark's path object doesn't have is_file()
-    if mctx.execute(["test", "-f", str(path)]).return_code == 0:
-        return path.dirname
-    return path
+def _dir_label_info(mctx, l, tracker, cache):
+    """Returns what get_package_for_path() needs to know about one of its dir_labels."""
+    key = str(l)
+    if cache != None and key in cache:
+        return cache[key]
 
-def get_package_for_path(mctx, path, dir_labels, tracker):
+    dir_path = get_dir_from_label(mctx, l, tracker)
+
+    # Resolve repo root if external
+    res_repo = ""
+    if l.workspace_name:
+        root = repo_root(tracker, l).realpath
+        res_repo = str(l).split("//")[0]
+    else:
+        # Local repo (main workspace)
+        root = tracker["ws_path"].realpath
+
+    # The package is relative to the module root
+    module_root = find_module_root(mctx, dir_path, limit_dir = root)
+    if not module_root:
+        module_root = root
+
+    info = struct(
+        dir_path_str = str(dir_path.realpath),
+        res_repo = res_repo,
+        module_root_str = str(module_root.realpath),
+    )
+    if cache != None:
+        cache[key] = info
+    return info
+
+def _is_subpath(path_str, prefix_str):
+    return path_str == prefix_str or path_str.startswith(prefix_str.rstrip("/") + "/")
+
+def get_package_for_path(mctx, path, dir_labels, tracker, cache = None):
     """Resolves the Bazel package for a given absolute path.
 
     Args:
@@ -120,6 +152,7 @@ def get_package_for_path(mctx, path, dir_labels, tracker):
         path: The absolute path to resolve.
         dir_labels: A list of directory labels that might contain the path.
         tracker: The deps.bzl tracker, to resolve labels without watching them.
+        cache: Optional dict to memoize per-label work across calls.
 
     Returns:
         The Bazel package string (e.g., '//arch/arm'), or None.
@@ -129,36 +162,25 @@ def get_package_for_path(mctx, path, dir_labels, tracker):
     best_pkg = None
     best_len = -1
     best_dir_len = -1
+    build_dir = None
+    build_dir_str = None
 
     for l in dir_labels:
-        dir_path = get_dir_from_label(mctx, l, tracker)
-        dir_path_str = str(dir_path.realpath)
+        info = _dir_label_info(mctx, l, tracker, cache)
+        dir_path_str = info.dir_path_str
 
-        if path_str.startswith(dir_path_str):
+        if _is_subpath(path_str, dir_path_str):
             # Find the nearest BUILD file
-            build_dir = find_nearest_build_file(mctx, path)
-            if not build_dir:
+            if build_dir_str == None:
+                build_dir = find_nearest_build_file(mctx, path)
+                build_dir_str = str(build_dir.realpath) if build_dir else ""
+            if not build_dir_str:
                 continue
 
-            build_dir_str = str(build_dir.realpath)
+            res_repo = info.res_repo
+            label_workspace_root = info.module_root_str
 
-            # Resolve repo root if external
-            res_repo = ""
-            if l.workspace_name:
-                root = repo_root(tracker, l).realpath
-                res_repo = str(l).split("//")[0]
-            else:
-                # Local repo (main workspace)
-                root = tracker["ws_path"].realpath
-
-            # The package is relative to the module root
-            module_root = find_module_root(mctx, dir_path, limit_dir = root)
-            if not module_root:
-                module_root = root
-
-            label_workspace_root = str(module_root.realpath)
-
-            if build_dir_str.startswith(label_workspace_root):
+            if _is_subpath(build_dir_str, label_workspace_root):
                 pkg = build_dir_str[len(label_workspace_root):].strip("/")
 
                 build_file = "BUILD.bazel"
@@ -597,6 +619,7 @@ def _zephyr_setup_core_impl(mctx):
 
     zephyr_root_str = str(zephyr_root.realpath)
     zephyr_canonical = str(Label("//:BUILD.bazel")).split("//")[0]
+    pkg_cache = {}
     board_index = {}
     package_to_boards = {}
     path_str_dict = {}
@@ -625,7 +648,7 @@ def _zephyr_setup_core_impl(mctx):
             qualifiers = [q for q in q_part.split(";") if q]
 
         path = mctx.path(path_str)
-        pkg_label = get_package_for_path(mctx, path, boards_dir_labels, tracker)
+        pkg_label = get_package_for_path(mctx, path, boards_dir_labels, tracker, pkg_cache)
         pkg_path = ""
         if not pkg_label:
             realpath_str = str(path.realpath)
@@ -726,7 +749,7 @@ def _zephyr_setup_core_impl(mctx):
     for l in apps_dir_labels:
         dir_path = get_dir_from_label(mctx, l, tracker)
         for app_path in _find_app_dirs(tracker, dir_path, deps_files):
-            app_pkg = get_package_for_path(mctx, app_path, apps_dir_labels, tracker)
+            app_pkg = get_package_for_path(mctx, app_path, apps_dir_labels, tracker, pkg_cache)
             if app_pkg:
                 norm_app = normalize_app_label(app_pkg)
 
