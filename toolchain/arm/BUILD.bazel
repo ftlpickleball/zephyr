@@ -6,7 +6,6 @@ load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
 load("//bazel:naming.bzl", "get_repo_root", "get_zephyr_bazel_root")
 
-
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -426,6 +425,14 @@ cc_args(
     args = ["-mcmse"],
 )
 
+cc_args(
+    name = "unwind_tables",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = ["-funwind-tables"],
+)
+
 _ZEPHYR_SDK_ARM_TOOLCHAIN_ROOT = get_repo_root("@zephyr_sdk_arm")
 
 cc_args(
@@ -506,6 +513,9 @@ cc_toolchain(
         "//conditions:default": [],
     }) + select({
         "@zephyr_kconfig//:CONFIG_ARM_SECURE_FIRMWARE=true": [":secure_firmware"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARCH_STACKWALK=true": [":unwind_tables"],
         "//conditions:default": [],
     }) + [
         ":thumb_abi",
@@ -590,8 +600,8 @@ cc_toolchain(
     tags = ["manual"],
     tool_map = "@zephyr_sdk_arm//:arm_tools",
 )
-_ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT = get_repo_root("@zephyr_sdk_llvm")
 
+_ZEPHYR_SDK_LLVM_TOOLCHAIN_ROOT = get_repo_root("@zephyr_sdk_llvm")
 
 cc_args(
     name = "llvm_flags",
@@ -1029,6 +1039,9 @@ cc_toolchain(
             ":llvm_multilib_link_soft_fp",
             ":llvm_cxx_multilib_includes_soft_fp",
         ],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ARCH_STACKWALK=true": [":unwind_tables"],
+        "//conditions:default": [],
     }) + [
         ":thumb_abi",
         ":cortex_common",
@@ -1097,5 +1110,3 @@ cc_toolchain(
     tags = ["manual"],
     tool_map = "@zephyr_sdk_llvm//:llvm_tools",
 )
-
-

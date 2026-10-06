@@ -57,6 +57,11 @@ zephyr_cc_library(
         "@zephyr_kconfig//:CONFIG_GDBSTUB=true": [
             "gdbstub.c",
         ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ARCH_STACKWALK=true": [
+            "stacktrace.c",
+        ],
     }),
     deps = [
         ":core_asm",
@@ -86,7 +91,10 @@ exports_files([
 # add kconfig conditions on these.
 cc_library(
     name = "linker_includes",
-    hdrs = glob(["*.ld"], allow_empty = True),
+    hdrs = glob(
+        ["*.ld"],
+        allow_empty = True,
+    ),
     deps = [
         "//arch/arm/core/cortex_m:linker_includes",
     ],
