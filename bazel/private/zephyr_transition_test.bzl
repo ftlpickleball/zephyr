@@ -4,12 +4,45 @@
 """Unit tests for Zephyr board transition and matching functions."""
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
-load("//bazel/private:zephyr_transition.bzl", "matches_board_base", "parse_cand_board", "resolve_board_id")
+load("//bazel:naming.bzl", "find_package_boards", "matches_board_base", "parse_cand_board", "parse_label", "resolve_board_id")
 
 def _parse_cand_board_test_impl(ctx):
     env = unittest.begin(ctx)
     asserts.equals(env, struct(full_id = "nrf52840dk", base = "nrf52840dk", rev = None), parse_cand_board("nrf52840dk"))
     asserts.equals(env, struct(full_id = "nrf52840dk@1.0.0", base = "nrf52840dk", rev = "1.0.0"), parse_cand_board("nrf52840dk@1.0.0"))
+    return unittest.end(env)
+
+def _parse_label_test_impl(ctx):
+    env = unittest.begin(ctx)
+    asserts.equals(
+        env,
+        struct(canonical_repo = "@@", apparent_repo = "", package = "boards/nordic/nrf52840dk", name = "nrf52840"),
+        parse_label("//boards/nordic/nrf52840dk:nrf52840"),
+    )
+    asserts.equals(
+        env,
+        struct(canonical_repo = "@@+module+ext_repo", apparent_repo = "ext_repo", package = "boards/custom", name = "custom"),
+        parse_label("@@+module+ext_repo//boards/custom"),
+    )
+    return unittest.end(env)
+
+def _find_package_boards_test_impl(ctx):
+    env = unittest.begin(ctx)
+    pkg_map = {
+        "boards/nordic": ["parent_board"],
+        "boards/nordic/nrf5340dk": ["nrf5340dk/nrf5340/cpuapp", "nrf5340dk/nrf5340/cpunet"],
+        "@other_repo//boards/nordic/nrf5340dk": ["other_board"],
+    }
+    asserts.equals(
+        env,
+        ("boards/nordic/nrf5340dk", ["nrf5340dk/nrf5340/cpuapp", "nrf5340dk/nrf5340/cpunet"]),
+        find_package_boards("//boards/nordic/nrf5340dk:nrf5340_cpuapp", pkg_map),
+    )
+    asserts.equals(
+        env,
+        ("@other_repo//boards/nordic/nrf5340dk", ["other_board"]),
+        find_package_boards("@@+module+other_repo//boards/nordic/nrf5340dk:other_board", pkg_map),
+    )
     return unittest.end(env)
 
 def _resolve_board_id_test_impl(ctx):
@@ -82,6 +115,8 @@ def _matches_board_base_test_impl(ctx):
     return unittest.end(env)
 
 parse_cand_board_test = unittest.make(_parse_cand_board_test_impl)
+parse_label_test = unittest.make(_parse_label_test_impl)
+find_package_boards_test = unittest.make(_find_package_boards_test_impl)
 resolve_board_id_test = unittest.make(_resolve_board_id_test_impl)
 matches_board_base_test = unittest.make(_matches_board_base_test_impl)
 
@@ -89,6 +124,8 @@ def zephyr_transition_test_suite(name = "zephyr_transition_test_suite"):
     unittest.suite(
         name,
         parse_cand_board_test,
+        parse_label_test,
+        find_package_boards_test,
         resolve_board_id_test,
         matches_board_base_test,
     )

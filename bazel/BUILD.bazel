@@ -1,7 +1,19 @@
 # SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
 package(default_visibility = ["//visibility:public"])
+
+string_flag(
+    name = "sysbuild_board",
+    build_setting_default = "",
+)
+
+string_flag(
+    name = "sysbuild_context",
+    build_setting_default = "",
+)
 
 exports_files([
     "defs.bzl",

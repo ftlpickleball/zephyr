@@ -43,7 +43,7 @@ zephyr_runner_config = rule(
         "deps": attr.label_list(cfg = "exec", doc = "Libraries or dependencies required by the runner."),
         "runner": attr.string(mandatory = True, doc = "The name of the runner (e.g. jlink, openocd)."),
         "runner_source": attr.label(allow_single_file = [".py"], doc = "Optional Python file implementing the runner."),
-        "tools": attr.label_list(cfg = "exec", doc = "Tools required by the runner (e.g. @openocd//:all)"),
+        "tools": attr.label_list(allow_files = True, cfg = "exec", doc = "Tools required by the runner (e.g. @openocd//:all)"),
     },
 )
 

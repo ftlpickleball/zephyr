@@ -841,7 +841,7 @@ def _zephyr_app_impl(ctx):
     if ctx.attr.runners_yaml:
         runfiles_list.append(ctx.attr.runners_yaml[DefaultInfo].default_runfiles)
 
-    extra_files = []
+    extra_files = [out_file] + binary_files
     if ctx.file.runners_yaml:
         extra_files.append(ctx.file.runners_yaml)
     if ctx.file.config_file:

@@ -3,26 +3,47 @@
 
 """Rule to transition a dependency to a specific platform."""
 
+SysbuildHelperInfo = provider(
+    doc = "Carries executable and runfiles from a transitioned sysbuild helper target.",
+    fields = ["executable", "runfiles"],
+)
+
 def _transition_impl(settings, attr):
     # Made optional to let sysbuild helper domains inherit the platform
     # attribute of the parent domain.
-    if attr.platform:
-        return {"//command_line_option:platforms": [str(attr.platform)]}
-    return {}
+    platforms = [str(attr.platform)] if attr.platform else settings["//command_line_option:platforms"]
+    sysbuild_ctx = attr.sysbuild_context if getattr(attr, "sysbuild_context", "") else settings["//bazel:sysbuild_context"]
+    return {
+        "//command_line_option:platforms": platforms,
+        "//bazel:sysbuild_context": sysbuild_ctx,
+    }
 
 platform_transition = transition(
     implementation = _transition_impl,
-    inputs = [],
-    outputs = ["//command_line_option:platforms"],
+    inputs = [
+        "//command_line_option:platforms",
+        "//bazel:sysbuild_context",
+    ],
+    outputs = [
+        "//command_line_option:platforms",
+        "//bazel:sysbuild_context",
+    ],
 )
 
 def _transitioned_dep_impl(ctx):
-    # Forward DefaultInfo files and runfiles from the actual target
+    # Forward DefaultInfo files, executable, and runfiles from the actual target
     target = ctx.attr.dep[0] if type(ctx.attr.dep) == "list" else ctx.attr.dep
-    providers = [DefaultInfo(
-        files = target[DefaultInfo].files,
-        runfiles = target[DefaultInfo].default_runfiles,
-    )]
+    exec_file = target[DefaultInfo].files_to_run.executable if target[DefaultInfo].files_to_run else None
+    providers = [
+        DefaultInfo(
+            files = target[DefaultInfo].files,
+            runfiles = target[DefaultInfo].default_runfiles,
+        ),
+        SysbuildHelperInfo(
+            executable = exec_file,
+            runfiles = target[DefaultInfo].default_runfiles,
+        ),
+    ]
     if OutputGroupInfo in target:
         providers.append(target[OutputGroupInfo])
     return providers
@@ -34,6 +55,7 @@ transitioned_dep = rule(
         # Optional to let sysbuild helper domains inherit the platform
         # attribute of the parent domain.
         "platform": attr.string(mandatory = False),
+        "sysbuild_context": attr.string(default = ""),
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
         ),

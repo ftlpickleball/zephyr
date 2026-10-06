@@ -119,6 +119,92 @@ SB_CONFIG_MCUBOOT_MODE_UPGRADE_ONLY=y
         self.assertIn("CONFIG_BOOTLOADER_MCUBOOT=y", translated["//apps/my_app"]["mcuboot"])
         self.assertIn("main", translated["//apps/my_app"])
         self.assertIn("CONFIG_BOOTLOADER_MCUBOOT=y", translated["//apps/my_app"]["main"])
+        self.assertIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_UPGRADE_ONLY=y", translated["//apps/my_app"]["main"])
+
+    def test_parse_overlays_and_board_helpers(self):
+        app_path = os.path.join(self.test_dir, "my_app")
+        boards_dir = os.path.join(app_path, "boards")
+        sysbuild_dir = os.path.join(app_path, "sysbuild")
+        mcuboot_boards_dir = os.path.join(sysbuild_dir, "mcuboot", "boards")
+        os.makedirs(boards_dir)
+        os.makedirs(mcuboot_boards_dir)
+
+        with open(os.path.join(app_path, "sysbuild.yml"), "w", encoding="utf-8") as f:
+            f.write("""
+overlays:
+  - "sysbuild/common.overlay"
+  - "//boards/common:extra.overlay"
+helpers:
+  mcuboot:
+    target: "//bootloader/mcuboot:mcuboot"
+""")
+
+        with open(
+            os.path.join(boards_dir, "nrf5340dk_nrf5340_cpuapp.sysbuild.yml"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            f.write("""
+overlays:
+  - "sysbuild/board.overlay"
+helpers:
+  remote:
+    target: "//samples/sysbuild/hello_world/remote:remote"
+    platform: "//boards/nordic/nrf5340dk:nrf5340_cpunet"
+""")
+
+        with open(os.path.join(sysbuild_dir, "remote.conf"), "w", encoding="utf-8") as f:
+            f.write("CONFIG_LOG=y\n")
+        with open(os.path.join(sysbuild_dir, "mcuboot.conf"), "w", encoding="utf-8") as f:
+            f.write("CONFIG_BOOT_MAX_IMG_SECTORS=256\n")
+        with open(
+            os.path.join(mcuboot_boards_dir, "nrf52840dk_nrf52840.conf"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            f.write("CONFIG_BOOT_MAX_IMG_SECTORS=512\n")
+
+        apps = {"samples/sysbuild/hello_world": app_path}
+        output = self.run_parser(apps)
+        raw = output["raw_metadata"]["samples/sysbuild/hello_world"]
+        self.assertEqual(
+            raw["overlays"],
+            [
+                "samples/sysbuild/hello_world/sysbuild/common.overlay",
+                "boards/common/extra.overlay",
+            ],
+        )
+        self.assertEqual(
+            raw["board_overlays"]["nrf5340dk_nrf5340_cpuapp"],
+            ["samples/sysbuild/hello_world/sysbuild/board.overlay"],
+        )
+        # Specific boards (nrf52840dk_nrf52840, nrf5340dk_nrf5340_cpuapp) must precede default_board
+        board_ids = [r["board_id"] for r in output["custom_repos"]]
+        self.assertEqual(board_ids[-1], "default_board")
+        remote_repos = [
+            r for r in output["custom_repos"] if r["helper_name"] == "remote"
+        ]
+        self.assertEqual(len(remote_repos), 1)
+        self.assertEqual(remote_repos[0]["board_id"], "nrf5340dk/nrf5340/cpunet")
+        self.assertEqual(
+            remote_repos[0]["platform"],
+            "//boards/nordic/nrf5340dk:nrf5340_cpunet",
+        )
+        mcuboot_52840 = [
+            r
+            for r in output["custom_repos"]
+            if r["helper_name"] == "mcuboot"
+            and r["board_id"] == "nrf52840dk_nrf52840"
+        ]
+        self.assertEqual(len(mcuboot_52840), 1)
+        self.assertIn(
+            "sysbuild/mcuboot/boards/nrf52840dk_nrf52840.conf",
+            mcuboot_52840[0]["conf_fragments"],
+        )
+        self.assertEqual(
+            parse_sysbuild_metadata.sanitize_board_id("board@1.0/soc"),
+            "board_1_0_soc",
+        )
 
 
 class TestParseSysbuildMetadataDeps(unittest.TestCase):
@@ -289,3 +375,4 @@ helpers:
 
 if __name__ == '__main__':
     unittest.main()
+

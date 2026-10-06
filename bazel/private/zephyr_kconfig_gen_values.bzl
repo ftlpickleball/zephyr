@@ -45,17 +45,23 @@ def _gen_zephyr_config_impl(rctx):
     for fragment in rctx.attr.conf_fragments:
         if not fragment.startswith("/"):
             fragment_path = rctx.path(str(rctx.workspace_root) + "/" + fragment)
+            if not fragment_path.exists:
+                fragment_path = rctx.path(zephyr_root_path + "/" + fragment)
         else:
             fragment_path = rctx.path(fragment)
         resolved_conf_fragments.append(str(fragment_path))
 
     resolved_dtc_overlays = []
-    for overlay in rctx.attr.dtc_overlays:
-        if not overlay.startswith("/"):
-            overlay_path = rctx.path(str(rctx.workspace_root) + "/" + overlay)
+    for ov in rctx.attr.dtc_overlays:
+        if ov.startswith("//"):
+            ov = ov[2:]
+        if not ov.startswith("/"):
+            ov_path = rctx.path(str(rctx.workspace_root) + "/" + ov)
+            if not ov_path.exists:
+                ov_path = rctx.path(zephyr_root_path + "/" + ov)
         else:
-            overlay_path = rctx.path(overlay)
-        resolved_dtc_overlays.append(str(overlay_path))
+            ov_path = rctx.path(ov)
+        resolved_dtc_overlays.append(str(ov_path))
 
     if rctx.attr.extra_kconfig:
         rctx.file("sysbuild_generated.conf", rctx.attr.extra_kconfig)

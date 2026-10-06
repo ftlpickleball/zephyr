@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: Copyright 2025 The Pigweed Authors
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:naming.bzl", "derive_module_label", "get_app_hash", "get_zc_repo_name_from_precomputed", "normalize_app_label", "parse_label", "sanitize_board_id")
+load("//bazel:naming.bzl", "derive_module_label", "find_package_boards", "get_app_hash", "get_zc_repo_name_from_precomputed", "normalize_app_label", "parse_label", "resolve_board_id", "sanitize_board_id")
 load("//bazel/private:deps.bzl", "find_pin_files", "label_path", "new_tracker", "read_path_list", "readdir", "realpath_of", "repo_root", "watch_deps", "watch_pins", "workspace_relpath")
 load("//bazel/private:repo_rule_python.bzl", "get_python")
 load("//bazel/private:zephyr_kconfig_gen_symbols.bzl", "zephyr_kconfig_schema")
@@ -687,35 +687,6 @@ def _zephyr_setup_core_impl(mctx):
     sysbuild_metadata_content = mctx.read(sysbuild_metadata_file)
     sysbuild_metadata = json.decode(sysbuild_metadata_content)
 
-    safe_to_board_id = {}
-    for b in board_index.keys():
-        safe_to_board_id[sanitize_board_id(b)] = b
-        _, slash, variant = b.partition("/")
-        if slash:
-            safe_to_board_id.setdefault(sanitize_board_id(variant), b)
-
-    # Post-process to make conf_fragments and dtc_overlays relative to workspace root
-    if "custom_repos" in sysbuild_metadata:
-        for repo in sysbuild_metadata["custom_repos"]:
-            parent_app = repo["parent_app"]
-            if repo["board_id"] not in board_index and repo["board_id"] in safe_to_board_id:
-                repo["board_id"] = safe_to_board_id[repo["board_id"]]
-            resolved_conf_fragments = []
-            for fragment in repo["conf_fragments"]:
-                if not fragment.startswith("/"):
-                    resolved_conf_fragments.append(parent_app + "/" + fragment)
-                else:
-                    resolved_conf_fragments.append(fragment)
-            repo["conf_fragments"] = resolved_conf_fragments
-
-            resolved_dtc_overlays = []
-            for overlay in repo.get("dtc_overlays", []):
-                if not overlay.startswith("/"):
-                    resolved_dtc_overlays.append(parent_app + "/" + overlay)
-                else:
-                    resolved_dtc_overlays.append(overlay)
-            repo["dtc_overlays"] = resolved_dtc_overlays
-
     # board_index maps board IDs to package labels, not paths: in-tree boards are in Zephyr's own
     # repository, whose canonical name is zephyr_canonical ("@@" when Zephyr is the root module).
     zephyr_packages_prefix = zephyr_canonical + "//"
@@ -751,10 +722,9 @@ def _zephyr_setup_core_impl(mctx):
                     if board_id == mb:
                         found_manual = True
                         break
-                else:
-                    if board_id == mb or board_id.split("/")[0] == mb:
-                        found_manual = True
-                        break
+                elif board_id == mb or board_id.split("/")[0] == mb:
+                    found_manual = True
+                    break
 
             if found_manual:
                 surviving_combinations[app_pkg].append(board_id)
@@ -778,7 +748,8 @@ def _zephyr_setup_core_impl(mctx):
                 board_name, qualifiers, board_rev = _parse_board_id(board_id)
                 override_candidates = (
                     _get_override_candidates(board_name, qualifiers, board_rev, "conf") +
-                    _get_override_candidates(board_name, qualifiers, board_rev, "overlay")
+                    _get_override_candidates(board_name, qualifiers, board_rev, "overlay") +
+                    _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
                 )
 
                 found = False
@@ -799,6 +770,61 @@ def _zephyr_setup_core_impl(mctx):
                 if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
                     surviving_combinations[app_pkg].append(board_id)
                 continue
+
+    # Resolve custom_repos board_ids against package_to_boards and surviving_combinations,
+    # and normalize conf_fragments and dtc_overlays relative to workspace root.
+    board_id_to_safe = {b: sanitize_board_id(b) for b in board_index.keys()}
+    safe_to_board_id = {}
+    for b, safe_b in board_id_to_safe.items():
+        safe_to_board_id[safe_b] = b
+        _, slash, variant = b.partition("/")
+        if slash:
+            safe_to_board_id.setdefault(sanitize_board_id(variant), b)
+
+    resolved_custom_repos = []
+    seen_custom_repo_names = {}
+    for repo in sysbuild_metadata.get("custom_repos", []):
+        parent_app = repo["parent_app"]
+        resolved_conf_fragments = [
+            (parent_app + "/" + f) if not f.startswith("/") else f
+            for f in repo.get("conf_fragments", [])
+        ]
+        resolved_dtc_overlays = [
+            (parent_app + "/" + ov) if not ov.startswith("/") else ov
+            for ov in repo.get("dtc_overlays", [])
+        ]
+
+        plat = repo.get("platform")
+        target_boards = []
+        if plat:
+            pkg, pkg_boards = find_package_boards(plat, package_to_boards)
+            b_id = resolve_board_id(plat, pkg, pkg_boards, package_to_boards) if pkg_boards != None else None
+            if not b_id:
+                b_id = repo["board_id"] if repo["board_id"] in board_index else safe_to_board_id.get(sanitize_board_id(repo["board_id"]))
+            if b_id:
+                target_boards = [b_id]
+        elif repo["board_id"] == "default_board":
+            target_boards = surviving_combinations.get(parent_app, [])
+        else:
+            b_id = repo["board_id"] if repo["board_id"] in board_index else safe_to_board_id.get(sanitize_board_id(repo["board_id"]))
+            if b_id:
+                target_boards = [b_id]
+
+        prefix = repo["name"][:12]
+        for b_id in target_boards:
+            safe_b = board_id_to_safe.get(b_id, sanitize_board_id(b_id))
+            resolved_name = prefix + safe_b
+            if resolved_name in seen_custom_repo_names:
+                continue
+            seen_custom_repo_names[resolved_name] = True
+            resolved_repo = dict(repo)
+            resolved_repo["name"] = resolved_name
+            resolved_repo["board_id"] = b_id
+            resolved_repo["conf_fragments"] = resolved_conf_fragments
+            resolved_repo["dtc_overlays"] = resolved_dtc_overlays
+            resolved_custom_repos.append(resolved_repo)
+
+    sysbuild_metadata["custom_repos"] = resolved_custom_repos
 
     # Generate Repositories
     state_data = {
@@ -845,7 +871,6 @@ def _zephyr_setup_core_impl(mctx):
     # Resolve canonical name prefix for this extension's repos
     repo_prefix = str(Label("//:BUILD.bazel")).split("//")[0] + "+zephyr_setup_apps+"
 
-    board_id_to_safe = {b: sanitize_board_id(b) for b in board_index.keys()}
     repo_name_to_canonical = {}
     for app_pkg, boards in surviving_combinations.items():
         app_hash = get_app_hash(app_pkg)
@@ -865,8 +890,9 @@ def _zephyr_setup_core_impl(mctx):
     # watch them. Whether they exist is reported by parse_sysbuild_metadata.py.
     sysbuild_custom_repos = {}
     for repo in custom_repos:
-        app_board_key = "%s:%s" % (normalize_app_label(repo["app_label"]), repo["board_id"])
-        sysbuild_custom_repos.setdefault(app_board_key, repo["name"])
+        safe_b = board_id_to_safe.get(repo["board_id"], sanitize_board_id(repo["board_id"]))
+        key = "%s:%s:%s" % (repo["parent_app"], repo["helper_name"], safe_b)
+        sysbuild_custom_repos[key] = repo["name"]
 
     index_content += "SYSBUILD_CUSTOM_REPOS = %r\n" % sysbuild_custom_repos
 
@@ -936,6 +962,19 @@ def _zephyr_setup_apps_impl(mctx):
 
             app_fragments = state.get("translated_conf", {}).get(app_pkg, {})
             main_fragment = app_fragments.get("main", "")
+            raw_meta = state.get("sysbuild_metadata", {}).get("raw_metadata", {}).get(app_pkg, {})
+            safe_b = board_id_to_safe[board_id]
+            board_name, qualifiers, board_rev = _parse_board_id(board_id)
+            board_overlays_map = raw_meta.get("board_overlays", {})
+            dtc_overlays = list(raw_meta.get("overlays", []))
+            overlay_keys = [
+                c[:-len(".sysbuild.yml")]
+                for c in _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
+            ] + [safe_b, board_id]
+            for k in overlay_keys:
+                for ov in board_overlays_map.get(k, []):
+                    if ov not in dtc_overlays:
+                        dtc_overlays.append(ov)
 
             app_dir_label = discovered_apps.get(app_pkg, "")
             if app_dir_label.startswith("@") and not app_dir_label.startswith("@@//"):
@@ -951,6 +990,7 @@ def _zephyr_setup_apps_impl(mctx):
                 board_dir = board_index.get(board_id, ""),
                 parent_platform = parent_platform,
                 extra_kconfig = main_fragment,
+                dtc_overlays = dtc_overlays,
             )
             all_repo_names.append(repo_name)
             repo_name_to_canonical[repo_name] = repo_prefix + repo_name
