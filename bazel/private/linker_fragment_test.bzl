@@ -4,6 +4,7 @@
 """Unit tests for zephyr_linker_fragment rule and provider merging."""
 
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
 load("//bazel:linker_fragment.bzl", "LinkerFragmentInfo", "zephyr_linker_fragment")
 
@@ -60,7 +61,7 @@ def _setup_test_targets():
         tags = ["manual"],
     )
 
-    native.cc_library(
+    cc_library(
         name = "test_cc_dep",
         hdrs = ["test_frag1.ld"],
         tags = ["manual"],
