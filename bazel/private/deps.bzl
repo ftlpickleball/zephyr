@@ -224,8 +224,8 @@ def watch_deps(tracker, files = [], dirs = []):
     """Watches the inputs a generator reported, according to where they live.
 
     Call it once, after all other inputs were recorded. Directory listings (including those of
-    readdir()) are only watched for directories of the workspace itself (not of overrides inside
-    it). Each listed directory is first watched as a path, then a barrier is recorded (see
+    readdir()) are only watched for directories inside the workspace (including in-workspace
+    overrides). Each listed directory is first watched as a path, then a barrier is recorded (see
     _record_barrier()), then the listings, then the files. A missing directory is only watched as a
     path, so that creating it is noticed.
 
