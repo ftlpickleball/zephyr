@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+constraint_setting(
+    name = "mcpu",
+    default_constraint_value = "none",
+)
+
+constraint_value(
+    name = "none",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "dc233c",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "sample_controller",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "sample_controller32",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "lx6",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "lx7",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "fusion_f1",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "hifi1",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "hifi3",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "hifi3z",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "hifi4",
+    constraint_setting = ":mcpu",
+)
+
+constraint_value(
+    name = "hifi5",
+    constraint_setting = ":mcpu",
+)
