@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import unittest
+import glob
+import importlib.util
 import os
 import tempfile
 import shutil
@@ -249,6 +251,222 @@ class TestKconfigUtils(unittest.TestCase):
         self.assertIn("sub1", visited_roots)
         self.assertIn("bazel-out", visited_roots)
         self.assertNotIn(".git", visited_roots)
+
+
+def _load_kconfiglib():
+    """Loads Zephyr's scripts/kconfig/kconfiglib.py without registering it in
+    sys.modules (other tests mock 'kconfiglib'), or returns None if it is not
+    available, e.g. outside of a Zephyr source tree."""
+    path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "scripts", "kconfig", "kconfiglib.py"
+    )
+    if not os.path.exists(path):
+        return None
+    spec = importlib.util.spec_from_file_location("_kconfiglib_under_test", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class TestInputTracking(unittest.TestCase):
+    def setUp(self):
+        self.test_dir = os.path.realpath(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.test_dir)
+
+    def _touch(self, *parts):
+        path = os.path.join(self.test_dir, *parts)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        Path(path).touch()
+        return path
+
+    def _chdir(self, path):
+        cwd = os.getcwd()
+        os.chdir(path)
+        self.addCleanup(os.chdir, cwd)
+
+    def test_glob_dependencies(self):
+        base = os.path.join(self.test_dir, "base")
+        self._touch("base", "a", "Kconfig")
+        self._touch("base", "a", "Kconfig.x")
+        self._touch("base", "a", "Kconfig.y")
+        os.makedirs(os.path.join(base, "b"))
+        self._touch("base", "c")  # A file, so no c/Kconfig candidate.
+        self._touch("base", ".hidden", "Kconfig")  # Skipped, like glob does.
+
+        # The listed dirs, and every path whose creation or removal changes the result.
+        pattern = os.path.join(base, "*", "Kconfig")
+        dirs, paths = kconfig_utils.glob_dependencies(pattern)
+        self.assertEqual(dirs, {base})
+        self.assertEqual(paths, {os.path.join(base, "a", "Kconfig"), os.path.join(base, "b", "Kconfig")})
+        self.assertLessEqual(set(glob.glob(pattern)), paths)
+
+        self.assertEqual(
+            kconfig_utils.glob_dependencies(os.path.join(base, "a", "Kconfig.*")),
+            ({os.path.join(base, "a")}, {os.path.join(base, "a", "Kconfig.x"), os.path.join(base, "a", "Kconfig.y")}),
+        )
+
+        # An 'osource' of a single file depends on that path only.
+        literal = os.path.join(base, "missing", "Kconfig")
+        self.assertEqual(kconfig_utils.glob_dependencies(literal), (set(), {literal}))
+
+        # Creating a missing directory could add matches.
+        missing = os.path.join(self.test_dir, "missing")
+        self.assertEqual(kconfig_utils.glob_dependencies(os.path.join(missing, "*", "Kconfig")), (set(), {missing}))
+
+        # Relative patterns are relative to the current directory, like glob's.
+        self._chdir(self.test_dir)
+        self.assertEqual(
+            kconfig_utils.glob_dependencies(os.path.join("base", "*", "Kconfig")),
+            ({base}, {os.path.join(base, "a", "Kconfig"), os.path.join(base, "b", "Kconfig")}),
+        )
+
+    def test_record_kconfig_sources(self):
+        kconfiglib = _load_kconfiglib()
+        if kconfiglib is None:
+            self.skipTest("scripts/kconfig/kconfiglib.py is not available")
+        root = os.path.join(self.test_dir, "root")
+        os.makedirs(os.path.join(root, "opt", "x"))
+        os.makedirs(os.path.join(root, "opt", "empty"))
+        self._touch("root", "sub", "Kconfig")
+        Path(root, "opt", "x", "Kconfig").write_text('config X\n\tbool "X"\n')
+        Path(root, "Kconfig").write_text(
+            'mainmenu "Test"\n'
+            'rsource "sub/Kconfig"\n'
+            'orsource "opt/*/Kconfig"\n'
+            'orsource "missing/Kconfig"\n'
+            f'osource "{self.test_dir}/elsewhere/Kconfig"\n'
+        )
+
+        tracker = kconfig_utils.InputRecorder()
+        original_iglob = kconfiglib.iglob
+        with patch.dict(os.environ):
+            os.environ.pop("srctree", None)
+            with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
+                kconf = kconfiglib.Kconfig(os.path.join(root, "Kconfig"), warn_to_stderr=False)
+
+        self.assertIs(kconfiglib.iglob, original_iglob)
+        self.assertIn("X", kconf.syms)
+        self.assertEqual(tracker.files, {
+            os.path.join(root, "sub", "Kconfig"),
+            os.path.join(root, "opt", "x", "Kconfig"),
+            os.path.join(root, "opt", "empty", "Kconfig"),
+            os.path.join(root, "missing", "Kconfig"),
+            os.path.join(self.test_dir, "elsewhere", "Kconfig"),
+        })
+        self.assertEqual(tracker.dirs, {os.path.join(root, "opt")})
+
+    def test_dts_python_sources(self):
+        zephyr_base = os.path.join(self.test_dir, "zephyr")
+        package = ("zephyr", "scripts", "dts", "python-devicetree", "src", "devicetree")
+        edtlib = self._touch(*package, "edtlib.py")
+        dtlib = self._touch(*package, "dtlib.py")
+        self._touch(*package, "grammar.lark")
+        self.assertEqual(
+            kconfig_utils.dts_python_sources(zephyr_base),
+            [os.path.join(zephyr_base, "scripts", "dts", "edtlib_logger.py"), dtlib, edtlib],
+        )
+
+    def test_generate_aggregation_file_records_inputs(self):
+        dir1 = os.path.join(self.test_dir, "dir1")
+        dir2 = os.path.join(self.test_dir, "dir2")
+        missing_dir = os.path.join(self.test_dir, "missing")
+        self._touch("dir1", "Kconfig")
+        self._touch("dir1", "Kconfig.extra")
+        os.makedirs(dir2)
+        dirs = [dir1, dir2, missing_dir]
+
+        untracked = os.path.join(self.test_dir, "out1", "Kconfig")
+        tracked = os.path.join(self.test_dir, "out2", "Kconfig")
+        kconfig_utils.generate_aggregation_file(untracked, dirs, "Test", include_wildcard=True)
+        tracker = kconfig_utils.InputRecorder()
+        kconfig_utils.generate_aggregation_file(tracked, dirs, "Test", include_wildcard=True, tracker=tracker)
+
+        self.assertEqual(Path(tracked).read_text(), Path(untracked).read_text())
+        self.assertEqual(tracker.files, {os.path.join(d, "Kconfig") for d in dirs})
+        # Their listings decide which Kconfig.* files are sourced.
+        self.assertEqual(tracker.dirs, {dir1, dir2})
+
+    def test_generate_kconfig_modules_records_inputs(self):
+        zephyr_base = os.path.join(self.test_dir, "zephyr")
+        modules_dir = os.path.join(zephyr_base, "modules")
+        self._touch("zephyr", "modules", "m1", "zephyr", "Kconfig")
+        self._touch("zephyr", "modules", "m2", "Kconfig")
+        extra = os.path.dirname(self._touch("extra", "Kconfig.zephyr"))
+        missing = os.path.join(self.test_dir, "missing_module")
+
+        untracked = os.path.join(self.test_dir, "Kconfig.modules.untracked")
+        tracked = os.path.join(self.test_dir, "Kconfig.modules")
+        kconfig_utils.generate_kconfig_modules(zephyr_base, [extra, missing], untracked)
+        tracker = kconfig_utils.InputRecorder()
+        kconfig_utils.generate_kconfig_modules(zephyr_base, [extra, missing], tracked, tracker=tracker)
+
+        self.assertEqual(Path(tracked).read_text(), Path(untracked).read_text())
+        # Candidates are recorded up to the first existing one.
+        self.assertEqual(tracker.files, {
+            os.path.join(modules_dir, "m1", "zephyr", "Kconfig"),
+            os.path.join(modules_dir, "m2", "zephyr", "Kconfig"),
+            os.path.join(modules_dir, "m2", "Kconfig"),
+            os.path.join(extra, "zephyr", "module.yml"),
+            os.path.join(extra, "zephyr", "Kconfig"),
+            os.path.join(extra, "Kconfig"),
+            os.path.join(extra, "Kconfig.zephyr"),
+            missing,
+        })
+        self.assertEqual(tracker.dirs, {modules_dir})
+
+        # Without zephyr/modules/, creating it would add modules.
+        tracker = kconfig_utils.InputRecorder()
+        no_modules = os.path.join(self.test_dir, "no_modules")
+        kconfig_utils.generate_kconfig_modules(no_modules, [], tracked, tracker=tracker)
+        self.assertEqual(tracker.files, {os.path.join(no_modules, "modules")})
+
+    @patch("subprocess.run")
+    def test_generate_kconfig_dts_records_inputs(self, mock_run):
+        zephyr_base = os.path.join(self.test_dir, "zephyr")
+        root1 = os.path.join(self.test_dir, "root1")
+        root2 = os.path.join(self.test_dir, "root2")
+        bindings = os.path.join(root1, "dts", "bindings")
+        x = self._touch("root1", "dts", "bindings", "x.yaml")
+        y = self._touch("root1", "dts", "bindings", "vendor", "y.yml")
+        self._touch("root1", "dts", "bindings", "vendor", "README.txt")
+        os.makedirs(root2)
+
+        tracker = kconfig_utils.InputRecorder()
+        kconfig_utils.generate_kconfig_dts(
+            zephyr_base, os.path.join(self.test_dir, "Kconfig.dts"), [root1, root2], tracker=tracker
+        )
+
+        cmd = mock_run.call_args[0][0]
+        self.assertEqual(cmd[cmd.index("--bindings-dirs") + 1:], [bindings])
+        self.assertEqual(tracker.files, {
+            os.path.join(zephyr_base, "scripts", "dts", "gen_driver_kconfig_dts.py"),
+            x,
+            y,
+            # Creating these would add or switch a bindings dir.
+            os.path.join(root1, "zephyr", "dts", "bindings"),
+            os.path.join(root2, "zephyr", "dts", "bindings"),
+            os.path.join(root2, "dts", "bindings"),
+        })
+        self.assertEqual(tracker.dirs, {bindings, os.path.join(bindings, "vendor")})
+
+    def test_filtered_walk_records_visited_dirs(self):
+        os.makedirs(os.path.join(self.test_dir, "sub_b"))
+        os.makedirs(os.path.join(self.test_dir, "sub", "deeper"))
+        os.makedirs(os.path.join(self.test_dir, ".git", "objects"))
+        self._touch("sub", "z.txt")
+        self._touch("sub", "a.txt")
+
+        tracker = kconfig_utils.InputRecorder()
+        walked = list(kconfig_utils.filtered_walk(self.test_dir, tracker=tracker))
+        self.assertEqual(walked[0][1], ["sub", "sub_b"])
+        self.assertEqual(walked[1][2], ["a.txt", "z.txt"])
+        self.assertEqual(tracker.dirs, {
+            self.test_dir,
+            os.path.join(self.test_dir, "sub"),
+            os.path.join(self.test_dir, "sub", "deeper"),
+            os.path.join(self.test_dir, "sub_b"),
+        })
+        self.assertEqual(tracker.files, set())
 
 
 if __name__ == '__main__':

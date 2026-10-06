@@ -108,5 +108,86 @@ class TestDiscoveryUtils(unittest.TestCase):
             f.write("")
         self.assertTrue(discovery_utils.check_filesystem_overrides(self.app_path, "nrf52833dk/nrf52833@0.7.0"))
 
+    def test_get_board_revision_defconfig_candidates(self):
+        board_dir = os.path.join(self.test_dir, "board")
+        self.assertEqual(
+            discovery_utils.get_board_revision_defconfig_candidates(board_dir, "board1", "/soc/cpu", "1.0.0"),
+            [
+                os.path.join(board_dir, "revisions", "1_0_0_defconfig"),
+                os.path.join(board_dir, "revisions", "1.0.0_defconfig"),
+                os.path.join(board_dir, "board1_1_0_0_defconfig"),
+                os.path.join(board_dir, "revisions", "1_0_0.conf"),
+                os.path.join(board_dir, "revisions", "1.0.0.conf"),
+                os.path.join(board_dir, "board1_soc_cpu_1_0_0_defconfig"),
+            ],
+        )
+        # A revision without dots names each revisions/ file once.
+        self.assertEqual(
+            discovery_utils.get_board_revision_defconfig_candidates(board_dir, "board1", "", "A"),
+            [
+                os.path.join(board_dir, "revisions", "A_defconfig"),
+                os.path.join(board_dir, "board1_A_defconfig"),
+                os.path.join(board_dir, "revisions", "A.conf"),
+            ],
+        )
+        # Nothing is probed without a revision or a board dir.
+        self.assertEqual(discovery_utils.get_board_revision_defconfig_candidates(board_dir, "board1", "soc", ""), [])
+        self.assertEqual(discovery_utils.get_board_revision_defconfig_candidates("", "board1", "soc", "1.0.0"), [])
+
+    def test_get_board_revision_defconfigs_returns_existing_candidates(self):
+        board_dir = os.path.join(self.test_dir, "board")
+        os.makedirs(os.path.join(board_dir, "revisions"))
+        existing = [
+            os.path.join(board_dir, "board1_soc_1_0_0_defconfig"),
+            os.path.join(board_dir, "revisions", "1_0_0.conf"),
+        ]
+        for path in existing:
+            open(path, "w").close()
+
+        candidates = discovery_utils.get_board_revision_defconfig_candidates(board_dir, "board1", "soc", "1.0.0")
+        self.assertEqual(
+            discovery_utils.get_board_revision_defconfigs(board_dir, "board1", "soc", "1.0.0"),
+            [c for c in candidates if c in existing],
+        )
+        self.assertEqual(
+            discovery_utils.get_board_revision_defconfigs(board_dir, "board1", "soc", "1.0.0"),
+            [existing[1], existing[0]],
+        )
+
+    def test_get_board_revision_overlay_candidates(self):
+        board_dir = os.path.join(self.test_dir, "board")
+        self.assertEqual(
+            discovery_utils.get_board_revision_overlay_candidates(board_dir, "board1", "soc/cpu", "1.0.0"),
+            [
+                os.path.join(board_dir, "revisions", "1_0_0.overlay"),
+                os.path.join(board_dir, "revisions", "1.0.0.overlay"),
+                os.path.join(board_dir, "board1_1_0_0.overlay"),
+                os.path.join(board_dir, "board1_soc_cpu_1_0_0.overlay"),
+            ],
+        )
+        self.assertEqual(
+            discovery_utils.get_board_revision_overlay_candidates(board_dir, "board1", "", "A"),
+            [
+                os.path.join(board_dir, "revisions", "A.overlay"),
+                os.path.join(board_dir, "board1_A.overlay"),
+            ],
+        )
+        self.assertEqual(discovery_utils.get_board_revision_overlay_candidates(board_dir, "board1", "soc", ""), [])
+
+    def test_get_board_revision_overlays_returns_existing_candidates(self):
+        board_dir = os.path.join(self.test_dir, "board")
+        os.makedirs(os.path.join(board_dir, "revisions"))
+        existing = [
+            os.path.join(board_dir, "board1_1_0_0.overlay"),
+            os.path.join(board_dir, "revisions", "1.0.0.overlay"),
+        ]
+        for path in existing:
+            open(path, "w").close()
+
+        self.assertEqual(
+            discovery_utils.get_board_revision_overlays(board_dir, "board1", "", "1.0.0"),
+            [existing[1], existing[0]],
+        )
+
 if __name__ == '__main__':
     unittest.main()

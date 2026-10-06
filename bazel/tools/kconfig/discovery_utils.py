@@ -61,8 +61,16 @@ def get_app_board_override_candidates(
     return candidates
 
 
-def get_board_revision_defconfigs(board_dir, board_name, board_qualifiers, board_revision):
-    """Returns existing revision defconfig/conf paths in board_dir."""
+def _unique(paths):
+    """Removes duplicates from 'paths', keeping the first occurrence."""
+    return list(dict.fromkeys(paths))
+
+
+def get_board_revision_defconfig_candidates(board_dir, board_name, board_qualifiers, board_revision):
+    """Returns every revision defconfig/conf path probed in board_dir, existing or not.
+
+    get_board_revision_defconfigs() returns the existing ones, in the same order.
+    """
     if not (board_dir and board_revision):
         return []
 
@@ -79,16 +87,23 @@ def get_board_revision_defconfigs(board_dir, board_name, board_qualifiers, board
     ]
     if safe_q:
         raw_candidates.append(os.path.join(board_dir, f"{board_name}_{safe_q}_{safe_rev}_defconfig"))
-
-    conf_files = []
-    for cand in raw_candidates:
-        if os.path.exists(cand) and cand not in conf_files:
-            conf_files.append(cand)
-    return conf_files
+    return _unique(raw_candidates)
 
 
-def get_board_revision_overlays(board_dir, board_name, board_qualifiers, board_revision):
-    """Returns existing revision overlay paths in board_dir."""
+def get_board_revision_defconfigs(board_dir, board_name, board_qualifiers, board_revision):
+    """Returns existing revision defconfig/conf paths in board_dir."""
+    return [
+        cand
+        for cand in get_board_revision_defconfig_candidates(board_dir, board_name, board_qualifiers, board_revision)
+        if os.path.exists(cand)
+    ]
+
+
+def get_board_revision_overlay_candidates(board_dir, board_name, board_qualifiers, board_revision):
+    """Returns every revision overlay path probed in board_dir, existing or not.
+
+    get_board_revision_overlays() returns the existing ones, in the same order.
+    """
     if not (board_dir and board_revision):
         return []
 
@@ -103,12 +118,16 @@ def get_board_revision_overlays(board_dir, board_name, board_qualifiers, board_r
     ]
     if safe_q:
         raw_candidates.append(os.path.join(board_dir, f"{board_name}_{safe_q}_{safe_rev}.overlay"))
+    return _unique(raw_candidates)
 
-    overlays = []
-    for cand in raw_candidates:
-        if os.path.exists(cand) and cand not in overlays:
-            overlays.append(cand)
-    return overlays
+
+def get_board_revision_overlays(board_dir, board_name, board_qualifiers, board_revision):
+    """Returns existing revision overlay paths in board_dir."""
+    return [
+        cand
+        for cand in get_board_revision_overlay_candidates(board_dir, board_name, board_qualifiers, board_revision)
+        if os.path.exists(cand)
+    ]
 
 
 def check_filesystem_overrides(app_path, board_id):

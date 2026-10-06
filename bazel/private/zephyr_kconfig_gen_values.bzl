@@ -23,6 +23,7 @@ def _gen_zephyr_config_impl(rctx):
 
     python = get_python(rctx, extra_import_paths = [
         zephyr_root_path + "/scripts/kconfig",
+        zephyr_root_path + "/bazel/tools/deps",
         str(kconfig_gen_values_py.dirname),
     ])
 
