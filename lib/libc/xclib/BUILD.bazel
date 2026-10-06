@@ -10,4 +10,15 @@ zephyr_freestanding_library(
         "libc-hooks.c",
         "multithreading.c",
     ],
+    linkopts = [
+        "-Wl,--start-group",
+        "-lm",
+        "-lc",
+        "-lgcc",
+        "-lsim",
+        "-lhal",
+        "-lc++-re",
+        "-lc++abi-re",
+        "-Wl,--end-group",
+    ],
 )
