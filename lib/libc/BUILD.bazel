@@ -58,6 +58,9 @@ zephyr_freestanding_library(
     }) + select({
         "@zephyr_kconfig//:CONFIG_PICOLIBC=true": ["//lib/libc/picolibc"],
         "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_XTENSA_LIBC=true": ["//lib/libc/xclib"],
+        "//conditions:default": [],
     }),
 )
 

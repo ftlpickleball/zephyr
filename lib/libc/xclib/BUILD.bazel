@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_freestanding_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_freestanding_library(
+    name = "xclib",
+    srcs = [
+        "libc-hooks.c",
+        "multithreading.c",
+    ],
+)
