@@ -61,6 +61,7 @@ class TestKconfigGenValues(unittest.TestCase):
         self.assertEqual(os.environ["BOARD_QUALIFIERS"], "nrf52840")
         self.assertEqual(os.environ["ARCH"], "*")
         self.assertEqual(os.environ["ZEPHYR_BASE"], str(self.zephyr_base))
+        self.assertEqual(os.environ["KCONFIG_BOARD_DIR"], os.path.join(output_dir, "boards"))
         self.assertEqual(os.environ["TOOLCHAIN_KCONFIG_DIR"], os.path.join(str(self.zephyr_base), "cmake", "toolchain", "zephyr"))
 
     def test_setup_environment_native(self):
@@ -482,8 +483,12 @@ class TestKconfigGenValues(unittest.TestCase):
                 args, str(self.zephyr_base), output_dir, board_dir, tracker=kconfig_utils.InputRecorder()
             )
 
-        # Verify dts_roots has no duplicates
+        # Verify dts_roots includes app_dir and board_dir and has no duplicates
+        self.assertIn(Path(app_dir), dts_roots)
+        self.assertIn(Path(board_dir), dts_roots)
         self.assertEqual(dts_roots.count(Path(self.test_dir)), 1)
+        pcpp_args = self.pcmd_mock.CmdPreprocessor.call_args[0][0]
+        self.assertIn("-D__DTS__=1", pcpp_args)
 
     @patch('subprocess.run')
     def test_generate_edt_pickle_resolves_and_deduplicates_bindings(self, mock_run):

@@ -60,7 +60,7 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
     os.environ["ZEPHYR_TOOLCHAIN_VARIANT"] = toolchain_variant
     os.environ["TOOLCHAIN_KCONFIG_DIR"] = os.path.join(zephyr_base, "cmake", "toolchain", toolchain_variant)
     os.environ["BOARD_DIR"] = os.path.abspath(board_dir)
-    os.environ["KCONFIG_BOARD_DIR"] = os.path.abspath(board_dir)
+    os.environ["KCONFIG_BOARD_DIR"] = os.path.join(output_dir, "boards")
     os.environ["ARCH_DIR"] = "arch"
     os.environ["SOC_DIR"] = "soc"
     os.environ["SOC_NAME"] = "none" # Will be overridden by defconfig
@@ -223,7 +223,12 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
     # Preprocess DTS using pcpp
     from pcpp.pcmd import CmdPreprocessor
 
-    raw_roots = [Path(r) for r in args.oot_dts_roots] + [Path(m) for m in args.modules] + [Path(zephyr_base)]
+    raw_roots = (
+        [Path(args.app_dir), Path(board_dir)]
+        + [Path(r) for r in args.oot_dts_roots]
+        + [Path(m) for m in args.modules]
+        + [Path(zephyr_base)]
+    )
     dts_roots = []
     for r in raw_roots:
         if r not in dts_roots:
@@ -231,6 +236,7 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
 
     pcpp_cmd_args = [
         "pcpp",
+        "-D__DTS__=1",
         os.path.abspath(dts_input_path),
         "-o",
         merged_dts_path,
