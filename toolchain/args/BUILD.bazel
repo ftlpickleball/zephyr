@@ -300,6 +300,8 @@ cc_args(
         "-Wno-unused-but-set-variable",
         "-Wno-error=format-zero-length",
         "-Wno-error=pointer-sign",
+        "-Wno-error=unused-function",
+        "-Wno-error=unused-variable",
     ],
 )
 
