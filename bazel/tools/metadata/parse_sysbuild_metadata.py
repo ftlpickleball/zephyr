@@ -11,6 +11,8 @@ import os
 import re
 import sys
 
+import input_recorder
+
 try:
     import yaml
 except ImportError:
@@ -30,6 +32,7 @@ def parse_args(argv=None):
         required=True,
         help="Path to output JSON file",
     )
+    input_recorder.add_arguments(parser)
     return parser.parse_args(argv)
 
 
@@ -111,6 +114,8 @@ def main(argv=None):
     with open(args.apps_json, "r", encoding="utf-8") as f:
         apps = json.load(f)
 
+    deps = input_recorder.InputRecorder(__file__)
+
     raw_metadata = {}
     translated_confs = {}
 
@@ -118,6 +123,7 @@ def main(argv=None):
         app_graph = {"helpers": {}, "board_helpers": {}}
 
         global_file = os.path.join(app_path, "sysbuild.yml")
+        deps.add_file(global_file)
         if os.path.exists(global_file):
             content = parse_sysbuild_yaml(global_file)
             if content and "helpers" in content:
@@ -132,9 +138,15 @@ def main(argv=None):
                 app_graph["helpers"] = helpers
 
         boards_dir = os.path.join(app_path, "boards")
+        if os.path.isdir(boards_dir):
+            # Adding or removing *.sysbuild.yml files changes the result.
+            deps.add_dir(boards_dir)
+        else:
+            deps.add_file(boards_dir)
         if os.path.exists(boards_dir):
             pattern = os.path.join(boards_dir, "*.sysbuild.yml")
             for board_file in glob.glob(pattern):
+                deps.add_file(board_file)
                 filename = os.path.basename(board_file)
                 board_name = filename.replace(".sysbuild.yml", "")
                 content = parse_sysbuild_yaml(board_file)
@@ -153,6 +165,7 @@ def main(argv=None):
             raw_metadata[app_pkg] = app_graph
 
         sysbuild_conf = os.path.join(app_path, "sysbuild.conf")
+        deps.add_file(sysbuild_conf)
         if os.path.exists(sysbuild_conf):
             app_fragments = process_sysbuild_conf(sysbuild_conf)
             if app_fragments:
@@ -209,6 +222,25 @@ def main(argv=None):
                 if safe_helper_board not in board_candidates:
                     board_candidates.append(safe_helper_board)
 
+                def probe_candidate(rel_cand):
+                    cand_path = os.path.join(app_path, rel_cand)
+                    if os.path.exists(cand_path):
+                        # Only its existence matters, not its content: track
+                        # the listing of its directory so that editing the
+                        # fragment/overlay does not invalidate this result.
+                        deps.add_dir(os.path.dirname(cand_path))
+                        if os.path.islink(cand_path):
+                            # The listing of sysbuild/ can't see the link
+                            # target vanish; track the target's parent
+                            # directory listing so that editing the target's
+                            # content still does not invalidate this result.
+                            deps.add_dir(
+                                os.path.dirname(deps.realpath(cand_path))
+                            )
+                        return True
+                    deps.add_file(cand_path)
+                    return False
+
                 conf_fragments = []
                 dtc_overlays = []
                 for img_name in image_names:
@@ -220,7 +252,7 @@ def main(argv=None):
                         ],
                         os.path.join("sysbuild", f"{img_name}.conf"),
                     ]:
-                        if os.path.exists(os.path.join(app_path, rel_cand)) and rel_cand not in conf_fragments:
+                        if probe_candidate(rel_cand) and rel_cand not in conf_fragments:
                             conf_fragments.append(rel_cand)
 
                     for rel_cand in [
@@ -231,7 +263,7 @@ def main(argv=None):
                         os.path.join("sysbuild", img_name, "app.overlay"),
                         os.path.join("sysbuild", f"{img_name}.overlay"),
                     ]:
-                        if os.path.exists(os.path.join(app_path, rel_cand)) and rel_cand not in dtc_overlays:
+                        if probe_candidate(rel_cand) and rel_cand not in dtc_overlays:
                             dtc_overlays.append(rel_cand)
 
                 helper_fragment = app_fragments.get(helper_name, "")
@@ -266,6 +298,8 @@ def main(argv=None):
     # Dump final JSON mapping to output file.
     with open(args.output_json, "w", encoding="utf-8") as f:
         json.dump(results, f)
+
+    deps.write(args.deps_out, args.dirs_out)
 
 
 if __name__ == "__main__":

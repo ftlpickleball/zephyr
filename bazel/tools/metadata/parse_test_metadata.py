@@ -8,6 +8,8 @@ import os
 import re
 import sys
 
+import input_recorder
+
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser()
@@ -26,6 +28,7 @@ def parse_args(argv=None):
         required=True,
         help="Path to write the output JSON file",
     )
+    input_recorder.add_arguments(parser)
     return parser.parse_args(argv)
 
 
@@ -62,6 +65,8 @@ def main(argv=None):
     with open(args.apps_json, "r", encoding="utf-8") as f:
         apps = json.load(f)
 
+    deps = input_recorder.InputRecorder(__file__)
+
     results = {}
 
     for app_pkg, app_path in apps.items():
@@ -69,6 +74,9 @@ def main(argv=None):
 
         for name in ["testcase.yaml", "sample.yaml"]:
             p = os.path.join(app_path, name)
+            # Read if present; if missing, creating it would change the
+            # result. Candidates after the first existing one are unused.
+            deps.add_file(p)
             if os.path.exists(p):
                 metadata_file = p
                 break
@@ -83,6 +91,8 @@ def main(argv=None):
     # Dump final JSON mapping to output file.
     with open(args.output_json, "w", encoding="utf-8") as f:
         json.dump(results, f)
+
+    deps.write(args.deps_out, args.dirs_out)
 
 
 if __name__ == "__main__":

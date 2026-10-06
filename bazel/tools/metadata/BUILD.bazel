@@ -64,6 +64,7 @@ py_library(
     srcs = ["parse_sysbuild_metadata.py"],
     imports = ["."],
     deps = [
+        "//bazel/tools/deps:input_recorder_lib",
         "@zephyr_pip_deps//pyyaml",
     ],
 )
@@ -87,6 +88,7 @@ py_library(
     srcs = ["parse_test_metadata.py"],
     imports = ["."],
     deps = [
+        "//bazel/tools/deps:input_recorder_lib",
         "@zephyr_pip_deps//pyyaml",
     ],
 )
