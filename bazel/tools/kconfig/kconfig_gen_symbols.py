@@ -36,36 +36,38 @@ def parse_args():
     return parser.parse_args()
 
 
-def find_soc_source_directories(zephyr_base, modules=None):
+def find_soc_source_directories(zephyr_base, modules=None, *, tracker):
     soc_roots = [Path(zephyr_base)] + ([Path(m) for m in modules] if modules else [])
     result = []
     for root in soc_roots:
         soc_path = root / "soc"
         if soc_path.is_dir():
-            for dirpath, dirs, filenames in kconfig_utils.filtered_walk(soc_path):
+            for dirpath, dirs, filenames in kconfig_utils.filtered_walk(soc_path, tracker=tracker):
                 if "soc.yml" in filenames:
                     result.append(dirpath)
+        else:
+            tracker.add(str(soc_path))
     return result
 
 
-def find_board_source_directories(board_roots):
+def find_board_source_directories(board_roots, tracker):
     result = []
     for root in board_roots:
         root_path = Path(root)
         if not root_path.exists():
+            tracker.add(root)
             continue
-        for dirpath, dirs, filenames in kconfig_utils.filtered_walk(root):
-            if "board.yml" in filenames:
+        for dirpath, dirs, filenames in kconfig_utils.filtered_walk(root, tracker=tracker):
+            if (
+                "board.yml" in filenames
+                or "Kconfig.board" in filenames
+                or "board.Kconfig" in filenames
+            ):
                 result.append(dirpath)
-        # HWM v1 uses Kconfig.board or board.Kconfig
-        for kconfig_file in root_path.rglob("Kconfig.board"):
-            result.append(str(kconfig_file.parent))
-        for kconfig_file in root_path.rglob("board.Kconfig"):
-            result.append(str(kconfig_file.parent))
-    return list(set(result))
+    return sorted(set(result))
 
 
-def get_soc_to_clusters(soc_dirs):
+def get_soc_to_clusters(soc_dirs, tracker):
     """Parses soc.yml files to map SoC names to their clusters."""
     soc_to_clusters = {}
     if yaml is None:
@@ -73,6 +75,7 @@ def get_soc_to_clusters(soc_dirs):
 
     for sdir in soc_dirs:
         soc_yml_path = os.path.join(sdir, "soc.yml")
+        tracker.add(soc_yml_path)
         if os.path.exists(soc_yml_path):
             try:
                 with open(soc_yml_path, "r") as f:
@@ -103,7 +106,7 @@ def get_soc_to_clusters(soc_dirs):
     return soc_to_clusters
 
 
-def discover_board_variants(board_dirs, soc_to_clusters, symbols):
+def discover_board_variants(board_dirs, soc_to_clusters, symbols, tracker):
     """Discovers board and SoC variants from board.yml files using YAML parsing."""
     if yaml is None:
         return
@@ -111,6 +114,7 @@ def discover_board_variants(board_dirs, soc_to_clusters, symbols):
     for bdir in board_dirs:
         for bfile in ["board.yml", "board.yaml"]:
             bpath = os.path.join(bdir, bfile)
+            tracker.add(bpath)
             if os.path.exists(bpath):
                 try:
                     with open(bpath, "r") as f:
@@ -248,39 +252,46 @@ def setup_kconfig_environment(zephyr_base, tmp_dir, modules=None):
 
 
 def generate_kconfig_scaffolding(
-    tmp_dir, zephyr_base, soc_dirs, board_dirs, modules, oot_dts_roots=[]
+    tmp_dir, zephyr_base, soc_dirs, board_dirs, modules, oot_dts_roots=[], tracker=None
 ):
-    """Generates the necessary Kconfig tree scaffolding for super-schema parsing."""
+    """Generates the necessary Kconfig tree scaffolding for super-schema parsing.
+
+    If 'tracker' (a kconfig_utils.InputRecorder) is given, the inputs of the
+    generated files are recorded.
+    """
     os.makedirs(tmp_dir, exist_ok=True)
 
     # Generate aggregation files
     kconfig_utils.generate_aggregation_file(
-        os.path.join(tmp_dir, "soc", "Kconfig.defconfig"), soc_dirs, "SoC defconfigs"
+        os.path.join(tmp_dir, "soc", "Kconfig.defconfig"), soc_dirs, "SoC defconfigs", tracker=tracker
     )
     kconfig_utils.generate_aggregation_file(
-        os.path.join(tmp_dir, "soc", "Kconfig"), soc_dirs, "SoC Kconfigs"
+        os.path.join(tmp_dir, "soc", "Kconfig"), soc_dirs, "SoC Kconfigs", tracker=tracker
     )
     kconfig_utils.generate_aggregation_file(
-        os.path.join(tmp_dir, "soc", "Kconfig.soc"), soc_dirs, "SoC Kconfigs"
+        os.path.join(tmp_dir, "soc", "Kconfig.soc"), soc_dirs, "SoC Kconfigs", tracker=tracker
     )
     kconfig_utils.generate_aggregation_file(
         os.path.join(tmp_dir, "soc", "Kconfig.sysbuild"),
         soc_dirs,
         "SoC sysbuild Kconfigs",
+        tracker=tracker,
     )
 
     kconfig_utils.generate_aggregation_file(
         os.path.join(tmp_dir, "boards", "Kconfig.defconfig"),
         board_dirs,
         "Board defconfigs",
+        tracker=tracker,
     )
     kconfig_utils.generate_aggregation_file(
-        os.path.join(tmp_dir, "boards", "Kconfig"), board_dirs, "Board Kconfigs", True
+        os.path.join(tmp_dir, "boards", "Kconfig"), board_dirs, "Board Kconfigs", True, tracker=tracker
     )
     kconfig_utils.generate_aggregation_file(
         os.path.join(tmp_dir, "boards", "Kconfig.sysbuild"),
         board_dirs,
         "Board sysbuild Kconfigs",
+        tracker=tracker,
     )
 
     # Mock arch Kconfig (Kconfig.zephyr sources it but we'll loop over archs)
@@ -289,7 +300,7 @@ def generate_kconfig_scaffolding(
         f.write("# Placeholder\n")
 
     kconfig_modules = os.path.join(tmp_dir, "Kconfig.modules")
-    kconfig_utils.generate_kconfig_modules(zephyr_base, modules, kconfig_modules)
+    kconfig_utils.generate_kconfig_modules(zephyr_base, modules, kconfig_modules, tracker=tracker)
 
     dts_roots = (
         [Path(zephyr_base)]
@@ -297,7 +308,7 @@ def generate_kconfig_scaffolding(
         + [Path(r) for r in oot_dts_roots]
     )
     kconfig_utils.generate_kconfig_dts(
-        zephyr_base, os.path.join(tmp_dir, "Kconfig.dts"), dts_roots
+        zephyr_base, os.path.join(tmp_dir, "Kconfig.dts"), dts_roots, tracker=tracker
     )
 
     # Mock currently unsupported parts of the Kconfig tree
@@ -315,18 +326,24 @@ def generate_kconfig_scaffolding(
 def parse_arch_symbols(
     arch, zephyr_base, global_tmp_dir, modules, soc_dirs, board_dirs, oot_dts_roots
 ):
-    """Parses Kconfig for a single architecture in a separate process."""
+    """Parses Kconfig for a single architecture in a separate process.
+
+    Returns (arch, symbols, warnings, parsed Kconfig files, inputs), where
+    'inputs' is a kconfig_utils.InputRecorder snapshot of everything this parse
+    depended on.
+    """
     kconfig_dir = os.path.join(zephyr_base, "scripts", "kconfig")
     if kconfig_dir not in sys.path:
         sys.path.insert(0, kconfig_dir)
     import kconfiglib
 
     arch_tmp_dir = os.path.join(global_tmp_dir, "archs", arch)
+    deps = kconfig_utils.InputRecorder()
 
     # Scaffolding must be arch-specific to avoid conflicts during parallel execution
     setup_kconfig_environment(zephyr_base, arch_tmp_dir, modules)
     generate_kconfig_scaffolding(
-        arch_tmp_dir, zephyr_base, soc_dirs, board_dirs, modules, oot_dts_roots
+        arch_tmp_dir, zephyr_base, soc_dirs, board_dirs, modules, oot_dts_roots, tracker=deps
     )
 
     symbols = {}
@@ -346,6 +363,7 @@ def parse_arch_symbols(
         # Update arch/Kconfig mock to source the real arch Kconfig
         with open(os.path.join(arch_tmp_dir, "arch", "Kconfig"), "w") as f:
             arch_kconfig = os.path.join(zephyr_base, "arch", arch, "Kconfig")
+            deps.add(arch_kconfig)
             if os.path.exists(arch_kconfig):
                 f.write('source "%s"\n' % arch_kconfig)
 
@@ -356,13 +374,17 @@ def parse_arch_symbols(
             zephyr_base, "cmake", "toolchain", toolchain_arch
         )
         if not os.path.exists(toolchain_kconfig_dir):
+            # Creating it would switch TOOLCHAIN_KCONFIG_DIR.
+            deps.add(toolchain_kconfig_dir)
             toolchain_kconfig_dir = os.path.join(
                 zephyr_base, "cmake", "toolchain", "zephyr"
             )
         os.environ["TOOLCHAIN_KCONFIG_DIR"] = toolchain_kconfig_dir
 
         kconf_path = os.path.join(zephyr_base, "Kconfig")
-        kconf = kconfiglib.Kconfig(kconf_path)
+        deps.add(kconf_path)
+        with kconfig_utils.record_kconfig_sources(kconfiglib, deps):
+            kconf = kconfiglib.Kconfig(kconf_path)
         if kconf.warnings:
             for warning in kconf.warnings:
                 warnings_list.append(warning)
@@ -387,7 +409,11 @@ def parse_arch_symbols(
         print("DEBUG: Exception parsing arch %s: %s" % (arch, e), file=sys.stderr)
         pass
 
-    return arch, symbols, warnings_list, parsed_files
+    # kconfiglib, kconfigfunctions and this script's modules, as loaded here.
+    deps.add_python_modules(
+        os.path.join(zephyr_base, "scripts"), os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    return arch, symbols, warnings_list, parsed_files, deps.snapshot()
 
 
 def parse_kconfig_authoritative(
@@ -401,9 +427,14 @@ def parse_kconfig_authoritative(
     symbols,
     warnings_list,
     kconfig_files,
-    jobs=None
+    jobs=None,
+    tracker=None,
 ):
-    """Uses kconfiglib to perform an authoritative parse for each architecture in parallel."""
+    """Uses kconfiglib to perform an authoritative parse for each architecture in parallel.
+
+    If 'tracker' (a kconfig_utils.InputRecorder) is given, the inputs of every
+    per-arch parse are merged into it.
+    """
     if jobs == 1:
         results = [
             parse_arch_symbols(
@@ -434,27 +465,33 @@ def parse_kconfig_authoritative(
             ]
             results = [future.result() for future in futures]
 
-    for arch, arch_symbols, arch_warnings, arch_kconfig_files in results:
+    for arch, arch_symbols, arch_warnings, arch_kconfig_files, arch_inputs in results:
         warnings_list.extend(arch_warnings)
         kconfig_files.update(arch_kconfig_files)
+        tracker.update(arch_inputs)
         for name, stype in arch_symbols.items():
             if name not in symbols or (stype != "bool" and symbols[name] == "bool"):
                 symbols[name] = stype
 
 
-def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, symbol_settings, kconfig_files):
-    """Scans files for symbols that might not be visible in the static Kconfig tree."""
+def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, symbol_settings, kconfig_files, tracker):
+    """Scans files for symbols that might not be visible in the static Kconfig tree.
+
+    Every directory walked, missing search dir and file read is recorded in 'tracker'.
+    """
     untyped_symbols = set()
     search_dirs = [zephyr_base] + list(board_dirs) + list(modules)
     for d in search_dirs:
         if not os.path.isdir(d):
+            tracker.add(d)
             continue
-        for root, dirs, files in kconfig_utils.filtered_walk(d):
+        for root, dirs, files in kconfig_utils.filtered_walk(d, tracker=tracker):
             for fname in files:
                 if fname == "Kconfig" or fname.startswith("Kconfig."):
                     fpath = os.path.join(root, fname)
                     kconfig_files.add(os.path.abspath(fpath))
                     kconfig_files.add(os.path.realpath(fpath))
+                    tracker.add(fpath)
                     try:
                         with open(fpath, "r", errors="ignore") as f:
                             content = f.read()
@@ -540,6 +577,7 @@ def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, sy
                     except:
                         pass
                 elif fname in ["BUILD.bazel", "BUILD"] or fname.endswith(".bzl") or fname.endswith(".BUILD"):
+                    tracker.add(os.path.join(root, fname))
                     try:
                         with open(os.path.join(root, fname), "r", errors="ignore") as f:
                             content = f.read()
@@ -613,18 +651,21 @@ def main():
     symbols = {}
     symbol_settings = collections.defaultdict(set)
     kconfig_files = set()
+    # Every input of this run, written to deps.txt and dep_dirs.txt.
+    deps = kconfig_utils.InputRecorder()
 
     # 1. Discover all hardware
-    soc_dirs = find_soc_source_directories(zephyr_base, args.modules)
+    soc_dirs = find_soc_source_directories(zephyr_base, tracker=deps, modules=args.modules)
     board_roots = [os.path.join(zephyr_base, "boards")] + args.board_dirs
-    board_dirs = find_board_source_directories(board_roots)
+    board_dirs = find_board_source_directories(board_roots, tracker=deps)
 
-    soc_to_clusters = get_soc_to_clusters(soc_dirs)
-    discover_board_variants(board_dirs, soc_to_clusters, symbols)
+    soc_to_clusters = get_soc_to_clusters(soc_dirs, tracker=deps)
+    discover_board_variants(board_dirs, soc_to_clusters, symbols, tracker=deps)
 
     arch_root = os.path.join(zephyr_base, "arch")
+    deps.add_dir(arch_root)
     archs = [
-        d for d in os.listdir(arch_root) if os.path.isdir(os.path.join(arch_root, d))
+        d for d in sorted(os.listdir(arch_root)) if os.path.isdir(os.path.join(arch_root, d))
     ]
 
     # 2. Setup environment
@@ -644,6 +685,7 @@ def main():
         all_warnings,
         kconfig_files,
         jobs=args.jobs,
+        tracker=deps,
     )
 
     # Generate kconfig_warnings.c
@@ -659,7 +701,7 @@ def main():
 
     # 4. Fallback: Scan files for dynamic symbols
     scan_files_for_dynamic_symbols(
-        zephyr_base, args.board_dirs, args.modules, symbols, symbol_settings, kconfig_files
+        zephyr_base, args.board_dirs, args.modules, symbols, symbol_settings, kconfig_files, tracker=deps
     )
 
     excluded_prefixes = (
@@ -682,6 +724,11 @@ def main():
 
     # 5. Generate BUILD.bazel
     write_bazel_build_file(args.output, symbols, symbol_settings)
+
+    # Python code that ran in this process; the per-arch parses reported theirs.
+    deps.add_python_modules(os.path.join(zephyr_base, "scripts"), os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    deps.add(*kconfig_files)
+    deps.write(output_dir=output_dir, exclude_dirs=[tmp_dir])
 
 
 if __name__ == "__main__":

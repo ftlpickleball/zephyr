@@ -3,6 +3,7 @@
 
 import unittest
 import os
+import pickle
 import shutil
 import tempfile
 from pathlib import Path
@@ -81,12 +82,18 @@ class TestKconfigGenSymbols(unittest.TestCase):
         )
         self.executor_patcher.start()
 
+        # main() scaffolds Kconfig trees in ./kconfig_bin: keep it in test_dir.
+        self.orig_cwd = os.getcwd()
+        os.chdir(self.test_dir)
+
     def tearDown(self):
+        os.chdir(self.orig_cwd)
         self.executor_patcher.stop()
         shutil.rmtree(self.test_dir)
 
     def test_find_soc_source_directories(self):
-        dirs = kconfig_gen_symbols.find_soc_source_directories(str(self.zephyr_base))
+        tracker = kconfig_utils.InputRecorder()
+        dirs = kconfig_gen_symbols.find_soc_source_directories(str(self.zephyr_base), tracker=tracker)
         self.assertTrue(any("nordic/nrf52" in d for d in dirs))
 
         # Test with OOT modules
@@ -95,14 +102,15 @@ class TestKconfigGenSymbols(unittest.TestCase):
         (Path(module_dir) / "soc" / "my_soc" / "soc.yml").touch()
 
         dirs_with_mods = kconfig_gen_symbols.find_soc_source_directories(
-            str(self.zephyr_base), [module_dir]
+            str(self.zephyr_base), tracker=tracker, modules=[module_dir]
         )
         self.assertTrue(any("nordic/nrf52" in d for d in dirs_with_mods))
         self.assertTrue(any("my_module/soc/my_soc" in d for d in dirs_with_mods))
 
     def test_find_board_source_directories(self):
+        tracker = kconfig_utils.InputRecorder()
         dirs = kconfig_gen_symbols.find_board_source_directories(
-            [str(self.zephyr_base / "boards")]
+            [str(self.zephyr_base / "boards")], tracker=tracker
         )
         self.assertTrue(any("nrf52840dk" in d for d in dirs))
 
@@ -169,9 +177,10 @@ board:
 
         soc_to_clusters = {"nrf52840": ["cpu0"]}
         symbols = {}
+        tracker = kconfig_utils.InputRecorder()
 
         kconfig_gen_symbols.discover_board_variants(
-            [str(board_dir_1), str(board_dir_2), str(board_dir_3), str(board_dir_4), str(board_dir_5)], soc_to_clusters, symbols
+            [str(board_dir_1), str(board_dir_2), str(board_dir_3), str(board_dir_4), str(board_dir_5)], soc_to_clusters, symbols, tracker=tracker
         )
 
         self.assertIn("CONFIG_BOARD_TEST_BOARD_1_NRF52840", symbols)
@@ -402,6 +411,98 @@ board:
             content,
         )
 
+    @patch("kconfig_utils.generate_kconfig_dts")
+    def test_main_writes_deps(self, mock_gen_dts):
+        output_dir = os.path.join(self.test_dir, "out")
+        os.makedirs(output_dir)
+        output_file = os.path.join(output_dir, "BUILD.bazel")
+        build_file = self.zephyr_base / "subsys" / "BUILD.bazel"
+        build_file.parent.mkdir()
+        build_file.write_text('flag_values = {"@zephyr_kconfig//:CONFIG_FOO": "true"}\n')
+        self.mock_kconf.syms = {}
+
+        with patch(
+            "sys.argv",
+            ["kconfig_gen_symbols.py", "--zephyr-base", str(self.zephyr_base), "--output", output_file],
+        ):
+            kconfig_gen_symbols.main()
+
+        real = lambda p: os.path.realpath(str(p))
+        deps = Path(output_dir, "deps.txt").read_text().splitlines()
+        dep_dirs = Path(output_dir, "dep_dirs.txt").read_text().splitlines()
+        # Neither the output dir nor the kconfig_bin scratch tree are inputs.
+        excluded = (real(output_dir) + os.sep, real(os.path.join(self.test_dir, "kconfig_bin")) + os.sep)
+        for lines in (deps, dep_dirs):
+            self.assertEqual(lines, sorted(set(lines)))
+            self.assertTrue(all(p == real(p) for p in lines))
+            self.assertFalse([p for p in lines if (p + os.sep).startswith(excluded)])
+
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        soc_dir = self.zephyr_base / "soc" / "nordic" / "nrf52"
+        expected = [
+            self.zephyr_base / "Kconfig",
+            self.zephyr_base / "arch" / "arm" / "Kconfig",  # Probed, missing.
+            self.zephyr_base / "cmake" / "toolchain" / "gnuarmemb",  # Probed, missing.
+            soc_dir / "Kconfig",
+            board_dir / "Kconfig",
+            board_dir / "Kconfig.defconfig",  # Probed, missing.
+            build_file,
+            kconfig_gen_symbols.__file__,
+            kconfig_utils.__file__,
+        ]
+        if kconfig_gen_symbols.yaml is not None:
+            expected += [board_dir / "board.yml", board_dir / "board.yaml", soc_dir / "soc.yml"]
+        for path in expected:
+            self.assertIn(real(path), deps)
+        for path in [self.zephyr_base, self.zephyr_base / "boards", board_dir, soc_dir, self.zephyr_base / "arch"]:
+            self.assertIn(real(path), dep_dirs)
+
+    @patch("kconfig_utils.generate_kconfig_dts")
+    def test_parse_arch_symbols_returns_inputs(self, mock_gen_dts):
+        board_dir = str(self.zephyr_base / "boards" / "arm" / "nrf52840dk")
+        result = kconfig_gen_symbols.parse_arch_symbols(
+            "arm", str(self.zephyr_base), os.path.join(self.test_dir, "kconfig_bin"), [], [], [board_dir], []
+        )
+
+        self.assertEqual(len(result), 5)
+        files, dirs = result[4]
+        # It comes back from a worker process.
+        self.assertEqual(pickle.loads(pickle.dumps(result[4])), (files, dirs))
+        real = lambda p: os.path.realpath(str(p))
+        for path in [
+            self.zephyr_base / "Kconfig",
+            self.zephyr_base / "arch" / "arm" / "Kconfig",
+            self.zephyr_base / "cmake" / "toolchain" / "gnuarmemb",
+            self.zephyr_base / "modules",
+            Path(board_dir) / "Kconfig",
+            Path(board_dir) / "Kconfig.defconfig",
+            kconfig_gen_symbols.__file__,
+        ]:
+            self.assertIn(real(path), files)
+        # Listed for the boards/Kconfig wildcard.
+        self.assertIn(real(board_dir), dirs)
+
+    def test_find_source_directories_record_walks(self):
+        tracker = kconfig_utils.InputRecorder()
+        missing_root = os.path.join(self.test_dir, "missing_boards")
+        module_dir = os.path.join(self.test_dir, "module_without_soc")
+        os.makedirs(module_dir)
+
+        kconfig_gen_symbols.find_board_source_directories(
+            [str(self.zephyr_base / "boards"), missing_root], tracker=tracker
+        )
+        kconfig_gen_symbols.find_soc_source_directories(str(self.zephyr_base), [module_dir], tracker=tracker)
+
+        real = lambda p: os.path.realpath(str(p))
+        self.assertEqual(tracker.files, {real(missing_root), real(os.path.join(module_dir, "soc"))})
+        self.assertEqual(tracker.dirs, {
+            real(self.zephyr_base / "boards"),
+            real(self.zephyr_base / "boards" / "arm"),
+            real(self.zephyr_base / "boards" / "arm" / "nrf52840dk"),
+            real(self.zephyr_base / "soc"),
+            real(self.zephyr_base / "soc" / "nordic"),
+            real(self.zephyr_base / "soc" / "nordic" / "nrf52"),
+        })
 
 if __name__ == "__main__":
     unittest.main()
