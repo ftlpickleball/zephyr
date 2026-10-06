@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -74,11 +75,14 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = [
+        ".",
+        "../crypto",
+        "include",
+    ],
     deps = [
+        "//subsys/bluetooth:hdrs",
     ] + select({
-        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADVANCED_FEATURES=true": [":controller_config_bt_ctlr_advanced_features_deps"],
-        "//conditions:default": [],
-    }) + select({
         ":config_bt_shell_and_config_bt_ll_sw_split": [":controller_config_bt_shell_and_config_bt_ll_sw_split_deps"],
         "//conditions:default": [],
     }) + select({
@@ -92,6 +96,14 @@ zephyr_cc_library(
         "//conditions:default": [],
     }) + select({
         ":config_bt_ctlr_filter_accept_list_or_config_bt_ctlr_sync_periodic_adv_list": [":controller_config_bt_ctlr_filter_accept_list_or_config_bt_ctlr_sync_periodic_adv_list_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_chan_deps_match": [":controller_chan_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_SOC_FLASH_NRF_RADIO_SYNC_TICKER=true": [
+            "//drivers/flash:hdrs",
+        ],
         "//conditions:default": [],
     }) + select({
         "@zephyr_kconfig//:CONFIG_BT_CTLR_COEX_DRIVERS=true": [
@@ -111,16 +123,6 @@ zephyr_cc_library(
     }),
 )
 
-zephyr_cc_library(
-    name = "controller_config_bt_ctlr_advanced_features_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
 selects.config_setting_group(
     name = "config_bt_shell_and_config_bt_ll_sw_split",
     match_all = [
@@ -137,6 +139,11 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//" + package_name() + "/ticker/shell",
+        "//" + package_name() + "/ll_sw/shell",
+    ],
 )
 
 zephyr_cc_library(
@@ -163,6 +170,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ],
 )
 
 zephyr_cc_library(
@@ -189,6 +199,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ],
 )
 
 zephyr_cc_library(
@@ -239,6 +252,7 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
     ] + select({
         ":config_bt_ctlr_peripheral_iso_or_config_bt_ctlr_central_iso": [":controller_config_bt_conn_deps_config_bt_ctlr_peripheral_iso_or_config_bt_ctlr_central_iso_deps"],
         "//conditions:default": [],
@@ -265,6 +279,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ],
 )
 
 selects.config_setting_group(
@@ -284,6 +301,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ],
 )
 
 selects.config_setting_group(
@@ -291,6 +311,40 @@ selects.config_setting_group(
     match_any = [
         "@zephyr_kconfig//:CONFIG_BT_CTLR_FILTER_ACCEPT_LIST=true",
         "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_PERIODIC_ADV_LIST=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "config_bt_broadcaster_and_config_bt_ctlr_adv_ext",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_BT_BROADCASTER=true",
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_EXT=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "config_bt_chan_deps_match",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true",
+        ":config_bt_broadcaster_and_config_bt_ctlr_adv_ext",
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_PERIODIC=true",
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_PERIODIC=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "controller_chan_deps",
+    srcs = [
+        "ll_sw/lll_chan.c",
+        "ll_sw/ull_chan.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
     ],
 )
 
@@ -303,4 +357,24 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        "../crypto",
+        "include",
+        "ll_sw",
+    ],
+    visibility = ["//visibility:public"],
 )

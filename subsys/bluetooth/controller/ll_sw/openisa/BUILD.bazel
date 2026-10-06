@@ -1,0 +1,154 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "openisa",
+    srcs = [
+        "hal/RV32M1/cntr.c",
+        "hal/RV32M1/ecb.c",
+        "hal/RV32M1/mayfly.c",
+        "hal/RV32M1/radio/radio.c",
+        "hal/RV32M1/ticker.c",
+        "lll/lll.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_DTM=true": [
+            "lll/lll_test.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    includes = [
+        ".",
+        "hci",
+        "../../../controller",
+        "../../../controller/include",
+        "../../../controller/ll_sw",
+    ],
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_BROADCASTER=true": [":openisa_config_bt_broadcaster_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_OBSERVER=true": [":openisa_config_bt_observer_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true": [":openisa_config_bt_conn_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "openisa_config_bt_broadcaster_deps",
+    srcs = [
+        "lll/lll_adv.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+zephyr_cc_library(
+    name = "openisa_config_bt_observer_deps",
+    srcs = [
+        "lll/lll_scan.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+zephyr_cc_library(
+    name = "openisa_config_bt_conn_deps",
+    srcs = [
+        "lll/lll_clock.c",
+        "lll/lll_conn.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_PERIPHERAL=true": [":openisa_config_bt_conn_deps_config_bt_peripheral_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CENTRAL=true": [":openisa_config_bt_conn_deps_config_bt_central_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "openisa_config_bt_conn_deps_config_bt_peripheral_deps",
+    srcs = [
+        "lll/lll_peripheral.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+zephyr_cc_library(
+    name = "openisa_config_bt_conn_deps_config_bt_central_deps",
+    srcs = [
+        "lll/lll_central.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        "hci",
+    ],
+    visibility = ["//visibility:public"],
+)

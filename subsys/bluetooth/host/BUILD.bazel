@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -43,7 +44,13 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
     ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_BT_CLASSIC=true": [
             "//" + package_name() + "/classic",
         ],
@@ -57,24 +64,17 @@ zephyr_cc_library(
         "@zephyr_kconfig//:CONFIG_BT_HCI_HOST=true": [":host_config_bt_hci_host_deps"],
         "//conditions:default": [],
     }) + select({
-        ":config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info": [":host_config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info_deps"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_BT_FIXED_PASSKEY=true": [":host_config_bt_fixed_passkey_deps"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_BT_OOB_DATA_FIXED=true": [":host_config_bt_oob_data_fixed_deps"],
-        "//conditions:default": [],
-    }) + select({
-        ":config_bt_use_debug_keys_or_config_bt_store_debug_keys": [":host_config_bt_use_debug_keys_or_config_bt_store_debug_keys_deps"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_BT_CONN_DISABLE_SECURITY=true": [":host_config_bt_conn_disable_security_deps"],
-        "//conditions:default": [],
-    }) + select({
         ":config_bt_mesh_and_config_bt_testing": [":host_config_bt_mesh_and_config_bt_testing_deps"],
         "//conditions:default": [],
     }),
+)
+
+selects.config_setting_group(
+    name = "want_conn_mgmt",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true",
+        "@zephyr_kconfig//:CONFIG_BT_ISO=true",
+    ],
 )
 
 zephyr_cc_library(
@@ -108,9 +108,13 @@ zephyr_cc_library(
             "ecc.c",
         ],
     }) + select({
+        ":want_conn_mgmt": [
+            "conn.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_BT_ISO=true": [
-            "conn.c",
             "iso.c",
         ],
     }) + select({
@@ -124,7 +128,13 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
     ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_BT_CONN=true": [":host_config_bt_hci_host_deps_config_bt_conn_deps"],
         "//conditions:default": [],
     }) + select({
@@ -137,7 +147,6 @@ zephyr_cc_library(
     name = "host_config_bt_hci_host_deps_config_bt_conn_deps",
     srcs = [
         "att.c",
-        "conn.c",
         "gatt.c",
         "l2cap.c",
     ] + select({
@@ -151,7 +160,13 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
     ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_BT_SMP=true": [":host_config_bt_hci_host_deps_config_bt_conn_deps_config_bt_smp_deps"],
         "//conditions:default": [":host_config_bt_hci_host_deps_config_bt_conn_deps_else_deps"],
     }),
@@ -167,6 +182,14 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 zephyr_cc_library(
@@ -178,6 +201,14 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 zephyr_cc_library(
@@ -189,73 +220,14 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
-)
-
-selects.config_setting_group(
-    name = "config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info",
-    match_any = [
-        "@zephyr_kconfig//:CONFIG_BT_SMP_LOG_LEVEL_DBG=true",
-        "@zephyr_kconfig//:CONFIG_BT_KEYS_LOG_LEVEL_DBG=true",
-        "@zephyr_kconfig//:CONFIG_BT_LOG_SNIFFER_INFO=true",
-    ],
-)
-
-zephyr_cc_library(
-    name = "host_config_bt_smp_log_level_dbg_or_config_bt_keys_log_level_dbg_or_config_bt_log_sniffer_info_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "host_config_bt_fixed_passkey_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "host_config_bt_oob_data_fixed_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-selects.config_setting_group(
-    name = "config_bt_use_debug_keys_or_config_bt_store_debug_keys",
-    match_any = [
-        "@zephyr_kconfig//:CONFIG_BT_USE_DEBUG_KEYS=true",
-        "@zephyr_kconfig//:CONFIG_BT_STORE_DEBUG_KEYS=true",
-    ],
-)
-
-zephyr_cc_library(
-    name = "host_config_bt_use_debug_keys_or_config_bt_store_debug_keys_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "host_config_bt_conn_disable_security_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 selects.config_setting_group(
@@ -274,4 +246,29 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MBEDTLS=true": [
+            "@mbedtls",
+        ],
+        "//conditions:default": [],
+    }),
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
 )

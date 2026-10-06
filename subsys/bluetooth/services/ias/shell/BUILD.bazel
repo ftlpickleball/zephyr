@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "shell",
+    srcs = [
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_IAS=true": [
+            "ias.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_IAS_CLIENT=true": [
+            "ias_client.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/services:hdrs",
+        "//subsys/bluetooth/services/ias:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)

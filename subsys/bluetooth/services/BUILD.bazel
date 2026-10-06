@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -52,6 +53,7 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
     ] + select({
         "@zephyr_kconfig//:CONFIG_BT_BAS=true": [":services_config_bt_bas_deps"],
         "//conditions:default": [],
@@ -75,6 +77,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//" + package_name() + "/bas",
+    ],
 )
 
 selects.config_setting_group(
@@ -93,6 +99,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//" + package_name() + "/ots",
+    ],
 )
 
 selects.config_setting_group(
@@ -111,6 +121,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//" + package_name() + "/ias",
+    ],
 )
 
 zephyr_cc_library(
@@ -121,4 +135,20 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//" + package_name() + "/nus",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
 )

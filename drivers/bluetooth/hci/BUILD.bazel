@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -133,130 +134,40 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//drivers/bluetooth:hdrs",
+        "//subsys/bluetooth:hdrs",
     ] + select({
-        "@zephyr_kconfig//:CONFIG_BUILD_ONLY_NO_BLOBS=true": [":hci_config_build_only_no_blobs_deps"],
-        "//conditions:default": [":hci_else_deps"],
-    }) + select({
         "@zephyr_kconfig//:CONFIG_BT_USERCHAN=true": [":hci_config_bt_userchan_deps"],
         "//conditions:default": [],
     }),
 )
 
 zephyr_cc_library(
-    name = "hci_config_build_only_no_blobs_deps",
+    name = "hci_config_bt_userchan_deps",
     srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "hci_else_deps",
-    srcs = [
+        "userchan.c",
+        "userchan_bottom.c",
     ],
     hdrs = glob(
         ["*.h"],
         allow_empty = True,
     ),
     deps = [
-    ] + select({
-        "@zephyr_kconfig//:CONFIG_DT_HAS_ESPRESSIF_ESP32_BT_HCI_ENABLED=true": [":hci_else_deps_config_dt_has_espressif_esp32_bt_hci_enabled_deps"],
-        "//conditions:default": [],
-    }) + select({
-        ":_config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled_": [":hci_else_deps__config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled__deps"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_DT_HAS_SILABS_BT_HCI_EFR32_ENABLED=true": [":hci_else_deps_config_dt_has_silabs_bt_hci_efr32_enabled_deps"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_DT_HAS_INFINEON_BLESS_HCI_ENABLED=true": [":hci_else_deps_config_dt_has_infineon_bless_hci_enabled_deps"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_DT_HAS_RENESAS_BT_HCI_DA1469X_ENABLED=true": [":hci_else_deps_config_dt_has_renesas_bt_hci_da1469x_enabled_deps"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_BT_BFLB_BL70X=true": [":hci_else_deps_config_bt_bflb_bl70x_deps"],
-        "//conditions:default": [],
-    }),
+        "//drivers/bluetooth:hdrs",
+        "//subsys/bluetooth:hdrs",
+        "//scripts/native_simulator:native_simulator_headers",
+    ],
 )
 
-zephyr_cc_library(
-    name = "hci_else_deps_config_dt_has_espressif_esp32_bt_hci_enabled_deps",
-    srcs = [
-    ],
+cc_library(
+    name = "hdrs",
     hdrs = glob(
-        ["*.h"],
+        [
+            "*.h",
+            "**/*.h",
+        ],
         allow_empty = True,
     ),
-)
-
-selects.config_setting_group(
-    name = "_config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled_",
-    match_any = [
-        "@zephyr_kconfig//:(CONFIG_DT_HAS_ST_HCI_STM32WBA_ENABLED)=true",
-        "@zephyr_kconfig//:(CONFIG_DT_HAS_ST_HCI_STM32WB0_ENABLED)=true",
-    ],
-)
-
-zephyr_cc_library(
-    name = "hci_else_deps__config_dt_has_st_hci_stm32wba_enabled__or__config_dt_has_st_hci_stm32wb0_enabled__deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "hci_else_deps_config_dt_has_silabs_bt_hci_efr32_enabled_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "hci_else_deps_config_dt_has_infineon_bless_hci_enabled_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "hci_else_deps_config_dt_has_renesas_bt_hci_da1469x_enabled_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "hci_else_deps_config_bt_bflb_bl70x_deps",
-    srcs = [
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
-)
-
-zephyr_cc_library(
-    name = "hci_config_bt_userchan_deps",
-    srcs = [
-        "userchan.c",
-    ],
-    hdrs = glob(
-        ["*.h"],
-        allow_empty = True,
-    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )

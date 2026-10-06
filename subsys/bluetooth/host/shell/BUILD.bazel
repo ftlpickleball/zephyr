@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "shell",
+    srcs = [
+        "bt.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true": [
+            "gatt.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_L2CAP_DYNAMIC_CHANNEL=true": [
+            "l2cap.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_ISO=true": [
+            "iso.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CHANNEL_SOUNDING=true": [
+            "cs.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/host:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)

@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -19,6 +20,7 @@ zephyr_cc_library(
         "@zephyr_kconfig//:CONFIG_BT_RPA=true": [
             "rpa.c",
         ],
+
     }) + select({
         "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_BT_PRIVATE_SHELL=true": [
@@ -29,4 +31,19 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
 )

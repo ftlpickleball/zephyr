@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -137,6 +138,8 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/audio:hdrs",
     ] + select({
         ":config_liblc3_and_config_usbd_audio2_class": [":shell_config_liblc3_and_config_usbd_audio2_class_deps"],
         "//conditions:default": [],
@@ -160,4 +163,20 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/audio:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
 )

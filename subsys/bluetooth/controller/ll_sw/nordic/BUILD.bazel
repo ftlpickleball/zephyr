@@ -1,0 +1,241 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "nordic",
+    srcs = [
+        "hal/nrf5/cntr.c",
+        "hal/nrf5/mayfly.c",
+        "hal/nrf5/radio/radio.c",
+        "hal/nrf5/ticker.c",
+        "hci/hci_vendor.c",
+        "lll/lll.c",
+        "lll/lll_clock.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_DF=true": [
+            "lll/lll_df.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_DTM=true": [
+            "lll/lll_test.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_PROFILE_ISR=true": [
+            "lll/lll_prof.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ISO_VENDOR_DATA_PATH=true": [
+            "ull/ull_iso_vendor.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_CRYPTO=true": [
+            "hal/nrf5/ecb.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    includes = [
+        ".",
+        "hci",
+        "../../../controller",
+        "../../../controller/include",
+        "../../../controller/ll_sw",
+        "hal/nrf5/nrfx_glue",
+    ],
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_BROADCASTER=true": [":nordic_config_bt_broadcaster_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_OBSERVER=true": [":nordic_config_bt_observer_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CONN=true": [":nordic_config_bt_conn_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_CONN_ISO=true": [":nordic_config_bt_ctlr_conn_iso_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_ctlr_df_and_not_config_soc_series_bsim_nrfxx": [":nordic_config_bt_ctlr_df_and_not_config_soc_series_bsim_nrfxx_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+zephyr_cc_library(
+    name = "nordic_config_bt_broadcaster_deps",
+    srcs = [
+        "lll/lll_adv.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_EXT=true": [
+            "lll/lll_adv_aux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_PERIODIC=true": [
+            "lll/lll_adv_sync.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_ISO=true": [
+            "lll/lll_adv_iso.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+zephyr_cc_library(
+    name = "nordic_config_bt_observer_deps",
+    srcs = [
+        "lll/lll_scan.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_ADV_EXT=true": [
+            "lll/lll_scan_aux.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_PERIODIC=true": [
+            "lll/lll_sync.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_SYNC_ISO=true": [
+            "lll/lll_sync_iso.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+zephyr_cc_library(
+    name = "nordic_config_bt_conn_deps",
+    srcs = [
+        "lll/lll_conn.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_PERIPHERAL=true": [
+            "lll/lll_peripheral.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CENTRAL=true": [
+            "lll/lll_central.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+zephyr_cc_library(
+    name = "nordic_config_bt_ctlr_conn_iso_deps",
+    srcs = [
+        "lll/lll_conn_iso.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_CENTRAL_ISO=true": [
+            "lll/lll_central_iso.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_PERIPHERAL_ISO=true": [
+            "lll/lll_peripheral_iso.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+config_setting(
+    name = "not_config_soc_series_bsim_nrfxx",
+    flag_values = {
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_BSIM_NRFXX": "false",
+    },
+)
+
+selects.config_setting_group(
+    name = "config_bt_ctlr_df_and_not_config_soc_series_bsim_nrfxx",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_BT_CTLR_DF=true",
+        ":not_config_soc_series_bsim_nrfxx",
+    ],
+)
+
+zephyr_cc_library(
+    name = "nordic_config_bt_ctlr_df_and_not_config_soc_series_bsim_nrfxx_deps",
+    srcs = [
+        "hal/nrf5/radio/radio_df.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        ":hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = [
+        "hci",
+        "hal/nrf5/nrfx_glue",
+    ],
+    visibility = ["//visibility:public"],
+)

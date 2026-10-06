@@ -4,18 +4,31 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
+
+selects.config_setting_group(
+    name = "want_ots_l2cap",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_OTS=true",
+        "@zephyr_kconfig//:CONFIG_BT_OTS_CLIENT=true",
+    ],
+)
 
 zephyr_cc_library(
     name = "ots",
     srcs = [
     ] + select({
+        ":want_ots_l2cap": [
+            "ots_l2cap.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_BT_OTS=true": [
             "ots.c",
-            "ots_l2cap.c",
             "ots_oacp.c",
             "ots_obj_manager.c",
             "ots_olcp.c",
@@ -29,11 +42,26 @@ zephyr_cc_library(
         "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_BT_OTS_CLIENT=true": [
             "ots_client.c",
-            "ots_l2cap.c",
         ],
     }),
     hdrs = glob(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/services:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
 )

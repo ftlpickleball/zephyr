@@ -1,0 +1,117 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
+# in zephyr-bazel.
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "shell",
+    srcs = [
+        "bredr.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_RFCOMM=true": [
+            "rfcomm.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_A2DP=true": [
+            "a2dp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_AVRCP=true": [
+            "avrcp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_GOEP=true": [
+            "goep.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_BT_BIP=true": [
+            "bip.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/host:hdrs",
+        "//subsys/bluetooth/host/classic:hdrs",
+    ] + select({
+        ":config_bt_hfp_hf_or_config_bt_hfp_ag": [":shell_config_bt_hfp_hf_or_config_bt_hfp_ag_deps"],
+        "//conditions:default": [],
+    }) + select({
+        ":config_bt_avrcp_tg_cover_art_or_config_bt_avrcp_ct_cover_art": [":shell_config_bt_avrcp_tg_cover_art_or_config_bt_avrcp_ct_cover_art_deps"],
+        "//conditions:default": [],
+    }),
+)
+
+selects.config_setting_group(
+    name = "config_bt_hfp_hf_or_config_bt_hfp_ag",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_HFP_HF=true",
+        "@zephyr_kconfig//:CONFIG_BT_HFP_AG=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "shell_config_bt_hfp_hf_or_config_bt_hfp_ag_deps",
+    srcs = [
+        "hfp.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/host:hdrs",
+        "//subsys/bluetooth/host/classic:hdrs",
+    ],
+)
+
+selects.config_setting_group(
+    name = "config_bt_avrcp_tg_cover_art_or_config_bt_avrcp_ct_cover_art",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_BT_AVRCP_TG_COVER_ART=true",
+        "@zephyr_kconfig//:CONFIG_BT_AVRCP_CT_COVER_ART=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "shell_config_bt_avrcp_tg_cover_art_or_config_bt_avrcp_ct_cover_art_deps",
+    srcs = [
+        "avrcp_cover_art.c",
+    ],
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/host:hdrs",
+        "//subsys/bluetooth/host/classic:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
+)

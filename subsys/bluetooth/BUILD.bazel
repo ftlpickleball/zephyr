@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -17,6 +18,7 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
         "//" + package_name() + "/common",
         "//" + package_name() + "/lib",
     ] + select({
@@ -58,4 +60,44 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//" + package_name() + "/controller",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//subsys/bluetooth/audio:hdrs",
+        "//subsys/bluetooth/audio/shell:hdrs",
+        "//subsys/bluetooth/common:hdrs",
+        "//subsys/bluetooth/controller:hdrs",
+        "//subsys/bluetooth/controller/coex:hdrs",
+        "//subsys/bluetooth/controller/ll_sw/shell:hdrs",
+        "//subsys/bluetooth/controller/ticker/shell:hdrs",
+        "//subsys/bluetooth/crypto:hdrs",
+        "//subsys/bluetooth/host:hdrs",
+        "//subsys/bluetooth/host/classic:hdrs",
+        "//subsys/bluetooth/host/classic/shell:hdrs",
+        "//subsys/bluetooth/host/shell:hdrs",
+        "//subsys/bluetooth/lib:hdrs",
+        "//subsys/bluetooth/mesh:hdrs",
+        "//subsys/bluetooth/mesh/shell:hdrs",
+        "//subsys/bluetooth/services:hdrs",
+        "//subsys/bluetooth/services/bas:hdrs",
+        "//subsys/bluetooth/services/ias:hdrs",
+        "//subsys/bluetooth/services/ias/shell:hdrs",
+        "//subsys/bluetooth/services/nus:hdrs",
+        "//subsys/bluetooth/services/ots:hdrs",
+    ],
 )

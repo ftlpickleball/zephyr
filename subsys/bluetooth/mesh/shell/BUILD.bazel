@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -74,6 +75,8 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/mesh:hdrs",
     ] + select({
         ":config_bt_mesh_shell_blob_cli_or_config_bt_mesh_shell_blob_srv_or_config_bt_mesh_shell_blob_io_flash": [":shell_config_bt_mesh_shell_blob_cli_or_config_bt_mesh_shell_blob_srv_or_config_bt_mesh_shell_blob_io_flash_deps"],
         "//conditions:default": [],
@@ -101,6 +104,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/mesh:hdrs",
+    ],
 )
 
 selects.config_setting_group(
@@ -122,4 +129,20 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/bluetooth:hdrs",
+        "//subsys/bluetooth/mesh:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        [
+            "*.h",
+            "**/*.h",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//visibility:public"],
 )
