@@ -21,3 +21,15 @@ common --host_per_file_copt=external/.*@-w
 common --verbose_failures
 test --test_output=errors
 common --ui_event_filters=-debug
+
+# Remote cache
+common:remote_cache --bes_backend="buildeventservice.googleapis.com"
+common:remote_cache --bes_instance_name=pigweed-rbe-open
+common:remote_cache --bes_results_url="https://source.cloud.google.com/results/invocations/"
+common:remote_cache --bes_timeout=600s
+common:remote_cache --experimental_remote_cache_eviction_retries=5
+common:remote_cache --google_default_credentials=true
+common:remote_cache --legacy_important_outputs
+common:remote_cache --remote_cache=grpcs://remotebuildexecution.googleapis.com
+common:remote_cache --remote_instance_name=projects/pigweed-rbe-open/instances/default-instance
+common:remote_cache --remote_upload_local_results=false

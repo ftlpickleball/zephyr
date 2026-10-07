@@ -10,6 +10,6 @@ if ! command -v bazelisk &> /dev/null; then
   export PATH="${BAZELISK_DIR}:${PATH}"
 fi
 
-bazelisk test //bazel/tools/... //bazel/private/...
-bazelisk build //samples/hello_world --platforms=@zephyr//boards/qemu/cortex_m3:qemu_cortex_m3
-bazelisk build //samples/hello_world --platforms=@zephyr//boards/native/native_sim:native
+bazelisk test --config=remote_cache "$@" //bazel/tools/... //bazel/private/...
+bazelisk build --config=remote_cache "$@" //samples/hello_world --platforms=@zephyr//boards/qemu/cortex_m3:qemu_cortex_m3
+bazelisk build --config=remote_cache "$@" //samples/hello_world --platforms=@zephyr//boards/native/native_sim:native
