@@ -207,18 +207,32 @@ def main(argv=None):
         app_graph = raw_metadata[app_pkg]
         app_fragments = translated_confs.get(app_pkg, {})
 
-        boards = set(app_graph["board_helpers"].keys())
-        has_img_boards = False
-        for h_name, h_cfg in app_graph["helpers"].items():
-            if h_cfg.get("type") == "external":
-                continue
+        def _helper_image_names(h_name, h_cfg):
             h_target = h_cfg.get("target", "")
             t_app = (
                 h_target.split(":")[-1]
                 if ":" in h_target
                 else os.path.basename(h_target.rstrip("/"))
             )
-            for img_name in {h_name, t_app} - {""}:
+            names = [h_name]
+            if t_app and t_app not in names:
+                names.append(t_app)
+            return names, t_app
+
+        boards = set(app_graph["board_helpers"].keys())
+        has_img_boards = False
+        all_helper_defs = list(app_graph["helpers"].items())
+        for bh in app_graph["board_helpers"].values():
+            all_helper_defs.extend(bh.items())
+        seen_img_names = set()
+        for h_name, h_cfg in all_helper_defs:
+            if h_cfg.get("type") == "external" or not h_cfg.get("target"):
+                continue
+            img_names, _ = _helper_image_names(h_name, h_cfg)
+            for img_name in img_names:
+                if img_name in seen_img_names:
+                    continue
+                seen_img_names.add(img_name)
                 img_boards_dir = os.path.join(
                     app_path, "sysbuild", img_name, "boards"
                 )
@@ -229,6 +243,8 @@ def main(argv=None):
                             if entry.endswith(ext):
                                 boards.add(entry[: -len(ext)])
                                 has_img_boards = True
+                else:
+                    deps.add_file(img_boards_dir)
         if has_img_boards or not boards:
             boards.add("default_board")
 
@@ -266,19 +282,16 @@ def main(argv=None):
                 else:
                     helper_board_id = board_id
 
-                target_app_name = (
-                    helper_target.split(":")[-1]
-                    if ":" in helper_target
-                    else os.path.basename(helper_target.rstrip("/"))
+                image_names, target_app_name = _helper_image_names(
+                    helper_name, helper_config
                 )
-                image_names = [helper_name]
-                if target_app_name and target_app_name not in image_names:
-                    image_names.append(target_app_name)
 
-                board_candidates = [helper_board_id]
-                safe_helper_board = sanitize_board_id(helper_board_id)
-                if safe_helper_board not in board_candidates:
-                    board_candidates.append(safe_helper_board)
+                board_candidates = []
+                if helper_board_id != "default_board":
+                    board_candidates.append(helper_board_id)
+                    safe_helper_board = sanitize_board_id(helper_board_id)
+                    if safe_helper_board not in board_candidates:
+                        board_candidates.append(safe_helper_board)
 
                 def probe_candidate(rel_cand):
                     cand_path = os.path.join(app_path, rel_cand)

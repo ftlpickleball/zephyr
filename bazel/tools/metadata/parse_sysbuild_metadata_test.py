@@ -255,13 +255,16 @@ class TestParseSysbuildMetadataDeps(unittest.TestCase):
         return output, lines[0], lines[1]
 
     def _missing_candidates(self, app_dir, img_names, boards):
-        cands = []
+        cands = [
+            self.path(app_dir, "sysbuild", img, "boards")
+            for img in img_names
+        ]
         for img in img_names:
             cands.extend([
                 self.path(app_dir, "sysbuild", img, "prj.conf"),
-                *[self.path(app_dir, "sysbuild", img, "boards", f"{b}.conf") for b in boards],
+                *[self.path(app_dir, "sysbuild", img, "boards", f"{b}.conf") for b in boards if b != "default_board"],
                 self.path(app_dir, "sysbuild", f"{img}.conf"),
-                *[self.path(app_dir, "sysbuild", img, "boards", f"{b}.overlay") for b in boards],
+                *[self.path(app_dir, "sysbuild", img, "boards", f"{b}.overlay") for b in boards if b != "default_board"],
                 self.path(app_dir, "sysbuild", img, "app.overlay"),
                 self.path(app_dir, "sysbuild", f"{img}.overlay"),
             ])
@@ -286,6 +289,7 @@ helpers:
         self.write("app/boards/b1.conf")
         self.write("app/sysbuild.conf", "mcuboot_CONFIG_LOG=y\n")
         self.write("app/sysbuild/mcuboot.conf", "CONFIG_FOO=y\n")
+        self.write("app/sysbuild/net/boards/b1.conf", "CONFIG_NET_B1=y\n")
         apps = {"//app": self.path("app")}
 
         out_without, _, _ = self.run_main(apps, deps_flags=False)
@@ -293,10 +297,18 @@ helpers:
 
         self.assertEqual(out_with, out_without)
         repos = json.loads(out_with)["custom_repos"]
-        self.assertEqual([r["helper_name"] for r in repos], ["mcuboot"])
+        self.assertEqual([r["helper_name"] for r in repos], ["mcuboot", "net", "mcuboot"])
         expected_missing = set(
-            self._missing_candidates("app", ["mcuboot", "zephyr_project", "net", "board_helper", "bh"], ["b1"])
-        ) - {self.path("app", "sysbuild", "mcuboot.conf")}
+            self._missing_candidates(
+                "app",
+                ["mcuboot", "zephyr_project", "net", "board_helper", "bh"],
+                ["b1"],
+            )
+        ) - {
+            self.path("app", "sysbuild", "mcuboot.conf"),
+            self.path("app", "sysbuild", "net", "boards"),
+            self.path("app", "sysbuild", "net", "boards", "b1.conf"),
+        }
         self.assertEqual(
             deps,
             sorted([
@@ -310,11 +322,16 @@ helpers:
                 *expected_missing,
             ]),
         )
-        # sysbuild/mcuboot.conf is only checked for existence, so its
-        # directory listing is tracked rather than its content.
+        # sysbuild/mcuboot.conf and sysbuild/net/boards/b1.conf are only checked
+        # for existence, so their parent directory listings are tracked rather
+        # than their contents.
         self.assertEqual(
             dirs,
-            sorted([self.path("app", "boards"), self.path("app", "sysbuild")]),
+            sorted([
+                self.path("app", "boards"),
+                self.path("app", "sysbuild"),
+                self.path("app", "sysbuild", "net", "boards"),
+            ]),
         )
 
     def test_deps_empty_app(self):
@@ -351,7 +368,11 @@ helpers:
         _, deps, dirs = self.run_main({"//app": self.path("app")})
 
         expected_missing = set(
-            self._missing_candidates("real_app", ["mcuboot", "zephyr_project"], ["default_board"])
+            self._missing_candidates(
+                "real_app",
+                ["mcuboot", "zephyr_project"],
+                ["default_board"],
+            )
         ) - {self.path("real_app", "sysbuild", "mcuboot.conf")}
         self.assertEqual(
             deps,
