@@ -58,14 +58,24 @@ cc_library(
     linkopts = select({
         "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_FLOAT=true": [
             "-DPICOLIBC_DOUBLE_PRINTF_SCANF",
+            "-Wl,--defsym=vfprintf=__d_vfprintf",
+            "-Wl,--defsym=vfscanf=__d_vfscanf",
         ],
         "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_MINIMAL=true": [
             "-DPICOLIBC_MINIMAL_PRINTF_SCANF",
+            "-Wl,--defsym=vfprintf=__m_vfprintf",
+            "-Wl,--defsym=vfscanf=__m_vfscanf",
         ],
         "@zephyr_kconfig//:CONFIG_PICOLIBC_IO_LONG_LONG=true": [
             "-DPICOLIBC_LONG_LONG_PRINTF_SCANF",
+            "-Wl,--defsym=vfprintf=__l_vfprintf",
+            "-Wl,--defsym=vfscanf=__l_vfscanf",
         ],
-        "//conditions:default": ["-DPICOLIBC_INTEGER_PRINTF_SCANF"],
+        "//conditions:default": [
+            "-DPICOLIBC_INTEGER_PRINTF_SCANF",
+            "-Wl,--defsym=vfprintf=__i_vfprintf",
+            "-Wl,--defsym=vfscanf=__i_vfscanf",
+        ],
     }),
 )
 
