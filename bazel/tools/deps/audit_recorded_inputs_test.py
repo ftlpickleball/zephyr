@@ -171,6 +171,23 @@ class CollectTest(unittest.TestCase):
         # Order is unknown in this format, so DIRENTS guards are not checked.
         self.assertEqual(audit.check_entry(entries[0], 10), [])
 
+    def test_repo_contents_cache_recorded_inputs(self):
+        rcc_dir = os.path.join(self.ob, "rcc", "hash123", "uuid456")
+        os.makedirs(rcc_dir)
+        self._write(
+            "rcc/hash123/uuid456.recorded_inputs",
+            "hash123\nFILE:@@zephyr+//.git ENOENT\nFILE:@@//app/prj.conf 01\n",
+        )
+        os.symlink(
+            rcc_dir,
+            os.path.join(self.ob, "external", "zephyr++ext+zc_x"),
+        )
+        entries = audit.collect_entries(self.ob, [], ["zephyr"])
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].name, "@zephyr++ext+zc_x")
+        self.assertEqual(len(entries[0].inputs), 2)
+        self.assertEqual(audit.check_entry(entries[0], 10), [])
+
     def test_main_exit_status(self):
         self._write("external/@zephyr+.marker", "deadbeef\nDIRTREE:@@//t 00\n")
         self.assertEqual(audit.main([self.ob]), 1)

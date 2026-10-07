@@ -8,8 +8,9 @@ server restart), it checks the recorded inputs in batches
 another external repository starts a new batch, and every batch costs a Skyframe restart. See
 bazel/private/deps.bzl for how the Zephyr rules keep that number small.
 
-This tool reads repository marker files ($OUTPUT_BASE/external/@<repo>.marker) and the module
-extension entries of lockfiles (by default the hidden lockfile $OUTPUT_BASE/MODULE.bazel.lock),
+This tool reads repository marker files ($OUTPUT_BASE/external/@<repo>.marker or
+<realpath(external/<repo>)>.recorded_inputs in --repo_contents_cache) and the module extension
+entries of lockfiles (by default the hidden lockfile $OUTPUT_BASE/MODULE.bazel.lock),
 prints what was recorded where, and checks that:
 
   * there are no DIRTREE inputs (they hash whole directory trees);
@@ -201,10 +202,22 @@ def collect_entries(output_base, lockfiles, filters):
     entries = []
     external = os.path.join(output_base, "external")
     if os.path.isdir(external):
-        for name in sorted(os.listdir(external)):
+        names = set(os.listdir(external))
+        for name in sorted(names):
             if name.endswith(".marker") and _matches(name, filters):
                 inputs = read_marker(os.path.join(external, name))
                 entries.append(Entry(name[: -len(".marker")], inputs))
+            elif (
+                not name.startswith("@")
+                and ("@" + name + ".marker") not in names
+                and _matches("@" + name, filters)
+            ):
+                entry_path = os.path.join(external, name)
+                if os.path.islink(entry_path):
+                    recorded = os.path.realpath(entry_path) + ".recorded_inputs"
+                    if os.path.isfile(recorded):
+                        inputs = read_marker(recorded)
+                        entries.append(Entry("@" + name, inputs))
     hidden = os.path.join(output_base, "MODULE.bazel.lock")
     for lockfile in ([hidden] if os.path.isfile(hidden) else []) + list(lockfiles):
         entries.extend(read_lockfile_entries(lockfile, filters))
