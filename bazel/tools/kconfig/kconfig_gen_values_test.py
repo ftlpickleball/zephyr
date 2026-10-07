@@ -297,9 +297,9 @@ class TestKconfigGenValues(unittest.TestCase):
         Path(app_overlay).touch()
 
         overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "soc", "1.0.0", board_dir, tracker=kconfig_utils.InputRecorder())
-        self.assertEqual(overlays, [board_rev_overlay, app_board_overlay, app_rev_overlay, app_overlay])
+        self.assertEqual(overlays, [board_rev_overlay, app_board_overlay, app_rev_overlay])
 
-    def test_discover_overlays_all(self):
+    def test_discover_overlays_board_shadows_app_overlay(self):
         app_dir = os.path.join(self.test_dir, "app")
         boards_dir = os.path.join(app_dir, "boards")
         os.makedirs(boards_dir, exist_ok=True)
@@ -313,7 +313,62 @@ class TestKconfigGenValues(unittest.TestCase):
         Path(soc_overlay).touch()
 
         overlays = kconfig_gen_values.discover_overlays(app_dir, "board", "/soc", tracker=kconfig_utils.InputRecorder())
-        self.assertEqual(overlays, [board_overlay, soc_overlay, app_overlay])
+        self.assertEqual(overlays, [board_overlay, soc_overlay])
+
+    def test_discover_overlays_board_app_overlay_precedence(self):
+        app_dir = os.path.join(self.test_dir, "app")
+        boards_dir = os.path.join(app_dir, "boards")
+        board_dir = os.path.join(self.test_dir, "board_dir")
+        board_rev_dir = os.path.join(board_dir, "revisions")
+        os.makedirs(boards_dir, exist_ok=True)
+        os.makedirs(board_rev_dir, exist_ok=True)
+
+        board_rev_overlay = os.path.join(board_rev_dir, "1.0.0.overlay")
+        board_app_overlay = os.path.join(board_dir, "mcuboot.overlay")
+        app_board_overlay = os.path.join(boards_dir, "board.overlay")
+        app_overlay = os.path.join(app_dir, "app.overlay")
+
+        Path(board_rev_overlay).touch()
+        Path(board_app_overlay).touch()
+        Path(app_board_overlay).touch()
+        Path(app_overlay).touch()
+
+        tracker = kconfig_utils.InputRecorder()
+        overlays = kconfig_gen_values.discover_overlays(
+            app_dir, "board", "soc", "1.0.0", board_dir, "mcuboot", tracker=tracker
+        )
+        self.assertEqual(overlays, [board_rev_overlay, board_app_overlay, app_board_overlay])
+        self.assertIn(os.path.realpath(board_app_overlay), tracker.files)
+
+        # Even without app_board_overlay, board_app_overlay should shadow app.overlay
+        os.remove(app_board_overlay)
+        overlays_no_app_board = kconfig_gen_values.discover_overlays(
+            app_dir, "board", "soc", "1.0.0", board_dir, "mcuboot", tracker=kconfig_utils.InputRecorder()
+        )
+        self.assertEqual(overlays_no_app_board, [board_rev_overlay, board_app_overlay])
+
+    def test_get_conf_files_board_app_conf_precedence(self):
+        args = MagicMock()
+        args.app_dir = os.path.join(self.test_dir, "app")
+        args.app_name = "mcuboot"
+        board_dir = os.path.join(self.test_dir, "board_dir")
+        app_boards_dir = os.path.join(args.app_dir, "boards")
+        os.makedirs(board_dir, exist_ok=True)
+        os.makedirs(app_boards_dir, exist_ok=True)
+
+        prj_conf = os.path.join(args.app_dir, "prj.conf")
+        board_app_conf = os.path.join(board_dir, "mcuboot.conf")
+        app_board_conf = os.path.join(app_boards_dir, "nrf52840dk.conf")
+        Path(prj_conf).touch()
+        Path(board_app_conf).touch()
+        Path(app_board_conf).touch()
+
+        tracker = kconfig_utils.InputRecorder()
+        with patch.dict(os.environ, {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""}):
+            conf_files = kconfig_gen_values.get_conf_files(args, board_dir, tracker=tracker)
+
+        self.assertEqual(conf_files, [prj_conf, board_app_conf, app_board_conf])
+        self.assertIn(os.path.realpath(board_app_conf), tracker.files)
 
     @patch('subprocess.run')
     def test_preprocess_dts_generates_input_c(self, mock_run):

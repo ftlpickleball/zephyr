@@ -120,7 +120,7 @@ def generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir, *, t
     kconfig_modules = os.path.join(output_dir, "Kconfig.modules")
     kconfig_utils.generate_kconfig_modules(zephyr_base, args.modules, kconfig_modules, tracker=tracker)
 
-def discover_overlays(app_dir, board_name, board_qualifiers, board_revision="", board_dir="", *, tracker):
+def discover_overlays(app_dir, board_name, board_qualifiers, board_revision="", board_dir="", app_name="", *, tracker):
     overlays = []
 
     # 1. Board-level revision overlays in board_dir
@@ -134,21 +134,35 @@ def discover_overlays(app_dir, board_name, board_qualifiers, board_revision="", 
         if cand not in overlays:
             overlays.append(cand)
 
-    # 2. App-level board overlays in app_dir/boards/ (precedence: base -> qualified -> revision -> qualified revision)
+    # 2. Board-level app-named overlay in board_dir (e.g., <board_dir>/mcuboot.overlay)
+    board_app_overlay_found = False
+    if board_dir and app_name:
+        board_app_overlay = os.path.join(board_dir, f"{app_name}.overlay")
+        tracker.add(board_app_overlay)
+        if os.path.exists(board_app_overlay):
+            board_app_overlay_found = True
+            if board_app_overlay not in overlays:
+                overlays.append(board_app_overlay)
+
+    # 3. App-level board overlays in app_dir/boards/ (precedence: base -> qualified -> revision -> qualified revision)
     app_boards_dir = os.path.join(app_dir, "boards")
+    app_board_overlays_found = False
     for cand_file in discovery_utils.get_app_board_override_candidates(
         board_name, board_qualifiers, board_revision, "overlay"
     ):
         cand_path = os.path.join(app_boards_dir, cand_file)
         tracker.add(cand_path)
-        if os.path.exists(cand_path) and cand_path not in overlays:
-            overlays.append(cand_path)
+        if os.path.exists(cand_path):
+            app_board_overlays_found = True
+            if cand_path not in overlays:
+                overlays.append(cand_path)
 
-    # 3. Default app overlay
-    app_overlay = os.path.join(app_dir, "app.overlay")
-    tracker.add(app_overlay)
-    if os.path.exists(app_overlay) and app_overlay not in overlays:
-        overlays.append(app_overlay)
+    # 4. Default app overlay (fallback only when no board-specific overlay exists)
+    if not board_app_overlay_found and not app_board_overlays_found:
+        app_overlay = os.path.join(app_dir, "app.overlay")
+        tracker.add(app_overlay)
+        if os.path.exists(app_overlay) and app_overlay not in overlays:
+            overlays.append(app_overlay)
 
     return overlays
 
@@ -204,7 +218,7 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
     if not dts_file:
         raise RuntimeError(f"Could not find DTS file for board {args.board} in {board_dir}. Tried: {candidates}")
 
-    overlays = discover_overlays(args.app_dir, board_name, board_qualifiers, board_revision, board_dir, tracker=tracker)
+    overlays = discover_overlays(args.app_dir, board_name, board_qualifiers, board_revision, board_dir, getattr(args, "app_name", ""), tracker=tracker)
     for extra_overlay in getattr(args, "dtc_overlays", []):
         tracker.add(extra_overlay)
         if os.path.exists(extra_overlay) and extra_overlay not in overlays:
@@ -433,6 +447,13 @@ def get_conf_files(args, board_dir, *, tracker):
     tracker.add(prj_conf, os.path.join(args.app_dir, "Kconfig"))
     if os.path.exists(prj_conf):
         conf_files.append(prj_conf)
+
+    # 4b. Board-level app-named conf in board_dir (e.g., <board_dir>/mcuboot.conf)
+    if board_dir and getattr(args, "app_name", ""):
+        board_app_conf = os.path.join(board_dir, f"{args.app_name}.conf")
+        tracker.add(board_app_conf)
+        if os.path.exists(board_app_conf) and board_app_conf not in conf_files:
+            conf_files.append(board_app_conf)
 
     # 5. Application board conf candidates (precedence: base -> qualified -> revision -> qualified revision)
     app_boards_dir = os.path.join(args.app_dir, "boards")
