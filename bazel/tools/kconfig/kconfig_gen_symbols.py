@@ -385,7 +385,7 @@ def parse_arch_symbols(
         kconf_path = os.path.join(zephyr_base, "Kconfig")
         deps.add(kconf_path)
         with kconfig_utils.record_kconfig_sources(kconfiglib, deps):
-            kconf = kconfiglib.Kconfig(kconf_path)
+            kconf = kconfiglib.Kconfig(kconf_path, warn_to_stderr=False)
         if kconf.warnings:
             for warning in kconf.warnings:
                 warnings_list.append(warning)
