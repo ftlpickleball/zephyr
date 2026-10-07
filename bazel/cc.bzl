@@ -750,7 +750,11 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
     gen_symtab_tool = Label("//scripts/build:gen_symtab")
     native.genrule(
         name = name + "_gen_symtab",
-        srcs = [":" + name + "._pre1.elf"],
+        srcs = select({
+            Label("@zephyr_kconfig//:CONFIG_USERSPACE=true"): [":" + name + "._pre1.elf"],
+            Label("@zephyr_kconfig//:CONFIG_DEVICE_DEPS=true"): [":" + name + "._pre1.elf"],
+            "//conditions:default": [target_pre0],
+        }),
         outs = ["{}._symtab/symtab.c".format(name)],
         cmd = "./$(execpath {tool}) -k $(SRCS) -o $(location {name}._symtab/symtab.c)".format(
             tool = gen_symtab_tool,
