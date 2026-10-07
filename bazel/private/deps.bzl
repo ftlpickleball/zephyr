@@ -11,9 +11,10 @@ paths) are batched together and verified in parallel.
 
 deps.bzl classifies reported inputs by their realpath:
 
-1. Fetched content under $OUTPUT_BASE/external/:
-   Fetched repositories are immutable and cannot change unless their definition changes.
-   -> deps.bzl never watches files inside external repos directly. This eliminates sequential
+1. Fetched external repositories (no <root>/.git):
+   Fetched repositories (under $OUTPUT_BASE/external/ or in --repo_contents_cache) are immutable
+   and cannot change unless their definition changes.
+   -> deps.bzl never watches files inside fetched repos directly. This eliminates sequential
       Skyframe restarts. Instead, immutable repos are covered by watching the pin files
       (MODULE.bazel, patches, overlays) that define them (see find_pin_files()).
 2. Main workspace content:
@@ -67,8 +68,8 @@ def new_tracker(ctx, workspace_root = None):
         "ws_path": workspace_root,
         "ws": str(workspace_root),
         "ws_real": str(workspace_root.realpath),
-        # Realpath of $OUTPUT_BASE/external, known once an external repository was resolved.
-        "external_real": None,
+        # Realpaths (with a trailing "/") of fetched external repositories.
+        "fetched_roots": [],
         # Canonical repository name -> root path; "" is the main repository.
         "roots": {"": workspace_root},
         # Realpaths (with a trailing "/") of external repositories that resolve into the workspace.
@@ -115,15 +116,16 @@ def repo_root(tracker, anchor):
     else:
         root = ctx.path(Label("@@%s//:.git" % canon)).dirname
 
+    git = root.get_child(".git")
     # A no-op when resolving the label above already recorded it implicitly.
-    ctx.watch(root.get_child(".git"))
+    ctx.watch(git)
     roots[canon] = root
 
-    if tracker["external_real"] == None:
-        tracker["external_real"] = str(root.dirname.realpath)
     real = str(root.realpath)
-    if _is_under(real, tracker["ws_real"]):
+    if (real + "/").startswith(tracker["ws_real"] + "/"):
         tracker["local_roots"].append(real + "/")
+    elif not git.exists:
+        tracker["fetched_roots"].append(real + "/")
     return root
 
 def label_path(tracker, label):
@@ -181,9 +183,6 @@ def workspace_relpath(tracker, real):
         return real[len(ws_real) + 1:]
     return None
 
-def _is_under(real, root):
-    return real == root or real.startswith(root + "/")
-
 def _file_watch_path(tracker, real):
     """Returns the path to watch for the realpath `real`, or None if it must not be watched."""
     if (real + "/").startswith(tracker["wd_real"]):
@@ -191,10 +190,10 @@ def _file_watch_path(tracker, real):
     rel = workspace_relpath(tracker, real)
     if rel != None:
         return tracker["ws"] + "/" + rel if rel else tracker["ws"]
-    external = tracker["external_real"]
-    if external != None and _is_under(real, external):
-        # Immutable fetched content, covered by the pin files and the .git probes.
-        return None
+    for fetched in tracker["fetched_roots"]:
+        if (real + "/").startswith(fetched):
+            # Immutable fetched content, covered by the pin files and the .git probes.
+            return None
     if tracker["watch_absolute"]:
         return real
     return None
