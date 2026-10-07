@@ -400,7 +400,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "CONFIG_STATIC_INIT_GNU=1",  # Hack
         ] + if_linker_is_clang(
             otherwise = [],
-            then = ["__LLD_LINKER_CMD__=1"],
+            then = [
+                "__LLD_LINKER_CMD__=1",
+                "CONFIG_LLVM_USE_LLD=1",
+            ],
         ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
@@ -432,7 +435,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "LINKER_ZEPHYR_PREBUILT=1",  # Controls the behavior of kobject-xxx.ld
         ] + if_linker_is_clang(
             otherwise = [],
-            then = ["__LLD_LINKER_CMD__=1"],
+            then = [
+                "__LLD_LINKER_CMD__=1",
+                "CONFIG_LLVM_USE_LLD=1",
+            ],
         ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
@@ -465,7 +471,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "LINKER_ZEPHYR_FINAL=1",
         ] + if_linker_is_clang(
             otherwise = [],
-            then = ["__LLD_LINKER_CMD__=1"],
+            then = [
+                "__LLD_LINKER_CMD__=1",
+                "CONFIG_LLVM_USE_LLD=1",
+            ],
         ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
@@ -499,7 +508,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "LINKER_ZEPHYR_FINAL=1",
         ] + if_linker_is_clang(
             otherwise = [],
-            then = ["__LLD_LINKER_CMD__=1"],
+            then = [
+                "__LLD_LINKER_CMD__=1",
+                "CONFIG_LLVM_USE_LLD=1",
+            ],
         ) + if_linker_is_gcc(
             otherwise = [],
             then = ["__GCC_LINKER_CMD__=1"],
