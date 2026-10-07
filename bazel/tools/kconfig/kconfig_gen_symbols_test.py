@@ -333,6 +333,7 @@ board:
             str(self.zephyr_base), tmp_dir, [module_dir]
         )
 
+        self.assertEqual(os.environ["APPLICATION_SOURCE_DIR"], tmp_dir)
         self.assertEqual(
             os.environ["ZEPHYR_HAL_NORDIC_MODULE_DIR"], os.path.abspath(module_dir)
         )

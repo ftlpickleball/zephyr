@@ -357,6 +357,8 @@ class TestInputTracking(unittest.TestCase):
             'rsource "sub/Kconfig"\n'
             'orsource "opt/*/Kconfig"\n'
             'orsource "missing/Kconfig"\n'
+            'osource "$(UNSET_VAR)/Kconfig.unset"\n'
+            'osource "$(UNSET_VAR)/zephyr/Kconfig"\n'
             f'osource "{self.test_dir}/elsewhere/Kconfig"\n'
         )
 
@@ -364,6 +366,7 @@ class TestInputTracking(unittest.TestCase):
         original_iglob = kconfiglib.iglob
         with patch.dict(os.environ):
             os.environ.pop("srctree", None)
+            os.environ.pop("UNSET_VAR", None)
             with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
                 kconf = kconfiglib.Kconfig(os.path.join(root, "Kconfig"), warn_to_stderr=False)
 

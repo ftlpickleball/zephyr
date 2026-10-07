@@ -77,10 +77,20 @@ def record_kconfig_sources(kconfiglib_module, tracker):
         yield
         return
 
+    def _valid_glob_path(p):
+        if p == os.sep:
+            return False
+        if p.startswith(os.sep):
+            top = os.path.join(os.sep, p.lstrip(os.sep).split(os.sep, 1)[0])
+            if not os.path.exists(top):
+                return False
+        return True
+
     def recording_iglob(pattern, *args, **kwargs):
         dirs, paths = glob_dependencies(pattern)
-        tracker.add_dir(*dirs)
-        tracker.add(*paths)
+        # An unset $(VAR)/... in osource expands to /... at the filesystem root.
+        tracker.add_dir(*(d for d in dirs if _valid_glob_path(d)))
+        tracker.add(*(p for p in paths if _valid_glob_path(p)))
         return original(pattern, *args, **kwargs)
 
     kconfiglib_module.iglob = recording_iglob

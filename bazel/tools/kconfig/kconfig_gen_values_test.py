@@ -52,6 +52,7 @@ class TestKconfigGenValues(unittest.TestCase):
         args = MagicMock()
         args.board = "nrf52840dk/nrf52840"
         args.toolchain_variant = None
+        args.app_dir = os.path.join(self.test_dir, "app")
         output_dir = os.path.join(self.test_dir, "out")
         board_dir = os.path.join(self.test_dir, "board")
 
@@ -61,6 +62,7 @@ class TestKconfigGenValues(unittest.TestCase):
         self.assertEqual(os.environ["BOARD_QUALIFIERS"], "nrf52840")
         self.assertEqual(os.environ["ARCH"], "*")
         self.assertEqual(os.environ["ZEPHYR_BASE"], str(self.zephyr_base))
+        self.assertEqual(os.environ["APPLICATION_SOURCE_DIR"], os.path.abspath(args.app_dir))
         self.assertEqual(os.environ["KCONFIG_BOARD_DIR"], os.path.join(output_dir, "boards"))
         self.assertEqual(os.environ["TOOLCHAIN_KCONFIG_DIR"], os.path.join(str(self.zephyr_base), "cmake", "toolchain", "zephyr"))
 

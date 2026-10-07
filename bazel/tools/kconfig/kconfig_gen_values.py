@@ -36,6 +36,8 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
     os.environ["srctree"] = zephyr_base
     os.environ["ZEPHYR_BASE"] = zephyr_base
     os.environ["KCONFIG_BINARY_DIR"] = output_dir
+    if getattr(args, "app_dir", None):
+        os.environ["APPLICATION_SOURCE_DIR"] = os.path.abspath(str(args.app_dir))
 
     # Replicate Zephyr SDK compiler capabilities for Kconfig
     os.environ["TOOLCHAIN_HAS_PICOLIBC"] = "y"

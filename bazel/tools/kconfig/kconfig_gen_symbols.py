@@ -224,6 +224,7 @@ def setup_kconfig_environment(zephyr_base, tmp_dir, modules=None):
     os.environ["srctree"] = zephyr_base
     os.environ["KCONFIG_BINARY_DIR"] = tmp_dir
     os.environ["CMAKE_BINARY_DIR"] = tmp_dir
+    os.environ["APPLICATION_SOURCE_DIR"] = tmp_dir
     os.environ["ARCH_DIR"] = "arch"
     os.environ["SOC_DIR"] = "soc"
     os.environ["BOARD_DIR"] = "boards"
