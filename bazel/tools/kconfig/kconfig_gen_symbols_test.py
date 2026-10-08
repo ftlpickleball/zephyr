@@ -457,11 +457,25 @@ board:
         build_file.write_text('flag_values = {"@zephyr_kconfig//:CONFIG_FOO": "true"}\n')
         self.mock_kconf.syms = {}
 
+        def record_scaffolding_warning(*args, **kwargs):
+            bin_dir = os.environ.get("KCONFIG_BINARY_DIR", "")
+            self.mock_kconf.warnings = [
+                f"{os.path.join(bin_dir, 'boards', 'Kconfig.defconfig')}:3: warning in generated file",
+                f"{self.zephyr_base / 'Kconfig'}:7: warning in source tree",
+            ]
+            return self.mock_kconf
+
+        self.kconfig_mock.Kconfig.side_effect = record_scaffolding_warning
+
         with patch(
             "sys.argv",
             ["kconfig_gen_symbols.py", "--zephyr-base", str(self.zephyr_base), "--output", output_file],
         ):
             kconfig_gen_symbols.main()
+
+        warnings_c = Path(output_dir, "kconfig_warnings.c").read_text()
+        self.assertIn("archs/arm/boards/Kconfig.defconfig:3: warning in generated file", warnings_c)
+        self.assertNotIn("/tmp/", warnings_c)
 
         real = lambda p: os.path.realpath(str(p))
         deps = Path(output_dir, "deps.txt").read_text().splitlines()

@@ -589,12 +589,17 @@ class TestKconfigGenValues(unittest.TestCase):
         (self.zephyr_base / "soc" / "nordic" / "nrf52" / "soc.yml").touch()
         zephyr_kconfig = str(self.zephyr_base / "Kconfig")
 
-        def run_kconfig(*args, **kwargs):
-            os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
-            Path(output_dir, ".config").write_text("CONFIG_FOO=y\n")
-            Path(output_dir, "zephyr", "autoconf.h").write_text("#define CONFIG_FOO 1\n")
-            # kconfig.py lists every Kconfig file it parsed.
-            Path(output_dir, "kconfig_list.txt").write_text(f"{zephyr_kconfig}\n{app_kconfig}\n")
+        def run_kconfig(cmd, **kwargs):
+            if "--handwritten-input-configs" in cmd:
+                idx = cmd.index("--handwritten-input-configs")
+                config_out = cmd[idx + 2]
+                autoconf_out = cmd[idx + 3]
+                kconfig_list_out = cmd[idx + 4]
+                os.makedirs(os.path.dirname(autoconf_out), exist_ok=True)
+                Path(config_out).write_text("CONFIG_FOO=y\n")
+                Path(autoconf_out).write_text("#define CONFIG_FOO 1\n")
+                # kconfig.py lists every Kconfig file it parsed.
+                Path(kconfig_list_out).write_text(f"{zephyr_kconfig}\n{app_kconfig}\n")
             return MagicMock(returncode=0, stderr="")
         mock_run.side_effect = run_kconfig
         self.kconfig_mock.Kconfig.return_value.unique_defined_syms = []
@@ -613,6 +618,11 @@ class TestKconfigGenValues(unittest.TestCase):
                  patch('kconfig_gen_values.generate_edt_pickle'):
                 mock_pre.return_value = ("merged.dts", [])
                 kconfig_gen_values.main()
+
+        self.assertEqual(
+            set(os.listdir(output_dir)),
+            {"BUILD.bazel", ".config", "zephyr", "deps.txt", "dep_dirs.txt"},
+        )
 
         real = os.path.realpath
         deps = Path(output_dir, "deps.txt").read_text().splitlines()

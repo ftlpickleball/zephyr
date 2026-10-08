@@ -5,7 +5,9 @@ import os
 import sys
 import argparse
 import pickle
+import shutil
 import subprocess
+import tempfile
 import json
 import re
 from pathlib import Path
@@ -284,10 +286,16 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
     tracker.add(*getattr(cpp, "probed_includes", []))
 
     if os.path.exists(merged_dts_path):
+        abs_out = os.path.abspath(output_dir)
         def _relativize_line(match):
             prefix, line_path, suffix = match.group(1), match.group(2), match.group(3)
             if os.path.isabs(line_path) or line_path.startswith(".."):
-                return f"{prefix}{kconfig_utils.clean_output_path(line_path, output_dir)}{suffix}"
+                abs_line = line_path if os.path.isabs(line_path) else os.path.abspath(os.path.join(abs_out, line_path))
+                if (abs_line + os.sep).startswith(abs_out + os.sep):
+                    rel_line = os.path.relpath(abs_line, abs_out)
+                else:
+                    rel_line = kconfig_utils.clean_output_path(abs_line, output_dir)
+                return f"{prefix}{rel_line}{suffix}"
             return match.group(0)
 
         with open(merged_dts_path, "r", encoding="utf-8") as f:
@@ -319,6 +327,10 @@ def _normalize_edt_pickle(edt_pickle_path, zephyr_base, output_dir):
         sys.path.insert(0, dt_src)
     with open(edt_pickle_path, "rb") as f:
         edt = pickle.load(f)
+    if getattr(edt, "dts_path", None):
+        edt.dts_path = os.path.basename(edt.dts_path)
+    if hasattr(edt, "_dt") and getattr(edt._dt, "filename", None):
+        edt._dt.filename = os.path.basename(edt._dt.filename)
     edt.bindings_dirs = [kconfig_utils.clean_output_path(d, output_dir) for d in edt.bindings_dirs]
     edt._binding_paths = [kconfig_utils.clean_output_path(p, output_dir) for p in edt._binding_paths]
     for k, v in list(edt._binding_fname2path.items()):
@@ -367,7 +379,7 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
 
     rel_edt_pickle = os.path.relpath(output_edt_pickle_path, output_dir)
     rel_merged_dts = os.path.relpath(merged_dts_path, output_dir)
-    rel_dts_debug = os.path.relpath(os.path.join(output_dir, "zephyr.dts.debug"), output_dir)
+    rel_dts_debug = os.path.relpath(f"{merged_dts_path}.debug", output_dir)
 
     if os.path.exists(gen_edt_py):
         gen_edt_args = [
@@ -698,78 +710,84 @@ def main():
                     break
             if found: break
 
-    setup_environment(args, zephyr_base, output_dir, board_dir)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        setup_environment(args, zephyr_base, tmp_dir, board_dir)
 
-    generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir, tracker=tracker)
+        generate_kconfig_aggregations(zephyr_base, args, tmp_dir, board_dir, tracker=tracker)
 
-    for frag in args.conf_fragments:
-        tracker.add(frag)
+        for frag in args.conf_fragments:
+            tracker.add(frag)
 
-    merged_dts_path, dts_roots = preprocess_dts(args, zephyr_base, output_dir, board_dir, tracker=tracker)
-    generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, tracker=tracker)
-    generate_dts_headers(zephyr_base, output_dir, os.path.join(output_dir, "edt.pickle"), tracker=tracker)
-    kconfig_utils.generate_kconfig_dts(zephyr_base, os.path.join(output_dir, "Kconfig.dts"), dts_roots, tracker=tracker)
+        merged_dts_path, dts_roots = preprocess_dts(args, zephyr_base, tmp_dir, board_dir, tracker=tracker)
+        generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, tracker=tracker)
+        generate_dts_headers(zephyr_base, output_dir, os.path.join(output_dir, "edt.pickle"), tracker=tracker)
+        kconfig_utils.generate_kconfig_dts(zephyr_base, os.path.join(tmp_dir, "Kconfig.dts"), dts_roots, tracker=tracker)
 
-    conf_files = get_conf_files(args, board_dir, tracker=tracker)
-    conf_files.extend(args.conf_fragments)
+        conf_files = get_conf_files(args, board_dir, tracker=tracker)
+        conf_files.extend(args.conf_fragments)
 
-    os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
+        os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
 
-    env = os.environ.copy()
+        env = os.environ.copy()
 
-    kconfig_root = os.path.join(zephyr_base, "Kconfig")
-    app_kconfig = os.path.join(args.app_dir, "Kconfig")
-    if os.path.exists(app_kconfig):
-        kconfig_root = app_kconfig
+        kconfig_root = os.path.join(zephyr_base, "Kconfig")
+        app_kconfig = os.path.join(args.app_dir, "Kconfig")
+        if os.path.exists(app_kconfig):
+            kconfig_root = app_kconfig
 
-    # Call the definitive Zephyr's kconfig.py
-    kconfig_py = os.path.join(zephyr_base, "scripts", "kconfig", "kconfig.py")
-    tracker.add(kconfig_py)
-    cmd = [
-        sys.executable,
-        "-B",
-        "-s",
-        kconfig_py,
-        "--handwritten-input-configs",
-        kconfig_root,
-        os.path.join(output_dir, ".config"),
-        os.path.join(output_dir, "zephyr", "autoconf.h"),
-        os.path.join(output_dir, "kconfig_list.txt"),
-    ] + conf_files
+        # Call the definitive Zephyr's kconfig.py
+        kconfig_py = os.path.join(zephyr_base, "scripts", "kconfig", "kconfig.py")
+        tracker.add(kconfig_py)
+        tmp_config_path = os.path.join(tmp_dir, ".config")
+        kconfig_list_path = os.path.join(tmp_dir, "kconfig_list.txt")
+        cmd = [
+            sys.executable,
+            "-B",
+            "-s",
+            kconfig_py,
+            "--handwritten-input-configs",
+            kconfig_root,
+            tmp_config_path,
+            os.path.join(output_dir, "zephyr", "autoconf.h"),
+            kconfig_list_path,
+        ] + conf_files
 
-    res = subprocess.run(cmd, env=env, capture_output=True, text=True)
-    
-    if res.stderr:
-        print(res.stderr, file=sys.stderr)
+        res = subprocess.run(cmd, env=env, capture_output=True, text=True)
 
-    if res.returncode != 0:
-        sys.exit(f"Kconfig generation failed with exit code {res.returncode}")
+        if res.stderr:
+            print(res.stderr, file=sys.stderr)
 
-    # Add the app name to the autoconf.h natively
-    with open(os.path.join(output_dir, "zephyr", "autoconf.h"), "a") as f:
-        f.write(f'#define APP_NAME "{args.app_name}"\n')
+        if res.returncode != 0:
+            sys.exit(f"Kconfig generation failed with exit code {res.returncode}")
 
-    # Load final cleanly resolved config
-    import kconfiglib
-    # This parse sees the same environment as kconfig.py's, so its 'source'
-    # globs and optional sources are the ones kconfig_list.txt doesn't show.
-    with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
-        kconf = kconfiglib.Kconfig(kconfig_root)
-    kconf.load_config(os.path.join(output_dir, ".config"))
+        if os.path.exists(tmp_config_path):
+            shutil.copyfile(tmp_config_path, os.path.join(output_dir, ".config"))
 
-    generate_config_c(kconf, output_dir, args)
-    generate_bazel_build(args, kconf, output_dir, kconfiglib)
+        # Add the app name to the autoconf.h natively
+        with open(os.path.join(output_dir, "zephyr", "autoconf.h"), "a") as f:
+            f.write(f'#define APP_NAME "{args.app_name}"\n')
 
-    # Record out-of-tree Kconfigs
-    tracker.add_kconfig_sources(os.path.join(output_dir, "kconfig_list.txt"))
+        # Load final cleanly resolved config
+        import kconfiglib
+        # This parse sees the same environment as kconfig.py's, so its 'source'
+        # globs and optional sources are the ones kconfig_list.txt doesn't show.
+        with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
+            kconf = kconfiglib.Kconfig(kconfig_root)
+        kconf.load_config(os.path.join(output_dir, ".config"))
 
-    # Python code that ran: this script, its helpers, kconfiglib and
-    # kconfigfunctions, and the devicetree modules loaded from edt.pickle.
-    tracker.add_python_modules(
-        os.path.join(zephyr_base, "scripts"),
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    )
-    tracker.write(output_dir=output_dir)
+        generate_config_c(kconf, output_dir, args)
+        generate_bazel_build(args, kconf, output_dir, kconfiglib)
+
+        # Record out-of-tree Kconfigs
+        tracker.add_kconfig_sources(kconfig_list_path)
+
+        # Python code that ran: this script, its helpers, kconfiglib and
+        # kconfigfunctions, and the devicetree modules loaded from edt.pickle.
+        tracker.add_python_modules(
+            os.path.join(zephyr_base, "scripts"),
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        )
+        tracker.write(output_dir=output_dir, exclude_dirs=[tmp_dir])
 
 if __name__ == "__main__":
     main()

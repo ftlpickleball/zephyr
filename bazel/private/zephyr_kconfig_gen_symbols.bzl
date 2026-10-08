@@ -57,19 +57,21 @@ def _zephyr_kconfig_schema_impl(rctx):
     # The generator lists every file it read (Kconfig files, board metadata, and the BUILD/.bzl
     # files it scans for configuration values) and every directory it walked, as realpaths. Only
     # mutable locations get watched; fetched content is covered by the pin files and probes.
-    deps = read_path_list(rctx, rctx.path("deps.txt"))
+    deps = (read_path_list(rctx, rctx.path("deps.txt")) or []) + [
+        realpath_of(p)
+        for p in [kconfig_gen_symbols_py, kconfig_utils_py]
+    ]
     dep_dirs = read_path_list(rctx, rctx.path("dep_dirs.txt")) or []
-    if deps == None:
-        # Generators without deps.txt only report some inputs, possibly not as realpaths.
-        legacy = read_path_list(rctx, rctx.path("kconfig_list.txt")) or []
-        deps = [realpath_of(rctx.path(line.strip())) for line in legacy]
-    deps = deps + [realpath_of(p) for p in [kconfig_gen_symbols_py, kconfig_utils_py]]
 
     watch_pins(tracker, context["pin_files"])
     watch_deps(tracker, files = deps, dirs = dep_dirs)
 
+    rctx.delete("deps.txt")
+    rctx.delete("dep_dirs.txt")
+
     bzl_content = "LOCAL_MODULES = %r\n" % rctx.attr.local_modules
     rctx.file("local_modules.bzl", bzl_content)
+    return rctx.repo_metadata(reproducible = True)
 
 zephyr_kconfig_schema = repository_rule(
     implementation = _zephyr_kconfig_schema_impl,

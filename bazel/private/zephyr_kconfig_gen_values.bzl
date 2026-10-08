@@ -83,24 +83,27 @@ def _gen_zephyr_config_impl(rctx):
     )
 
     result = python.execute(args)
+    if rctx.attr.extra_kconfig:
+        rctx.delete("sysbuild_generated.conf")
     if result.return_code != 0:
         fail("Zephyr config generation failed: %s" % result.stderr)
 
     # The generator lists every file it read (plus probed candidates that don't exist) and every
     # directory whose listing matters, as realpaths. Only mutable locations get watched.
-    deps = read_path_list(rctx, rctx.path("deps.txt"))
+    deps = (read_path_list(rctx, rctx.path("deps.txt")) or []) + [
+        realpath_of(p)
+        for p in [kconfig_gen_values_py, kconfig_utils_py]
+    ] + [
+        realpath_of(rctx.path(f))
+        for f in resolved_conf_fragments + resolved_dtc_overlays
+    ]
     dep_dirs = read_path_list(rctx, rctx.path("dep_dirs.txt")) or []
-    if deps == None:
-        # Generators without deps.txt only report some inputs, possibly not as realpaths.
-        legacy = read_path_list(rctx, rctx.path("watched_inputs.txt"))
-        if legacy == None:
-            legacy = read_path_list(rctx, rctx.path("kconfig_list.txt")) or []
-        deps = [realpath_of(rctx.path(line.strip())) for line in legacy]
-    deps = deps + [realpath_of(p) for p in [kconfig_gen_values_py, kconfig_utils_py]]
-    deps = deps + [realpath_of(rctx.path(f)) for f in resolved_conf_fragments + resolved_dtc_overlays]
 
     watch_pins(tracker, context["pin_files"])
     watch_deps(tracker, files = deps, dirs = dep_dirs)
+
+    rctx.delete("deps.txt")
+    rctx.delete("dep_dirs.txt")
 
     # We need to replace @zc_target with the actual repo name in BUILD.bazel
     # since the script doesn't know it.
@@ -108,6 +111,7 @@ def _gen_zephyr_config_impl(rctx):
     build_bazel = build_bazel.replace("@zc_target", "@@" + rctx.name)
     build_bazel = build_bazel.replace("zc_target_platform", rctx.name + "_platform")
     rctx.file("BUILD.bazel", build_bazel)
+    return rctx.repo_metadata(reproducible = True)
 
 gen_zephyr_config = repository_rule(
     implementation = _gen_zephyr_config_impl,
