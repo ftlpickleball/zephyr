@@ -17,6 +17,11 @@ zephyr_cc_library(
         "@zephyr_kconfig//:CONFIG_BT_EAD=true": [
             "ead.c",
         ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LIBSBC=true": [
+            "sbc.c",
+        ],
     }),
     hdrs = glob(
         ["*.h"],
@@ -24,7 +29,12 @@ zephyr_cc_library(
     ),
     deps = [
         "//subsys/bluetooth:hdrs",
-    ],
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LIBSBC=true": [
+            "@libsbc",
+        ],
+    }),
 )
 
 cc_library(

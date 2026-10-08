@@ -206,6 +206,14 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/hal_tdk.git",
 )
 
+new_git_repository(
+    name = "libsbc",
+    build_file = "@zephyr//modules/libsbc:external.BUILD",
+    commit = "8e1beda02acb8972e29e6edbb423f7cafe16e445",
+    remote = "https://github.com/zephyrproject-rtos/libsbc.git",
+)
+
+
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
 zephyr_setup.env(
     apps_dirs = [

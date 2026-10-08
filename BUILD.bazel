@@ -441,5 +441,8 @@ cc_library(
     }) + select({
         "@zephyr_kconfig//:CONFIG_MCUBOOT_BOOTUTIL_LIB=true": ["@mcuboot//:headers"],
         "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_LIBSBC=true": ["@libsbc//:headers"],
+        "//conditions:default": [],
     }),
 )

@@ -11,9 +11,11 @@
 #include <stdbool.h>
 #include <string.h>
 #include <zephyr/toolchain.h>
+#if defined(CONFIG_LIBSBC)
 #include "sbc_encoder.h"
 #include "oi_codec_sbc.h"
 #include "oi_status.h"
+#endif
 
 /** @brief SBC channel mode */
 enum __packed sbc_ch_mode {
@@ -35,6 +37,7 @@ enum __packed sbc_alloc_mthd {
 	SBC_ALLOC_MTHD_SNR,
 };
 
+#if defined(CONFIG_LIBSBC)
 /** @brief SBC encoder */
 struct sbc_encoder {
 	/** @cond INTERNAL_HIDDEN */
@@ -137,4 +140,5 @@ int sbc_setup_decoder(struct sbc_decoder *decoder);
  */
 int sbc_decode(struct sbc_decoder *decoder, const void **in_data, uint32_t *in_size,
 		void *out_data, uint32_t *out_size);
+#endif /* CONFIG_LIBSBC */
 #endif /* ZEPHYR_INCLUDE_LIB_SBC_H_ */
