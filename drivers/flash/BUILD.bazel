@@ -462,6 +462,7 @@ zephyr_cc_library(
 zephyr_cc_library(
     name = "flash_config_flash_simulator_deps_config_native_library_deps",
     srcs = [
+        "flash_simulator_native.c",
     ],
     hdrs = glob(
         ["*.h"],
