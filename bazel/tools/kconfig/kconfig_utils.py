@@ -12,9 +12,30 @@ from pathlib import Path
 from input_recorder import DEPS_FILE, DEP_DIRS_FILE, InputRecorder  # noqa: F401
 
 _EXCLUDED_DIR_NAMES = {".git"}
+_REPO_ROOT_MARKERS = ("MODULE.bazel", "REPO.bazel", "WORKSPACE.bazel", "WORKSPACE", ".git")
 
 # File suffixes edtlib and gen_driver_kconfig_dts.py load from bindings dirs.
 BINDING_SUFFIXES = (".yaml", ".yml")
+
+
+def clean_output_path(path, output_dir):
+    """Formats 'path' for generated repository outputs without leaking checkout paths.
+
+    Paths inside 'output_dir' or sibling external repositories ('../<repo>/...')
+    stay relative to 'output_dir'. Paths that climb out of the external root into
+    a host workspace checkout are made relative to that checkout's root.
+    """
+    abs_out = os.path.abspath(output_dir)
+    abs_path = os.path.abspath(os.path.join(abs_out, path) if not os.path.isabs(path) else path)
+    rel = os.path.relpath(abs_path, abs_out)
+    if not rel.startswith(".." + os.sep + ".."):
+        return rel
+    for parent in Path(abs_path).parents:
+        if os.path.commonpath([abs_out, str(parent)]) == str(parent):
+            break
+        if any((parent / m).exists() for m in _REPO_ROOT_MARKERS):
+            return os.path.relpath(abs_path, parent)
+    return os.path.basename(abs_path)
 
 
 def glob_dependencies(pattern):

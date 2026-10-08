@@ -4,6 +4,7 @@
 import os
 import sys
 import argparse
+import pickle
 import subprocess
 import json
 import re
@@ -267,7 +268,7 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
         for directory in directories:
             path = dts_root / directory
             if path.exists():
-                pcpp_cmd_args.append("-I" + os.path.realpath(path))
+                pcpp_cmd_args.append("-I" + os.path.abspath(path))
             else:
                 # Creating it would add an include path, with headers that
                 # could shadow the ones found now.
@@ -285,8 +286,8 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
     if os.path.exists(merged_dts_path):
         def _relativize_line(match):
             prefix, line_path, suffix = match.group(1), match.group(2), match.group(3)
-            if os.path.isabs(line_path):
-                return f"{prefix}{os.path.relpath(line_path, output_dir)}{suffix}"
+            if os.path.isabs(line_path) or line_path.startswith(".."):
+                return f"{prefix}{kconfig_utils.clean_output_path(line_path, output_dir)}{suffix}"
             return match.group(0)
 
         with open(merged_dts_path, "r", encoding="utf-8") as f:
@@ -310,6 +311,32 @@ def _dts_subprocess_env(zephyr_base):
     )
     return env
 
+def _normalize_edt_pickle(edt_pickle_path, zephyr_base, output_dir):
+    if not os.path.exists(edt_pickle_path):
+        return
+    dt_src = os.path.abspath(os.path.join(zephyr_base, "scripts", "dts", "python-devicetree", "src"))
+    if dt_src not in sys.path:
+        sys.path.insert(0, dt_src)
+    with open(edt_pickle_path, "rb") as f:
+        edt = pickle.load(f)
+    edt.bindings_dirs = [kconfig_utils.clean_output_path(d, output_dir) for d in edt.bindings_dirs]
+    edt._binding_paths = [kconfig_utils.clean_output_path(p, output_dir) for p in edt._binding_paths]
+    for k, v in list(edt._binding_fname2path.items()):
+        edt._binding_fname2path[k] = kconfig_utils.clean_output_path(v, output_dir)
+    seen = set()
+    def _clean_binding(b):
+        while b is not None and id(b) not in seen:
+            seen.add(id(b))
+            if b.path:
+                b.path = kconfig_utils.clean_output_path(b.path, output_dir)
+            b = getattr(b, "child_binding", None)
+    for b in edt._compat2binding.values():
+        _clean_binding(b)
+    for node in edt.nodes:
+        _clean_binding(getattr(node, "_binding", None))
+    with open(edt_pickle_path, "wb") as f:
+        pickle.dump(edt, f, protocol=4)
+
 def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, tracker):
     """Runs gen_edt.py (or gen_defines.py) to write edt.pickle."""
     output_edt_pickle_path = os.path.join(output_dir, "edt.pickle")
@@ -317,23 +344,17 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
     os.makedirs(os.path.dirname(output_header), exist_ok=True)
 
     bindings_dirs = []
+    seen_resolved = set()
     for dts_root in dts_roots:
-        bdir = dts_root / "zephyr" / "dts" / "bindings"
-        if bdir.exists():
-            resolved = bdir.resolve()
-            tracker.add_tree(resolved, kconfig_utils.BINDING_SUFFIXES)
-            rel_bdir = os.path.relpath(resolved, output_dir)
-            if rel_bdir not in bindings_dirs:
-                bindings_dirs.append(rel_bdir)
-        else:
-            tracker.add(str(bdir))
-            bdir = dts_root / "dts" / "bindings"
+        for b in ("zephyr/dts/bindings", "dts/bindings"):
+            bdir = dts_root / b
             if bdir.exists():
                 resolved = bdir.resolve()
                 tracker.add_tree(resolved, kconfig_utils.BINDING_SUFFIXES)
-                rel_bdir = os.path.relpath(resolved, output_dir)
-                if rel_bdir not in bindings_dirs:
-                    bindings_dirs.append(rel_bdir)
+                if resolved not in seen_resolved:
+                    seen_resolved.add(resolved)
+                    bindings_dirs.append(os.path.relpath(bdir, output_dir))
+                break
             else:
                 tracker.add(str(bdir))
 
@@ -354,6 +375,8 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
             "-B",
             "-s",
             gen_edt_py,
+            "--workspace-dir",
+            ".",
             "--edt-pickle-out",
             rel_edt_pickle,
             "--dts",
@@ -398,6 +421,7 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
         ])
         subprocess.run(cmd, env=env, cwd=output_dir, check=True)
 
+    _normalize_edt_pickle(output_edt_pickle_path, zephyr_base, output_dir)
     os.environ["EDT_PICKLE"] = output_edt_pickle_path
 
 def generate_dts_headers(zephyr_base, output_dir, edt_pickle_path, *, tracker):

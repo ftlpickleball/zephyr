@@ -780,6 +780,8 @@ class TestKconfigGenValues(unittest.TestCase):
 
         cmd = mock_run.call_args[0][0]
         self.assertIn(str(scripts_dts / "gen_edt.py"), cmd)
+        ws_idx = cmd.index("--workspace-dir")
+        self.assertEqual(cmd[ws_idx + 1], ".")
         real = lambda p: os.path.realpath(str(p))
         self.assertLessEqual({
             real(bindings / "vendor" / "foo.yaml"),

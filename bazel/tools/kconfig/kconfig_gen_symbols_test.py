@@ -239,6 +239,36 @@ board:
         self.assertIn('int_flag(name = "CONFIG_MY_INT"', content)
 
     @patch("kconfig_utils.generate_kconfig_dts")
+    def test_warning_paths_with_parentheses_normalized(self, mock_gen_dts):
+        out_dir = Path(self.test_dir) / "zephyr_kconfig"
+        out_dir.mkdir(parents=True)
+        stm_kconfig = self.zephyr_base / "Kconfig.defconfig.stm32f303x(b-c)"
+        stm_kconfig.write_text("")
+
+        mock_kconf = MagicMock()
+        self.kconfig_mock.Kconfig.return_value = mock_kconf
+        mock_kconf.warnings = [
+            f"warning: CPU_HAS_ARM_MPU (defined at {stm_kconfig}:10) defined without a type"
+        ]
+        mock_kconf.syms = {}
+
+        with patch(
+            "sys.argv",
+            [
+                "kconfig_gen_symbols.py",
+                "--zephyr-base",
+                str(self.zephyr_base),
+                "--output",
+                str(out_dir / "BUILD.bazel"),
+            ],
+        ):
+            kconfig_gen_symbols.main()
+
+        warnings_c = (out_dir / "kconfig_warnings.c").read_text()
+        self.assertIn("../zephyr/Kconfig.defconfig.stm32f303x(b-c):10", warnings_c)
+        self.assertNotIn(str(self.test_dir), warnings_c)
+
+    @patch("kconfig_utils.generate_kconfig_dts")
     def test_logging_template_fallback(self, mock_gen_dts):
         app_dir = Path(self.test_dir) / "app"
         app_dir.mkdir()
@@ -300,7 +330,8 @@ board:
         # Mock kconfiglib to produce warnings
         mock_kconf = MagicMock()
         self.kconfig_mock.Kconfig.return_value = mock_kconf
-        mock_kconf.warnings = ["Warning 1", "Warning 2"]
+        abs_kconf = str(self.zephyr_base / "soc" / "nordic" / "nrf52" / "Kconfig")
+        mock_kconf.warnings = ["Warning 1", f"Warning 2 (defined at {abs_kconf}:6)"]
         mock_kconf.syms = {}
 
         with patch(
@@ -322,7 +353,11 @@ board:
 
         content = Path(warnings_file).read_text()
         self.assertIn('#warning "Kconfig warning: Warning 1"', content)
-        self.assertIn('#warning "Kconfig warning: Warning 2"', content)
+        self.assertIn(
+            '#warning "Kconfig warning: Warning 2 (defined at zephyr/soc/nordic/nrf52/Kconfig:6)"',
+            content,
+        )
+        self.assertNotIn(self.test_dir, content)
 
     def test_setup_kconfig_environment_with_bzlmod_modules(self):
         tmp_dir = os.path.join(self.test_dir, "tmp")

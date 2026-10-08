@@ -494,6 +494,31 @@ class TestInputTracking(unittest.TestCase):
         })
         self.assertEqual(tracker.files, set())
 
+    def test_clean_output_path(self):
+        output_dir = os.path.join(self.test_dir, "ob", "external", "zc_app")
+        sibling_repo = os.path.join(self.test_dir, "ob", "external", "zephyr+")
+        checkout = os.path.join(self.test_dir, "checkout_a")
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(sibling_repo, exist_ok=True)
+        os.makedirs(os.path.join(checkout, "modules", "mod", "dts", "bindings"), exist_ok=True)
+        Path(os.path.join(checkout, "MODULE.bazel")).touch()
+
+        self.assertEqual(
+            kconfig_utils.clean_output_path(os.path.join(output_dir, "zephyr.dts"), output_dir),
+            "zephyr.dts",
+        )
+        self.assertEqual(
+            kconfig_utils.clean_output_path(os.path.join(sibling_repo, "dts", "bindings"), output_dir),
+            os.path.join("..", "zephyr+", "dts", "bindings"),
+        )
+        self.assertEqual(
+            kconfig_utils.clean_output_path(
+                os.path.join(checkout, "modules", "mod", "dts", "bindings", "foo.yaml"),
+                output_dir,
+            ),
+            os.path.join("modules", "mod", "dts", "bindings", "foo.yaml"),
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
