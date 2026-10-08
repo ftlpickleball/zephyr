@@ -1,0 +1,6 @@
+board:
+  name: custom_sim
+  full_name: Custom Native Simulator
+  vendor: vendor
+  socs:
+  - name: native

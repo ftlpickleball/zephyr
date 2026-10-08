@@ -1,0 +1,11 @@
+/ {
+    sample_dev: sample-dev {
+        compatible = "vendor,sample-dev";
+        status = "okay";
+#ifdef __DTS__
+        sample-prop = <200>;
+#else
+        sample-prop = <999>;
+#endif
+    };
+};

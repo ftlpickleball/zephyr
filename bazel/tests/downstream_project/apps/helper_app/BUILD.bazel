@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@zephyr//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "lib",
+    srcs = ["src/main.c"],
+    deps = ["//modules/sample_mod"],
+)
+
+zephyr_app(
+    name = "helper_app",
+    deps = [":lib"],
+)

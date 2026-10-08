@@ -1,0 +1,6 @@
+description: Sample downstream device
+compatible: "vendor,sample-dev"
+properties:
+  sample-prop:
+    type: int
+    required: true

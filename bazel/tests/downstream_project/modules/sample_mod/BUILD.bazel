@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@zephyr//bazel:cc.bzl", "zephyr_module")
+
+zephyr_module(
+    name = "sample_mod",
+    config = "CONFIG_SAMPLE_MOD_ENABLED",
+    srcs = ["sample_mod.c"],
+    hdrs = ["sample_mod.h"],
+    includes = ["."],
+)

@@ -1,0 +1,3 @@
+helpers:
+  helper_app:
+    target: //apps/helper_app:helper_app

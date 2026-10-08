@@ -13,3 +13,4 @@ fi
 bazelisk test --config=remote_cache "$@" //bazel/tools/... //bazel/private/...
 bazelisk build --config=remote_cache "$@" //samples/hello_world --platforms=@zephyr//boards/qemu/cortex_m3:qemu_cortex_m3
 bazelisk build --config=remote_cache "$@" //samples/hello_world --platforms=@zephyr//boards/native/native_sim:native
+BAZEL_EXTRA_ARGS="--config=remote_cache $*" python3 bazel/tests/integration_test.py

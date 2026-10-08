@@ -1,0 +1,7 @@
+config SAMPLE_MOD_ENABLED
+	bool "Enable sample module"
+	default y
+
+config SAMPLE_MOD_VALUE
+	int "Sample module integer value"
+	default 42

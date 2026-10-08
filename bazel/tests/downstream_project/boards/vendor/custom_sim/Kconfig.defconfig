@@ -1,0 +1,6 @@
+if BOARD_CUSTOM_SIM
+config BUILD_OUTPUT_BIN
+	default n
+config BUILD_OUTPUT_EXE
+	default y
+endif

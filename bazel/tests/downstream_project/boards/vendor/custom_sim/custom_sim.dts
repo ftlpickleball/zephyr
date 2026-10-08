@@ -1,0 +1,29 @@
+/dts-v1/;
+#include <skeleton.dtsi>
+
+/ {
+	model = "Custom Native Sim Board";
+	compatible = "vendor,custom-sim", "zephyr,posix";
+	chosen {
+		zephyr,console = &uart0;
+		zephyr,sram = &ram0;
+	};
+	ram0: memory@0 {
+		compatible = "mmio-sram";
+		reg = <0x0 0x10000>;
+	};
+	uart0: uart {
+		compatible = "zephyr,native-pty-uart";
+		current-speed = <0>;
+		status = "okay";
+	};
+	counter0: counter {
+		compatible = "zephyr,native-sim-counter";
+		status = "okay";
+	};
+	sample_dev: sample-dev {
+		compatible = "vendor,sample-dev";
+		sample-prop = <100>;
+		status = "okay";
+	};
+};

@@ -1,0 +1,5 @@
+name: sample_mod
+build:
+  kconfig: Kconfig
+  settings:
+    dts_root: .
