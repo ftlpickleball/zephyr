@@ -15,7 +15,7 @@ load("//bazel:elf_to_hex.bzl", "elf_to_hex")
 load("//bazel:runfiles.bzl", "resolve_runfiles_path")
 load("//bazel:runner.bzl", "zephyr_runners_yaml")
 load("//bazel/private:zephyr_transition.bzl", "zephyr_transition")
-load("@zephyr_kconfig//:local_modules.bzl", "LOCAL_MODULES")
+load("@zephyr_index//:index.bzl", "LOCAL_MODULES")
 load("//bazel:compatibility.bzl", "zephyr")
 
 def if_compiler_is_clang(then, *, otherwise = []):

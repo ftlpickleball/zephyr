@@ -896,6 +896,12 @@ def _zephyr_setup_core_impl(mctx):
 
     index_content += "SYSBUILD_CUSTOM_REPOS = %r\n" % sysbuild_custom_repos
 
+    local_modules = [
+        discovered_modules_labels[name]["target"]
+        for name in sorted(discovered_modules_labels.keys())
+    ]
+    index_content += "LOCAL_MODULES = %r\n" % local_modules
+
     zephyr_index_repo(
         name = "zephyr_index",
         content = index_content,
@@ -908,10 +914,7 @@ def _zephyr_setup_core_impl(mctx):
         name = "zephyr_kconfig",
         board_dirs = board_dirs,
         context = context_json,
-        local_modules = [
-            discovered_modules_labels[name]["target"]
-            for name in sorted(discovered_modules_labels.keys())
-        ],
+        local_modules = local_modules,
     )
 
     watch_deps(tracker, files = deps_files, dirs = deps_dirs)
