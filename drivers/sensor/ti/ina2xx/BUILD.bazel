@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "ina2xx",
+    srcs = [
+        "ina2xx_attr.c",
+        "ina2xx_common.c",
+        "ina2xx_fetch.c",
+        "ina2xx_get.c",
+        "ina2xx_trigger.c",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_INA226=true": [
+            "ina226.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_INA230=true": [
+            "ina230.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_INA237=true": [
+            "ina237.c",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_INA230_TRIGGER=true": [
+            "ina230_trigger.c",
+        ],
+        "//conditions:default": [],
+    }),
+    hdrs = glob(["*.h"], allow_empty = True),
+)
