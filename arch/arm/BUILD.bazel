@@ -18,6 +18,7 @@ cc_library(
     hdrs = [
         "//arch/arm/core:offsets/offsets_aarch32.c",
     ],
+    features = ["zephyr_warning_suppressions"],
     includes = [
         "core/offsets",
     ],
