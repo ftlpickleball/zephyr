@@ -52,6 +52,84 @@ board:
         revs = parse_board_metadata.discover_revisions_for_board(board_dir, recorder)
         self.assertEqual(sorted(revs), ["1_0_0", "2_0_0"])
 
+    def test_discover_toolchains_from_build_bazel(self):
+        board_dir = os.path.join(self.tmp_dir.name, "test_board")
+        os.makedirs(board_dir)
+        build_content = """
+platform(
+    name = "soc_a_cpu0",
+    flags = flags_from_dict({
+        "@zephyr//:soc": "@zephyr//soc/test",
+    }) + [
+        "--@zephyr//toolchain:zephyr_toolchain_variant=llvm",
+    ],
+)
+
+platform(
+    name = "soc_a_dsp",
+    flags = flags_from_dict({
+        "@zephyr//toolchain:compiler": "xt-clang",
+    }),
+)
+"""
+        with open(os.path.join(board_dir, "BUILD.bazel"), "w", encoding="utf-8") as f:
+            f.write(build_content)
+
+        recorder = input_recorder.InputRecorder()
+        bdata = {"name": "test_board", "qualifiers": ["soc_a/cpu0", "soc_a/dsp"]}
+        toolchains = parse_board_metadata.discover_toolchains_for_board(
+            board_dir, bdata, recorder
+        )
+        self.assertEqual(
+            toolchains,
+            {
+                "test_board/soc_a/cpu0": "llvm",
+                "test_board/soc_a/dsp": "xt-clang",
+            },
+        )
+
+    def test_discover_toolchains_multi_board_and_target_fallbacks(self):
+        board_dir = os.path.join(self.tmp_dir.name, "multi_board")
+        os.makedirs(board_dir)
+        build_content = """
+platform(
+    name = "board_a_soc_a",
+    flags = [
+        "--@zephyr//toolchain:zephyr_toolchain_variant=llvm",
+    ],
+)
+
+platform(
+    name = "board_b",
+    flags = [
+        "--@zephyr//toolchain:zephyr_toolchain_variant=xt-clang",
+    ],
+)
+"""
+        with open(os.path.join(board_dir, "BUILD.bazel"), "w", encoding="utf-8") as f:
+            f.write(build_content)
+
+        recorder = input_recorder.InputRecorder()
+        bdata = {
+            "name": "board_a",
+            "qualifiers": ["soc_a"],
+            "boards": [
+                {"name": "board_a", "qualifiers": ["soc_a"]},
+                {"name": "board_b", "qualifiers": ["soc_b"]},
+            ],
+        }
+        toolchains = parse_board_metadata.discover_toolchains_for_board(
+            board_dir, bdata, recorder
+        )
+        self.assertEqual(
+            toolchains,
+            {
+                "board_a/soc_a": "llvm",
+                "board_b/soc_b": "xt-clang",
+                "board_b": "xt-clang",
+            },
+        )
+
 
 class TestParseBoardMetadataDeps(unittest.TestCase):
     """Tests for --deps-out / --dirs-out."""
@@ -154,8 +232,12 @@ class TestParseBoardMetadataDeps(unittest.TestCase):
                                 parse_board_metadata.extract_board_revisions.__module__
                             ].__file__
                         ),
+                        os.path.join(real, "b1", "BUILD.bazel"),
+                        os.path.join(real, "b1", "BUILD"),
                         os.path.join(real, "b1", "board.yml"),
                         os.path.join(real, "b1", "revisions"),
+                        os.path.join(real, "b2", "BUILD.bazel"),
+                        os.path.join(real, "b2", "BUILD"),
                         os.path.join(real, "b2", "board.yml"),
                         os.path.join(real, "b2", "board.yaml"),
                     ])

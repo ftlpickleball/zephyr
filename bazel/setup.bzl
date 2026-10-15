@@ -600,7 +600,9 @@ def _zephyr_setup_core_impl(mctx):
     ], deps_files, deps_dirs)
     if board_meta_res.return_code != 0:
         fail("parse_board_metadata.py failed (%d):\n%s" % (board_meta_res.return_code, board_meta_res.stderr))
-    board_revisions_map = json.decode(mctx.read(board_revisions_file))
+    board_meta_data = json.decode(mctx.read(board_revisions_file))
+    board_revisions_map = board_meta_data["board_revisions"]
+    board_toolchains = board_meta_data["board_toolchains"]
 
     for path_str, bdata in path_str_dict.items():
         name = bdata["name"]
@@ -836,6 +838,7 @@ def _zephyr_setup_core_impl(mctx):
         "oot_dts_roots": [str(l) for l in boards_dir_labels],
         "package_to_boards": package_to_boards,
         "manual_boards": manual_boards,
+        "board_toolchains": board_toolchains,
         "surviving_combinations": surviving_combinations,
         "sysbuild_metadata": sysbuild_metadata,
         "translated_conf": sysbuild_metadata.get("translated_confs", {}),
@@ -885,6 +888,12 @@ def _zephyr_setup_core_impl(mctx):
     index_content = "PACKAGE_TO_BOARDS = %r\n" % package_to_boards
     index_content += "REPO_NAME_TO_CANONICAL = %r\n" % repo_name_to_canonical
     index_content += "SYSBUILD_METADATA = %r\n" % sysbuild_metadata
+    safe_board_toolchains = {
+        board_id_to_safe[b]: board_toolchains[b.partition("@")[0]]
+        for b in board_index.keys()
+        if b.partition("@")[0] in board_toolchains
+    }
+    index_content += "BOARD_TOOLCHAINS = %r\n" % safe_board_toolchains
 
     # The custom repos' fragment contents only matter to the configuration repositories, which
     # watch them. Whether they exist is reported by parse_sysbuild_metadata.py.
@@ -952,6 +961,7 @@ def _zephyr_setup_apps_impl(mctx):
     all_repo_names = []
     repo_name_to_canonical = {}
     board_id_to_safe = {b: sanitize_board_id(b) for b in board_index.keys()}
+    board_toolchains = state.get("board_toolchains", {})
     surviving_combinations = state["surviving_combinations"]
     for app_pkg, boards in surviving_combinations.items():
         app_hash = get_app_hash(app_pkg)
@@ -994,6 +1004,7 @@ def _zephyr_setup_apps_impl(mctx):
                 parent_platform = parent_platform,
                 extra_kconfig = main_fragment,
                 dtc_overlays = dtc_overlays,
+                toolchain_variant = board_toolchains.get(board_id.partition("@")[0], ""),
             )
             all_repo_names.append(repo_name)
             repo_name_to_canonical[repo_name] = repo_prefix + repo_name
@@ -1017,6 +1028,7 @@ def _zephyr_setup_apps_impl(mctx):
             conf_fragments = repo["conf_fragments"],
             dtc_overlays = repo.get("dtc_overlays", []),
             extra_kconfig = repo.get("extra_kconfig", ""),
+            toolchain_variant = board_toolchains.get(board_id.partition("@")[0], ""),
         )
         all_repo_names.append(repo["name"])
         repo_name_to_canonical[repo["name"]] = repo_prefix + repo["name"]

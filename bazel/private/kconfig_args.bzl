@@ -53,7 +53,8 @@ def get_kconfig_args(
         board_dirs = [],
         oot_dts_roots = [],
         conf_fragments = [],
-        dtc_overlays = []):
+        dtc_overlays = [],
+        toolchain_variant = None):
     args = [
         str(script),
         "--zephyr-base",
@@ -93,5 +94,8 @@ def get_kconfig_args(
     if dtc_overlays:
         args.append("--dtc-overlays")
         args.extend(dtc_overlays)
+
+    if toolchain_variant:
+        args.extend(["--toolchain-variant", toolchain_variant])
 
     return args

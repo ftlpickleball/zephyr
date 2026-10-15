@@ -25,6 +25,7 @@ string_flag(
     values = [
         "gcc",
         "llvm",
+        "xt-clang",
     ],
 )
 

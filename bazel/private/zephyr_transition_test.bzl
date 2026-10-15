@@ -4,7 +4,8 @@
 """Unit tests for Zephyr board transition and matching functions."""
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
-load("//bazel:naming.bzl", "find_package_boards", "matches_board_base", "parse_cand_board", "parse_label", "resolve_board_id")
+load("//bazel:naming.bzl", "find_package_boards", "get_zc_repo_name", "matches_board_base", "parse_cand_board", "parse_label", "resolve_board_id")
+load("//bazel/private:zephyr_transition.bzl", "zephyr_transition_impl")
 
 def _parse_cand_board_test_impl(ctx):
     env = unittest.begin(ctx)
@@ -114,11 +115,63 @@ def _matches_board_base_test_impl(ctx):
 
     return unittest.end(env)
 
+def _zephyr_transition_board_toolchains_test_impl(ctx):
+    env = unittest.begin(ctx)
+    board_toolchains = {
+        "esp32s3_devkitc_esp32s3_procpu": "xt-clang",
+    }
+    repo_name = get_zc_repo_name("//samples/hello_world:hello_world", "esp32s3_devkitc/esp32s3/procpu")
+    canonical_repo = "@@+zephyr_setup_apps+" + repo_name
+    top_level_settings = {
+        "//command_line_option:platforms": [Label("//boards/espressif/esp32s3_devkitc:esp32s3_procpu")],
+        "//command_line_option:compilation_mode": "fastbuild",
+        "//toolchain:zephyr_toolchain_variant": "gcc",
+        "//bazel:sysbuild_context": "",
+    }
+    res_top = zephyr_transition_impl(
+        top_level_settings,
+        struct(app_label = "//samples/hello_world:hello_world"),
+        package_to_boards = {"boards/espressif/esp32s3_devkitc": ["esp32s3_devkitc/esp32s3/procpu"]},
+        repo_name_to_canonical = {repo_name: canonical_repo},
+        sysbuild_custom_repos = {},
+        board_toolchains = board_toolchains,
+    )
+    asserts.equals(
+        env,
+        ["%s//:%s_platform_xt-clang" % (canonical_repo, canonical_repo.lstrip("@"))],
+        res_top["//command_line_option:platforms"],
+    )
+
+    parent_repo_name = get_zc_repo_name("//samples/sysbuild/main_app:main_app", "esp32s3_devkitc/esp32s3/procpu")
+    zc_settings = {
+        "//command_line_option:platforms": [
+            "@@+zephyr_setup_apps+%s//:zc_target_platform_xt-clang" % parent_repo_name,
+        ],
+        "//command_line_option:compilation_mode": "fastbuild",
+        "//toolchain:zephyr_toolchain_variant": "gcc",
+        "//bazel:sysbuild_context": "samples/sysbuild/main_app:helper_app",
+    }
+    res_zc = zephyr_transition_impl(
+        zc_settings,
+        struct(app_label = "//samples/hello_world:hello_world"),
+        package_to_boards = {},
+        repo_name_to_canonical = {repo_name: canonical_repo},
+        sysbuild_custom_repos = {},
+        board_toolchains = board_toolchains,
+    )
+    asserts.equals(
+        env,
+        ["%s//:%s_platform_xt-clang" % (canonical_repo, canonical_repo.lstrip("@"))],
+        res_zc["//command_line_option:platforms"],
+    )
+    return unittest.end(env)
+
 parse_cand_board_test = unittest.make(_parse_cand_board_test_impl)
 parse_label_test = unittest.make(_parse_label_test_impl)
 find_package_boards_test = unittest.make(_find_package_boards_test_impl)
 resolve_board_id_test = unittest.make(_resolve_board_id_test_impl)
 matches_board_base_test = unittest.make(_matches_board_base_test_impl)
+zephyr_transition_board_toolchains_test = unittest.make(_zephyr_transition_board_toolchains_test_impl)
 
 def zephyr_transition_test_suite(name = "zephyr_transition_test_suite"):
     unittest.suite(
@@ -128,4 +181,5 @@ def zephyr_transition_test_suite(name = "zephyr_transition_test_suite"):
         find_package_boards_test,
         resolve_board_id_test,
         matches_board_base_test,
+        zephyr_transition_board_toolchains_test,
     )

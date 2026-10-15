@@ -88,6 +88,31 @@ class TestKconfigGenValues(unittest.TestCase):
         kconfig_gen_values.setup_environment(args, str(self.zephyr_base), output_dir, board_dir)
         self.assertEqual(os.environ["TOOLCHAIN_KCONFIG_DIR"], os.path.join(str(self.zephyr_base), "cmake", "toolchain", "gnuarmemb"))
 
+    def test_setup_environment_bazel_platform_variants_resolve_to_zephyr_or_host(self):
+        output_dir = os.path.join(self.test_dir, "out")
+        os.makedirs(output_dir, exist_ok=True)
+
+        for variant in ("gcc", "llvm"):
+            args = MagicMock()
+            args.board = "nrf52840dk/nrf52840"
+            args.toolchain_variant = variant
+            board_dir = os.path.join(self.test_dir, "board")
+            kconfig_gen_values.setup_environment(args, str(self.zephyr_base), output_dir, board_dir)
+            self.assertEqual(os.environ["ZEPHYR_TOOLCHAIN_VARIANT"], "zephyr")
+            self.assertEqual(
+                os.environ["TOOLCHAIN_KCONFIG_DIR"],
+                os.path.join(str(self.zephyr_base), "cmake", "toolchain", "zephyr"),
+            )
+
+            args.board = "native_sim"
+            board_dir = os.path.join(self.test_dir, "boards/native/native_sim")
+            kconfig_gen_values.setup_environment(args, str(self.zephyr_base), output_dir, board_dir)
+            self.assertEqual(os.environ["ZEPHYR_TOOLCHAIN_VARIANT"], "host")
+            self.assertEqual(
+                os.environ["TOOLCHAIN_KCONFIG_DIR"],
+                os.path.join(str(self.zephyr_base), "cmake", "toolchain", "host"),
+            )
+
     @patch('subprocess.run')
     def test_main_success(self, mock_run):
         output_dir = os.path.join(self.test_dir, "out")

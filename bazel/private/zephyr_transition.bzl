@@ -3,7 +3,7 @@
 
 """Incoming transition for Zephyr applications."""
 
-load("@zephyr_index//:index.bzl", "PACKAGE_TO_BOARDS", "REPO_NAME_TO_CANONICAL", "SYSBUILD_CUSTOM_REPOS")
+load("@zephyr_index//:index.bzl", "BOARD_TOOLCHAINS", "PACKAGE_TO_BOARDS", "REPO_NAME_TO_CANONICAL", "SYSBUILD_CUSTOM_REPOS")
 load(
     "//bazel:naming.bzl",
     "find_package_boards",
@@ -32,7 +32,13 @@ def resolve_platform_board_id(platform_label):
         return None
     return resolve_board_id(platform_label, pkg, pkg_boards, PACKAGE_TO_BOARDS)
 
-def zephyr_transition_impl(settings, attr):
+def zephyr_transition_impl(
+        settings,
+        attr,
+        package_to_boards = PACKAGE_TO_BOARDS,
+        repo_name_to_canonical = REPO_NAME_TO_CANONICAL,
+        sysbuild_custom_repos = SYSBUILD_CUSTOM_REPOS,
+        board_toolchains = BOARD_TOOLCHAINS):
     """Implementation of the incoming Zephyr configuration transition."""
     platforms = settings["//command_line_option:platforms"]
     if not platforms:
@@ -51,13 +57,13 @@ def zephyr_transition_impl(settings, attr):
         if not board_id:
             return {}
     else:
-        pkg, pkg_boards = find_package_boards(platform_label, PACKAGE_TO_BOARDS)
+        pkg, pkg_boards = find_package_boards(platform_label, package_to_boards)
         if pkg_boards == None:
             # This platform is not in a package that contains Zephyr boards.
             # Bypass the transition and let Bazel handle it.
             return {}
 
-        board_id = resolve_board_id(platform_label, pkg, pkg_boards, PACKAGE_TO_BOARDS)
+        board_id = resolve_board_id(platform_label, pkg, pkg_boards, package_to_boards)
 
         if not board_id:
             fail("Unknown Zephyr board: %s. Valid boards in %s: %s" % (platform_label, pkg, pkg_boards))
@@ -65,10 +71,10 @@ def zephyr_transition_impl(settings, attr):
     repo_name = None
     if sysbuild_ctx:
         custom_key = "%s:%s" % (sysbuild_ctx, sanitize_board_id(board_id))
-        repo_name = SYSBUILD_CUSTOM_REPOS.get(custom_key)
+        repo_name = sysbuild_custom_repos.get(custom_key)
     if not repo_name:
         repo_name = get_zc_repo_name(attr.app_label, board_id)
-    canonical_repo = REPO_NAME_TO_CANONICAL.get(repo_name)
+    canonical_repo = repo_name_to_canonical.get(repo_name)
     if not canonical_repo:
         fail("""
 Board combination '%s' for app '%s' was filtered out by heuristics.
@@ -85,7 +91,10 @@ To fix this, you can either:
     if incoming_mode == "dbg":
         target_mode = "dbg"
 
-    toolchain_variant = settings["//toolchain:zephyr_toolchain_variant"]
+    toolchain_variant = board_toolchains.get(
+        sanitize_board_id(board_id),
+        settings["//toolchain:zephyr_toolchain_variant"],
+    )
     repo_clean = canonical_repo.lstrip("@")
     return {
         "//command_line_option:platforms": ["%s//:%s_platform_%s" % (canonical_repo, repo_clean, toolchain_variant)],

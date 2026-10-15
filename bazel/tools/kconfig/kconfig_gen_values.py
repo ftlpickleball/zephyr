@@ -55,7 +55,7 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
     os.environ["KCONFIG_FUNCTIONS"] = "kconfigfunctions"
     # Determine toolchain variant similar to Zephyr's FindHostTools.cmake
     toolchain_variant = args.toolchain_variant
-    if not toolchain_variant:
+    if toolchain_variant in (None, "", "gcc", "llvm"):
         board_dir_lower = board_dir.lower()
         if "native" in args.board or "boards/native" in board_dir_lower or "posix" in board_dir_lower:
             toolchain_variant = "host"
@@ -639,53 +639,41 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
 
         flags_str = "".join(flags_lines)
 
-        # GCC Platform
-        f.write('platform(\n')
-        f.write('    name = "zc_target_platform_gcc",\n')
-        f.write('    parents = ["%s"],\n' % args.parent_platform)
-        f.write('    constraint_values = [\n')
-        f.write('        "@zephyr//constraints:zephyr_autoconf_force_included",\n')
-        f.write('        "@bazel_tools//tools/cpp:gcc",\n')
-        f.write('    ],\n')
-        f.write('    flags = [\n')
-        f.write(flags_str)
-        f.write('        "--@zephyr//:autoconf_file=@zc_target//:zephyr/autoconf.h",\n')
-        f.write('        "--@zephyr//:autoconf_dir=@zc_target//:autoconf_dir",\n')
-        f.write('        "--@zephyr//:kconfig_config_file=@zc_target//:.config",\n')
-        f.write('        "--@zephyr//:autoconf_library=@zc_target//:autoconf_library",\n')
-        f.write('        "--@zephyr//:autoconf_symbols_to_link=@zc_target//:autoconf_symbols",\n')
-        f.write('        "--@zephyr//:dts_cc_library=@zc_target//:devicetree_generated",\n')
-        f.write('        "--@zephyr//:edt_pickle=@zc_target//:edt.pickle",\n')
-        f.write('    ],\n')
-        f.write(')\n\n')
-        f.write('alias(\n')
-        f.write('    name = "platform_gcc",\n')
-        f.write('    actual = ":zc_target_platform_gcc",\n')
-        f.write(')\n\n')
-
-        # LLVM Platform
-        f.write('platform(\n')
-        f.write('    name = "zc_target_platform_llvm",\n')
-        f.write('    parents = ["%s"],\n' % args.parent_platform)
-        f.write('    constraint_values = [\n')
-        f.write('        "@zephyr//constraints:zephyr_autoconf_force_included",\n')
-        f.write('        "@bazel_tools//tools/cpp:clang",\n')
-        f.write('    ],\n')
-        f.write('    flags = [\n')
-        f.write(flags_str)
-        f.write('        "--@zephyr//:autoconf_file=@zc_target//:zephyr/autoconf.h",\n')
-        f.write('        "--@zephyr//:autoconf_dir=@zc_target//:autoconf_dir",\n')
-        f.write('        "--@zephyr//:kconfig_config_file=@zc_target//:.config",\n')
-        f.write('        "--@zephyr//:autoconf_library=@zc_target//:autoconf_library",\n')
-        f.write('        "--@zephyr//:autoconf_symbols_to_link=@zc_target//:autoconf_symbols",\n')
-        f.write('        "--@zephyr//:dts_cc_library=@zc_target//:devicetree_generated",\n')
-        f.write('        "--@zephyr//:edt_pickle=@zc_target//:edt.pickle",\n')
-        f.write('    ],\n')
-        f.write(')\n\n')
-        f.write('alias(\n')
-        f.write('    name = "platform_llvm",\n')
-        f.write('    actual = ":zc_target_platform_llvm",\n')
-        f.write(')\n\n')
+        extra_constraints_by_variant = {
+            "gcc": ["@bazel_tools//tools/cpp:gcc"],
+            "llvm": ["@bazel_tools//tools/cpp:clang"],
+        }
+        variants = (
+            [args.toolchain_variant]
+            if args.toolchain_variant
+            else ["gcc", "llvm"]
+        )
+        for variant in variants:
+            constraints = [
+                "@zephyr//constraints:zephyr_autoconf_force_included",
+            ] + extra_constraints_by_variant.get(variant, [])
+            f.write('platform(\n')
+            f.write('    name = "zc_target_platform_%s",\n' % variant)
+            f.write('    parents = ["%s"],\n' % args.parent_platform)
+            f.write('    constraint_values = [\n')
+            for c in constraints:
+                f.write('        "%s",\n' % c)
+            f.write('    ],\n')
+            f.write('    flags = [\n')
+            f.write(flags_str)
+            f.write('        "--@zephyr//:autoconf_file=@zc_target//:zephyr/autoconf.h",\n')
+            f.write('        "--@zephyr//:autoconf_dir=@zc_target//:autoconf_dir",\n')
+            f.write('        "--@zephyr//:kconfig_config_file=@zc_target//:.config",\n')
+            f.write('        "--@zephyr//:autoconf_library=@zc_target//:autoconf_library",\n')
+            f.write('        "--@zephyr//:autoconf_symbols_to_link=@zc_target//:autoconf_symbols",\n')
+            f.write('        "--@zephyr//:dts_cc_library=@zc_target//:devicetree_generated",\n')
+            f.write('        "--@zephyr//:edt_pickle=@zc_target//:edt.pickle",\n')
+            f.write('    ],\n')
+            f.write(')\n\n')
+            f.write('alias(\n')
+            f.write('    name = "platform_%s",\n' % variant)
+            f.write('    actual = ":zc_target_platform_%s",\n' % variant)
+            f.write(')\n\n')
 
 def main():
     args = parse_args()

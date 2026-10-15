@@ -80,6 +80,7 @@ def _gen_zephyr_config_impl(rctx):
         oot_dts_roots = resolved_oot_dts_roots,
         conf_fragments = resolved_conf_fragments,
         dtc_overlays = resolved_dtc_overlays,
+        toolchain_variant = rctx.attr.toolchain_variant,
     )
 
     result = python.execute(args)
@@ -130,6 +131,7 @@ gen_zephyr_config = repository_rule(
         "conf_fragments": attr.string_list(),
         "dtc_overlays": attr.string_list(),
         "extra_kconfig": attr.string(),
+        "toolchain_variant": attr.string(default = ""),
         "_context": attr.label(default = "@zephyr_state//:context.json"),
         "_kconfig_gen_values_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_values.py"),
         "_pip_deps": attr.label_list(

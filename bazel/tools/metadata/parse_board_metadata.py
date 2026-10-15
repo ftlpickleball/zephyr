@@ -3,6 +3,7 @@
 
 #!/usr/bin/env python3
 import argparse
+import ast
 import json
 import os
 import sys
@@ -83,6 +84,95 @@ def discover_revisions_for_board(board_dir, deps):
     return revisions
 
 
+def _is_toolchain_flag(flag):
+    return flag.lstrip("-").endswith(
+        ("//toolchain:zephyr_toolchain_variant", "//toolchain:compiler")
+    )
+
+
+def _extract_toolchain_from_flags(node):
+    for subnode in ast.walk(node):
+        if isinstance(subnode, ast.Dict):
+            for k, v in zip(subnode.keys, subnode.values):
+                if (
+                    isinstance(k, ast.Constant)
+                    and isinstance(k.value, str)
+                    and isinstance(v, ast.Constant)
+                    and isinstance(v.value, str)
+                    and _is_toolchain_flag(k.value)
+                ):
+                    return v.value
+        elif isinstance(subnode, (ast.List, ast.Tuple)):
+            for elt in subnode.elts:
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                    flag, sep, val = elt.value.partition("=")
+                    if sep and _is_toolchain_flag(flag):
+                        return val
+    return None
+
+
+def discover_toolchains_for_board(board_dir, bdata, deps):
+    build_file = None
+    for fname in ["BUILD.bazel", "BUILD"]:
+        candidate = os.path.join(board_dir, fname)
+        deps.add_file(candidate)
+        if os.path.isfile(candidate):
+            build_file = candidate
+            break
+    if not build_file:
+        return {}
+
+    try:
+        with open(build_file, "r", encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=build_file)
+    except Exception as e:
+        sys.stderr.write(f"Warning: Failed to parse {build_file}: {e}\n")
+        return {}
+
+    target_toolchains = {}
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and getattr(node.func, "id", None) == "platform"
+        ):
+            kw = {
+                k.arg: k.value
+                for k in node.keywords
+                if k.arg in ("name", "flags")
+            }
+            name_node = kw.get("name")
+            flags_node = kw.get("flags")
+            if (
+                isinstance(name_node, ast.Constant)
+                and isinstance(name_node.value, str)
+                and flags_node is not None
+            ):
+                toolchain = _extract_toolchain_from_flags(flags_node)
+                if toolchain:
+                    target_toolchains[name_node.value] = toolchain
+
+    if not target_toolchains:
+        return {}
+
+    board_toolchains = {}
+    for entry in bdata.get("boards", [bdata]):
+        board_name = entry.get("name", "")
+        if not board_name:
+            continue
+        for q in entry.get("qualifiers", []):
+            target = q.replace("/", "_")
+            toolchain = (
+                target_toolchains.get(target)
+                or target_toolchains.get(f"{board_name}_{target}")
+                or target_toolchains.get(board_name)
+            )
+            if toolchain:
+                board_toolchains[f"{board_name}/{q}"] = toolchain
+        if board_name in target_toolchains:
+            board_toolchains[board_name] = target_toolchains[board_name]
+    return board_toolchains
+
+
 def main(argv=None):
     args = parse_args(argv)
 
@@ -94,12 +184,24 @@ def main(argv=None):
         __file__, sys.modules[extract_board_revisions.__module__].__file__
     )
 
-    result = {}
-    for board_dir in boards_map.keys():
-        result[board_dir] = discover_revisions_for_board(board_dir, deps)
+    revisions_result = {}
+    board_toolchains = {}
+
+    for board_dir, bdata in boards_map.items():
+        revisions_result[board_dir] = discover_revisions_for_board(
+            board_dir, deps
+        )
+        board_toolchains.update(
+            discover_toolchains_for_board(board_dir, bdata, deps)
+        )
+
+    output = {
+        "board_revisions": revisions_result,
+        "board_toolchains": board_toolchains,
+    }
 
     with open(args.output_json, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=2)
+        json.dump(output, f, indent=2)
 
     deps.write(args.deps_out, args.dirs_out)
 
