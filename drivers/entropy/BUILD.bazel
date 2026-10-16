@@ -217,6 +217,7 @@ zephyr_cc_library(
     name = "entropy_config_fake_entropy_native_sim_deps",
     srcs = [
         "fake_entropy_native_sim.c",
+        "fake_entropy_native_bottom.c",
     ],
     hdrs = glob(
         ["*.h"],
