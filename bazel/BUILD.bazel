@@ -25,6 +25,7 @@ exports_files([
     "rename_kobject_hash_sections.bzl",
     "errno.bzl",
     "elf_to_hex.bzl",
+    "elf_to_bin.bzl",
     "runner.bzl",
     "runfiles.bzl",
     "bootstrapper.py.tpl",

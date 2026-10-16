@@ -12,6 +12,7 @@ load("//bazel:linker_fragment.bzl", "generate_app_smem_aligned_linker")
 load("//bazel:rename_kobject_hash_sections.bzl", "rename_kobject_sections")
 load("//bazel:zephyr_linker_script.bzl", "zephyr_linker_script")
 load("//bazel:elf_to_hex.bzl", "elf_to_hex")
+load("//bazel:elf_to_bin.bzl", "elf_to_bin")
 load("//bazel:runfiles.bzl", "resolve_runfiles_path")
 load("//bazel:runner.bzl", "zephyr_runners_yaml")
 load("//bazel/private:zephyr_transition.bzl", "zephyr_transition")
@@ -983,6 +984,12 @@ def zephyr_app(*, name, app_label = None, **kwargs):
     _zephyr_cc_binary(
         name = binary_name,
         **kwargs
+    )
+
+    elf_to_bin(
+        name = name + ".bin",
+        src = ":" + binary_name,
+        testonly = kwargs.get("testonly", False),
     )
 
     hex_target = name + "_hex_gen"
