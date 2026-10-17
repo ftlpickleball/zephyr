@@ -933,10 +933,7 @@ _zephyr_app_rule = rule(
 )
 
 def _zephyr_app_elf_impl(ctx):
-    binary_files = ctx.attr.binary[DefaultInfo].files.to_list()
-    if not binary_files:
-        fail("Binary target %s produced no files" % ctx.attr.binary.label)
-    in_file = binary_files[0]
+    in_file = ctx.file.binary
     out_file = ctx.actions.declare_file(ctx.label.name)
 
     ctx.actions.symlink(
@@ -956,12 +953,47 @@ _zephyr_app_elf = rule(
     implementation = _zephyr_app_elf_impl,
     attrs = {
         "app_label": attr.string(mandatory = True),
-        "binary": attr.label(mandatory = True),
+        "binary": attr.label(
+            mandatory = True,
+            cfg = "target",
+            allow_single_file = True,
+        ),
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
         ),
     },
     executable = True,
+    cfg = zephyr_transition,
+)
+
+def _zephyr_app_bin_impl(ctx):
+    in_file = ctx.file.bin
+    out_file = ctx.actions.declare_file(ctx.label.name)
+
+    ctx.actions.symlink(
+        output = out_file,
+        target_file = in_file,
+    )
+
+    return [
+        DefaultInfo(
+            files = depset([out_file]),
+        ),
+    ]
+
+_zephyr_app_bin = rule(
+    implementation = _zephyr_app_bin_impl,
+    attrs = {
+        "app_label": attr.string(mandatory = True),
+        "bin": attr.label(
+            mandatory = True,
+            cfg = "target",
+            allow_single_file = True,
+        ),
+        "_allowlist_function_transition": attr.label(
+            default = "@bazel_tools//tools/allowlists/function_transition_allowlist",
+        ),
+    },
     cfg = zephyr_transition,
 )
 
@@ -986,9 +1018,17 @@ def zephyr_app(*, name, app_label = None, **kwargs):
         **kwargs
     )
 
+    bin_target = name + "_bin_gen"
     elf_to_bin(
-        name = name + ".bin",
+        name = bin_target,
         src = ":" + binary_name,
+        testonly = kwargs.get("testonly", False),
+    )
+
+    _zephyr_app_bin(
+        name = name + ".bin",
+        app_label = app_label,
+        bin = ":" + bin_target,
         testonly = kwargs.get("testonly", False),
     )
 
