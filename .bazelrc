@@ -23,6 +23,7 @@ test --test_output=errors
 common --ui_event_filters=-debug
 
 # Remote cache
+startup --experimental_remote_repo_contents_cache
 common:remote_cache --bes_backend="buildeventservice.googleapis.com"
 common:remote_cache --bes_instance_name=pigweed-rbe-open
 common:remote_cache --bes_results_url="https://source.cloud.google.com/results/invocations/"
