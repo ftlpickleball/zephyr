@@ -188,7 +188,7 @@ def _make_include_recorder(cmd_preprocessor):
 
     return IncludeRecorder
 
-def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
+def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker, rel_base_dir=None):
     # Determine input DTS file
     board_name = os.environ["BOARD"]
     board_qualifiers = os.environ.get("BOARD_QUALIFIERS", "")
@@ -287,6 +287,7 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
 
     if os.path.exists(merged_dts_path):
         abs_out = os.path.abspath(output_dir)
+        clean_base_dir = rel_base_dir or output_dir
         def _relativize_line(match):
             prefix, line_path, suffix = match.group(1), match.group(2), match.group(3)
             if os.path.isabs(line_path) or line_path.startswith(".."):
@@ -294,7 +295,7 @@ def preprocess_dts(args, zephyr_base, output_dir, board_dir, *, tracker):
                 if (abs_line + os.sep).startswith(abs_out + os.sep):
                     rel_line = os.path.relpath(abs_line, abs_out)
                 else:
-                    rel_line = kconfig_utils.clean_output_path(abs_line, output_dir)
+                    rel_line = kconfig_utils.clean_output_path(abs_line, clean_base_dir)
                 return f"{prefix}{rel_line}{suffix}"
             return match.group(0)
 
@@ -331,6 +332,8 @@ def _normalize_edt_pickle(edt_pickle_path, zephyr_base, output_dir):
         edt.dts_path = os.path.basename(edt.dts_path)
     if hasattr(edt, "_dt") and getattr(edt._dt, "filename", None):
         edt._dt.filename = os.path.basename(edt._dt.filename)
+    if hasattr(edt, "_dt") and getattr(edt._dt, "_base_dir", None):
+        edt._dt._base_dir = "."
     edt.bindings_dirs = [kconfig_utils.clean_output_path(d, output_dir) for d in edt.bindings_dirs]
     edt._binding_paths = [kconfig_utils.clean_output_path(p, output_dir) for p in edt._binding_paths]
     for k, v in list(edt._binding_fname2path.items()):
@@ -341,6 +344,11 @@ def _normalize_edt_pickle(edt_pickle_path, zephyr_base, output_dir):
             seen.add(id(b))
             if b.path:
                 b.path = kconfig_utils.clean_output_path(b.path, output_dir)
+            if getattr(b, "_included_binding_paths", None):
+                b._included_binding_paths = {
+                    kconfig_utils.clean_output_path(p, output_dir)
+                    for p in b._included_binding_paths
+                }
             b = getattr(b, "child_binding", None)
     for b in edt._compat2binding.values():
         _clean_binding(b)
@@ -754,7 +762,9 @@ def main():
         for frag in args.conf_fragments:
             tracker.add(frag)
 
-        merged_dts_path, dts_roots = preprocess_dts(args, zephyr_base, tmp_dir, board_dir, tracker=tracker)
+        merged_dts_path, dts_roots = preprocess_dts(
+            args, zephyr_base, tmp_dir, board_dir, tracker=tracker, rel_base_dir=output_dir
+        )
         generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, tracker=tracker)
         generate_dts_headers(zephyr_base, output_dir, os.path.join(output_dir, "edt.pickle"), tracker=tracker)
         kconfig_utils.generate_kconfig_dts(zephyr_base, os.path.join(tmp_dir, "Kconfig.dts"), dts_roots, tracker=tracker)

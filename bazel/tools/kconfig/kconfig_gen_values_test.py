@@ -14,6 +14,31 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
 import kconfig_gen_values
 import kconfig_utils
 
+
+class _DummyDt:
+    def __init__(self, filename, base_dir):
+        self.filename = filename
+        self._base_dir = base_dir
+
+
+class _DummyBinding:
+    def __init__(self, path, included_paths):
+        self.path = path
+        self._included_binding_paths = included_paths
+        self.child_binding = None
+
+
+class _DummyEdt:
+    def __init__(self, dts_path, dt_filename, dt_base_dir, binding_path, included_paths):
+        self.dts_path = dts_path
+        self._dt = _DummyDt(dt_filename, dt_base_dir)
+        self.bindings_dirs = []
+        self._binding_paths = []
+        self._binding_fname2path = {}
+        self._compat2binding = {"vnd,foo": _DummyBinding(binding_path, included_paths)}
+        self.nodes = []
+
+
 class TestKconfigGenValues(unittest.TestCase):
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
@@ -155,6 +180,7 @@ class TestKconfigGenValues(unittest.TestCase):
                  patch('kconfig_gen_values.generate_edt_pickle'):
                 mock_pre.return_value = ("merged.dts", [])
                 kconfig_gen_values.main()
+                self.assertEqual(mock_pre.call_args.kwargs.get("rel_base_dir"), os.path.abspath(output_dir))
 
         # Verify APP_NAME was added
         autoconf_path = os.path.join(output_dir, "zephyr", "autoconf.h")
@@ -457,6 +483,90 @@ class TestKconfigGenValues(unittest.TestCase):
         self.assertNotIn(self.test_dir, dts_content)
 
     @patch('subprocess.run')
+    def test_preprocess_dts_rel_base_dir_with_tmp_dir(self, mock_run):
+        app_dir = os.path.join(self.test_dir, "app")
+        board_dir = os.path.join(self.test_dir, "board")
+        tmp_dir = os.path.join(self.test_dir, "tmp_work")
+        repo_out_dir = os.path.join(self.test_dir, "ob", "external", "zc_app")
+        sibling_mod_dir = os.path.join(self.test_dir, "ob", "external", "hal_mod+")
+        for d in (app_dir, board_dir, tmp_dir, repo_out_dir, os.path.join(sibling_mod_dir, "dts")):
+            os.makedirs(d, exist_ok=True)
+
+        base_dts = os.path.join(board_dir, "my_board.dts")
+        Path(base_dts).touch()
+        sibling_dtsi = os.path.join(sibling_mod_dir, "dts", "soc.dtsi")
+        Path(sibling_dtsi).touch()
+
+        os.environ["BOARD"] = "my_board"
+        os.environ["BOARD_QUALIFIERS"] = ""
+
+        args = MagicMock()
+        args.board = "my_board"
+        args.app_dir = app_dir
+        args.oot_dts_roots = []
+        args.modules = [sibling_mod_dir]
+
+        def fake_preprocessor(cmd_args):
+            out_idx = cmd_args.index("-o") + 1
+            out_path = cmd_args[out_idx]
+            with open(out_path, "w") as f:
+                f.write(f'#line 1 "{sibling_dtsi}"\n/dts-v1/;\n')
+            mock_cpp = MagicMock()
+            mock_cpp.include_times = []
+            mock_cpp.probed_includes = []
+            return mock_cpp
+        self.pcmd_mock.CmdPreprocessor.side_effect = fake_preprocessor
+
+        merged_dts_path, _ = kconfig_gen_values.preprocess_dts(
+            args,
+            str(self.zephyr_base),
+            tmp_dir,
+            board_dir,
+            tracker=kconfig_utils.InputRecorder(),
+            rel_base_dir=repo_out_dir,
+        )
+
+        dts_content = Path(merged_dts_path).read_text()
+        expected_rel = os.path.join("..", "hal_mod+", "dts", "soc.dtsi")
+        self.assertIn(f'#line 1 "{expected_rel}"', dts_content)
+        self.assertNotIn(self.test_dir, dts_content)
+
+    def test_normalize_edt_pickle_cleans_base_dir_and_included_bindings(self):
+        checkout = os.path.join(self.test_dir, "checkout")
+        output_dir = os.path.join(self.test_dir, "ob", "external", "zc_app")
+        os.makedirs(checkout, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
+        Path(os.path.join(checkout, "MODULE.bazel")).touch()
+
+        binding_file = os.path.join(checkout, "dts", "bindings", "foo.yaml")
+        included_file = os.path.join(checkout, "dts", "bindings", "base.yaml")
+        pickle_path = os.path.join(output_dir, "edt.pickle")
+
+        import pickle
+        edt = _DummyEdt(
+            dts_path=os.path.join(self.test_dir, "tmp", "zephyr.dts"),
+            dt_filename=os.path.join(self.test_dir, "tmp", "zephyr.dts"),
+            dt_base_dir=os.path.join(self.test_dir, "tmp"),
+            binding_path=binding_file,
+            included_paths={included_file},
+        )
+        with open(pickle_path, "wb") as f:
+            pickle.dump(edt, f, protocol=4)
+
+        kconfig_gen_values._normalize_edt_pickle(pickle_path, str(self.zephyr_base), output_dir)
+
+        with open(pickle_path, "rb") as f:
+            cleaned = pickle.load(f)
+        self.assertEqual(cleaned.dts_path, "zephyr.dts")
+        self.assertEqual(cleaned._dt.filename, "zephyr.dts")
+        self.assertEqual(cleaned._dt._base_dir, ".")
+        self.assertEqual(cleaned._compat2binding["vnd,foo"].path, os.path.join("dts", "bindings", "foo.yaml"))
+        self.assertEqual(
+            cleaned._compat2binding["vnd,foo"]._included_binding_paths,
+            {os.path.join("dts", "bindings", "base.yaml")},
+        )
+
+    @patch('subprocess.run')
     def test_generate_dts_headers(self, mock_run):
         output_dir = os.path.join(self.test_dir, "out")
         edt_pickle_path = os.path.join(output_dir, "edt.pickle")
@@ -643,6 +753,7 @@ class TestKconfigGenValues(unittest.TestCase):
                  patch('kconfig_gen_values.generate_edt_pickle'):
                 mock_pre.return_value = ("merged.dts", [])
                 kconfig_gen_values.main()
+                self.assertEqual(mock_pre.call_args.kwargs.get("rel_base_dir"), os.path.abspath(output_dir))
 
         self.assertEqual(
             set(os.listdir(output_dir)),
