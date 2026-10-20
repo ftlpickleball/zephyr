@@ -13,6 +13,19 @@ _DEFAULT_HOST_PYTHON_VERSION = "python_{}_host".format(DEFAULT_PYTHON_VERSION.re
 _DEFAULT_PYTHON_INTERPRETER_LABEL = INTERPRETER_LABELS.get(_DEFAULT_HOST_PYTHON_VERSION)
 _PIP_HUB_NAME = "zephyr_pip_deps"
 
+def _materialize_repo_dir(ctx, repo_name):
+    """Fetches and materializes an external repository on disk by canonical name.
+
+    With --experimental_remote_repo_contents_cache, Bazel keeps remote-cached
+    repositories in an in-memory overlay filesystem until ctx.path(Label(...))
+    is called on a Label belonging to that repository. Because rules_python hub
+    and host-wrapper repositories (@zephyr_pip_deps, @python_3_11_host) indirect
+    to separate backing repositories via BUILD aliases or symlinks, resolving a
+    Label only in the hub repository leaves the backing repository unmaterialized
+    on the host filesystem when passed to ctx.execute().
+    """
+    return ctx.path(Label("@@" + repo_name + "//:BUILD.bazel")).dirname
+
 def _requirement_to_py_repo_dir(ctx, dep):
     """Resolves the site-packages directory of a pip dependency.
 
@@ -47,8 +60,31 @@ def _requirement_to_py_repo_dir(ctx, dep):
             dep.package,
         )
 
-    wheel_build_file = ctx.path(Label("@@" + repo_name + "//:BUILD.bazel"))
-    return str(wheel_build_file.dirname) + "/site-packages"
+    return str(_materialize_repo_dir(ctx, repo_name)) + "/site-packages"
+
+def _resolve_python_interpreter(ctx, label):
+    """Resolves the host Python interpreter path and materializes its backing repo."""
+    interp_path = ctx.path(label)
+
+    # TODO(b/575637070): Remove this workaround once upstream Bazel fixes
+    # RemoteExternalOverlayFileSystem.ensureMaterialized() to materialize
+    # cached repositories targeted by symlinks in native repositories.
+    # @python_3_11_host//:python is a symlink into the platform-specific
+    # interpreter repository (e.g. rules_python++python+python_3_11_<platform>).
+    # Calling interp_path.realpath fails with ENOENT in Bazel 9.3.0 when the
+    # backing repository is only in the in-memory overlay filesystem, so read
+    # the host repository's .marker file (with watch = "no") to find and
+    # materialize the backing repository on disk before ctx.execute() runs.
+    repo_dir = interp_path.dirname
+    marker_file = repo_dir.dirname.get_child("@" + repo_dir.basename + ".marker")
+    if marker_file.exists:
+        for line in ctx.read(marker_file, watch = "no").splitlines():
+            if "@@" in line and "//" in line:
+                target_repo = line.split("@@", 1)[1].split("//", 1)[0]
+                if target_repo and target_repo != repo_dir.basename:
+                    _materialize_repo_dir(ctx, target_repo)
+
+    return str(interp_path)
 
 COMMON_PY_REPO_RULE_ATTRS = {
     "_python_interpreter": attr.label(
@@ -101,7 +137,7 @@ def get_python(ctx, extra_import_paths = [], pip_deps = None):
         "PYTHONUTF8": "1",
     }
 
-    python_interpreter = str(ctx.path(python_interpreter_label))
+    python_interpreter = _resolve_python_interpreter(ctx, python_interpreter_label)
 
     def _execute(args, **kwargs):
         environment = kwargs.pop("environment", {})
