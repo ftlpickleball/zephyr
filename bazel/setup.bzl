@@ -553,7 +553,7 @@ def _zephyr_setup_core_impl(mctx):
                     pkg_path = zephyr_canonical + "//" + rel_build_pkg
                     pkg_label = pkg_path + ":" + build_file
                 else:
-                    rel_path = path_str[len(zephyr_root_str):].strip("/")
+                    rel_path = realpath_str[len(zephyr_root_str):].strip("/")
                     build_file = "BUILD.bazel"
                     if path.get_child("BUILD").exists:
                         build_file = "BUILD"
