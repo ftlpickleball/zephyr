@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -55,6 +56,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/virtual",
+    ],
 )
 
 zephyr_cc_library(
@@ -65,6 +69,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/dummy",
+    ],
 )
 
 selects.config_setting_group(
@@ -83,6 +90,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/offloaded_netdev",
+    ],
 )
 
 zephyr_cc_library(
@@ -93,6 +103,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/ethernet",
+    ],
 )
 
 zephyr_cc_library(
@@ -103,6 +116,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/ppp",
+    ],
 )
 
 zephyr_cc_library(
@@ -113,6 +129,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/ieee802154",
+    ],
 )
 
 zephyr_cc_library(
@@ -123,6 +142,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/openthread",
+    ],
 )
 
 selects.config_setting_group(
@@ -141,6 +163,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/wifi",
+    ],
 )
 
 zephyr_cc_library(
@@ -151,4 +176,23 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/canbus",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//subsys/net/l2/ethernet:hdrs",
+        "//subsys/net/l2/ethernet/gptp:hdrs",
+        "//subsys/net/l2/ppp:hdrs",
+        "//subsys/net/l2/wifi:hdrs",
+    ],
 )

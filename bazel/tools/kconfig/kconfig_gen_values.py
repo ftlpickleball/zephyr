@@ -538,6 +538,54 @@ def generate_config_c(kconf, output_dir, args):
 
         f.write("GEN_ABS_SYM_END\n")
 
+def _is_enabled(kconf, name):
+    sym = kconf.syms.get(name)
+    return bool(sym and sym.str_value == "y")
+
+
+def _get_int(kconf, name):
+    sym = kconf.syms.get(name)
+    if not sym or not sym.str_value:
+        return 0
+    try:
+        return int(sym.str_value, 0)
+    except ValueError:
+        return 0
+
+
+def _sum_kconfig_prefix(kconf, prefix):
+    total = 0
+    for sym in kconf.unique_defined_syms:
+        if not sym.nodes or not sym.name.startswith(prefix):
+            continue
+        if sym.str_value:
+            try:
+                total += int(sym.str_value, 0)
+            except ValueError:
+                pass
+    return total
+
+
+def _get_zvfs_eventfd_size(kconf):
+    if not (_is_enabled(kconf, "ZVFS") and _is_enabled(kconf, "ZVFS_EVENTFD")):
+        return None
+    eventfd_max = _get_int(kconf, "ZVFS_EVENTFD_MAX")
+    if _is_enabled(kconf, "ZVFS_EVENTFD_IGNORE_MIN"):
+        return eventfd_max
+    eventfd_add_size_sum = _sum_kconfig_prefix(kconf, "ZVFS_EVENTFD_ADD_SIZE_")
+    return max(eventfd_max, eventfd_add_size_sum)
+
+
+def _get_zvfs_open_size(kconf):
+    if not _is_enabled(kconf, "ZVFS"):
+        return None
+    open_max = _get_int(kconf, "ZVFS_OPEN_MAX")
+    if _is_enabled(kconf, "ZVFS_OPEN_IGNORE_MIN"):
+        return open_max
+    add_size_sum = _sum_kconfig_prefix(kconf, "ZVFS_OPEN_ADD_SIZE_")
+    return max(open_max, add_size_sum)
+
+
 def generate_bazel_build(args, kconf, output_dir, kconfiglib):
     resolved_arch = "arm"
     for a in SUPPORTED_ARCHITECTURES:
@@ -762,6 +810,16 @@ def main():
         with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
             kconf = kconfiglib.Kconfig(kconfig_root)
         kconf.load_config(os.path.join(output_dir, ".config"))
+
+        extra_autoconf_defines = [
+            ("ZVFS_EVENTFD_SIZE", _get_zvfs_eventfd_size(kconf)),
+            ("ZVFS_OPEN_SIZE", _get_zvfs_open_size(kconf)),
+        ]
+        if any(val is not None for _, val in extra_autoconf_defines):
+            with open(os.path.join(output_dir, "zephyr", "autoconf.h"), "a") as f:
+                for macro_name, macro_val in extra_autoconf_defines:
+                    if macro_val is not None:
+                        f.write(f"#define {macro_name} {macro_val}\n")
 
         generate_config_c(kconf, output_dir, args)
         generate_bazel_build(args, kconf, output_dir, kconfiglib)

@@ -68,6 +68,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/ip",
+    ],
 )
 
 zephyr_cc_library(
@@ -78,4 +81,7 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/conn_mgr",
+    ],
 )

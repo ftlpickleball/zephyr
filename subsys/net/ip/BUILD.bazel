@@ -27,7 +27,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = ["."],
     deps = [
+        "//subsys/net/lib:hdrs",
     ] + select({
         "@zephyr_kconfig//:CONFIG_NET_OFFLOAD=true": [":ip_config_net_offload_deps"],
         "//conditions:default": [],
@@ -50,6 +52,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = ["."],
+    deps = [
+        "//subsys/net/lib:hdrs",
+    ],
 )
 
 zephyr_cc_library(
@@ -178,7 +184,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = ["."],
     deps = [
+        "//subsys/net/l2/ethernet:hdrs",
+        "//subsys/net/lib:hdrs",
     ] + select({
         ":config_net_tcp_isn_rfc6528_or_config_net_ipv6_pe_or_config_net_ipv6_iid_stable": [":ip_config_net_native_deps_config_net_tcp_isn_rfc6528_or_config_net_ipv6_pe_or_config_net_ipv6_iid_stable_deps"],
         "//conditions:default": [],
@@ -251,4 +260,14 @@ zephyr_linker_fragment(
     srcs = ["iterables_net_pkt_alloc_stats.ld"],
     location = "DATA_SECTIONS",
     sort_key = "default",
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )

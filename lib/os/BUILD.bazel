@@ -72,7 +72,12 @@ zephyr_cc_library(
     }),
     deps = [
         "//lib/libc",
-    ],
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_ZVFS=true": [
+            "//lib/os/zvfs",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 filegroup(

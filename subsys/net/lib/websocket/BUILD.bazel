@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -14,4 +15,14 @@ zephyr_cc_library(
         "websocket.c",
     ],
     hdrs = glob(["*.h"], allow_empty=True),
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )

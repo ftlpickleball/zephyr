@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -166,6 +167,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/lib/dhcpv4",
+    ],
 )
 
 selects.config_setting_group(
@@ -185,6 +189,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/lib/dns",
+    ],
 )
 
 zephyr_cc_library(
@@ -195,4 +202,24 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/lib/http",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//subsys/net/lib/dhcpv4:hdrs",
+        "//subsys/net/lib/dns:hdrs",
+        "//subsys/net/lib/shell:hdrs",
+        "//subsys/net/lib/sockets:hdrs",
+        "//subsys/net/lib/websocket:hdrs",
+    ],
 )

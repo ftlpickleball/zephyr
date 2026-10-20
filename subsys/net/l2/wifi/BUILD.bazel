@@ -43,7 +43,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = ["."],
     deps = [
+        "//subsys/net/ip:hdrs",
+        "//subsys/net/lib/shell:hdrs",
     ] + select({
         "@zephyr_kconfig//:CONFIG_WIFI_NM=true": [":wifi_config_wifi_nm_deps"],
         "//conditions:default": [],
@@ -118,4 +121,14 @@ zephyr_linker_fragment(
     }),
     location = "DATA_SECTIONS",
     sort_key = "default",
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )

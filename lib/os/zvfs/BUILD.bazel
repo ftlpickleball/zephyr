@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "zvfs",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ZVFS_FDTABLE=true": [
+            "zvfs_fdtable.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ZVFS_DEFAULT_FILE_VMETHODS=true": [
+            "zvfs_file_vmethods.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ZVFS_EVENTFD=true": [
+            "zvfs_eventfd.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ZVFS_POLL=true": [
+            "zvfs_poll.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_ZVFS_SELECT=true": [
+            "zvfs_select.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

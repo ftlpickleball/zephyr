@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -61,12 +62,17 @@ zephyr_cc_library(
         ],
     }),
     hdrs = glob(["*.h"], allow_empty=True),
+    includes = ["."],
     deps = [
+        "//subsys/net/ip:hdrs",
     ] + select({
         "//conditions:default": [":sockets_not_config_net_sockets_offload_deps"],
         "@zephyr_kconfig//:CONFIG_NET_SOCKETS_OFFLOAD=true": [],
     }) + select({
         "@zephyr_kconfig//:CONFIG_NET_SOCKETS_NET_MGMT=true": [":sockets_config_net_sockets_net_mgmt_deps"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NET_SOCKETS_SOCKOPT_TLS=true": ["//subsys/net/lib/tls_credentials:hdrs"],
         "//conditions:default": [],
     }) + select({
         "@zephyr_kconfig//:CONFIG_SOCKS=true": [":sockets_config_socks_deps"],
@@ -80,6 +86,10 @@ zephyr_cc_library(
         "getnameinfo.c",
     ],
     hdrs = glob(["*.h"], allow_empty=True),
+    includes = ["."],
+    deps = [
+        "//subsys/net/ip:hdrs",
+    ],
 )
 
 zephyr_cc_library(
@@ -88,6 +98,10 @@ zephyr_cc_library(
         "sockets_net_mgmt.c",
     ],
     hdrs = glob(["*.h"], allow_empty=True),
+    includes = ["."],
+    deps = [
+        "//subsys/net/ip:hdrs",
+    ],
 )
 
 zephyr_cc_library(
@@ -95,6 +109,9 @@ zephyr_cc_library(
     srcs = [
     ],
     hdrs = glob(["*.h"], allow_empty=True),
+    deps = [
+        "//subsys/net/lib/socks:hdrs",
+    ],
 )
 
 filegroup(
@@ -102,4 +119,14 @@ filegroup(
     srcs = [
         "//include:zephyr/net/socket.h",
     ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )

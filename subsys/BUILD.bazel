@@ -10,6 +10,9 @@ filegroup(
     name = "syscall_client_files",
     srcs = [
         "//subsys/logging:syscall_client_files",
+        "//subsys/net/ip:syscall_client_files",
+        "//subsys/net/l2/ethernet:syscall_client_files",
+        "//subsys/net/lib/sockets:syscall_client_files",
         "//subsys/random:syscall_client_files",
         "//subsys/rtio:syscall_client_files",
         "//subsys/testsuite/ztest:syscall_client_files",

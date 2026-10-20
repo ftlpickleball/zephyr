@@ -237,15 +237,26 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
         if not cc_info.linking_context:
             continue
         for linker_input in cc_info.linking_context.linker_inputs.to_list():
-            owner_key = linker_input.owner or linker_input
+            lib_files = tuple([
+                lib.static_library or lib.pic_static_library or lib.dynamic_library or lib.interface_library
+                for lib in linker_input.libraries
+            ])
+            owner_key = (
+                linker_input.owner,
+                lib_files,
+                tuple(linker_input.user_link_flags),
+            )
             if owner_key in seen:
                 continue
             seen[owner_key] = True
 
             # Pass through untouched if no library requires alwayslink.
+            # Precompiled source archives (is_source == True) are external blobs
+            # and must not be forced into --whole-archive.
             needs_wrap = any([
                 not lib.alwayslink and
-                (lib.static_library or lib.pic_static_library)
+                ((lib.static_library and not lib.static_library.is_source) or
+                 (lib.pic_static_library and not lib.pic_static_library.is_source))
                 for lib in linker_input.libraries
             ])
             if not needs_wrap:
@@ -254,9 +265,11 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
 
             new_libraries = []
             for lib in linker_input.libraries:
-                if lib.alwayslink or not (
-                    lib.static_library or lib.pic_static_library
-                ):
+                is_generated_static = (
+                    (lib.static_library and not lib.static_library.is_source) or
+                    (lib.pic_static_library and not lib.pic_static_library.is_source)
+                )
+                if lib.alwayslink or not is_generated_static:
                     new_libraries.append(lib)
                     continue
                 new_libraries.append(cc_common.create_library_to_link(
@@ -290,7 +303,14 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
     else:
         comp_ctx = cc_common.create_compilation_context()
 
+    runfiles = ctx.runfiles().merge_all([
+        dep[DefaultInfo].default_runfiles
+        for dep in ctx.attr.deps
+        if DefaultInfo in dep and dep[DefaultInfo].default_runfiles
+    ])
+
     return [
+        DefaultInfo(runfiles = runfiles),
         CcInfo(
             compilation_context = comp_ctx,
             linking_context = cc_common.create_linking_context(

@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "dhcpv4",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_DHCPV4=true": [
+            "dhcpv4.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NET_DHCPV4_SERVER=true": [
+            "dhcpv4_server.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    deps = [
+        "//subsys/net/ip:hdrs",
+        "//subsys/net/l2/ethernet:hdrs",
+    ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
+)

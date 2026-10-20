@@ -21,6 +21,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = ["."],
+    deps = [
+        "//subsys/net/ip:hdrs",
+    ],
 )
 
 zephyr_linker_fragment(
@@ -43,4 +47,14 @@ zephyr_linker_fragment(
     srcs = ["conn_mgr.ld"],
     location = "DATA_SECTIONS",
     sort_key = "default",
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )

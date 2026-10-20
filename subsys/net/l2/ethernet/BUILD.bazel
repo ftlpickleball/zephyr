@@ -4,6 +4,7 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -26,7 +27,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = ["."],
     deps = [
+        "//subsys/net/ip:hdrs",
+        "//subsys/net/l2:hdrs",
     ] + select({
         "@zephyr_kconfig//:CONFIG_NET_NATIVE=true": [":ethernet_config_net_native_deps"],
         "//conditions:default": [],
@@ -56,7 +60,10 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    includes = ["."],
     deps = [
+        "//subsys/net/ip:hdrs",
+        "//subsys/net/l2:hdrs",
     ] + select({
         "@zephyr_kconfig//:CONFIG_NET_GPTP=true": [":ethernet_config_net_native_deps_config_net_gptp_deps"],
         "//conditions:default": [],
@@ -80,6 +87,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/ethernet/gptp",
+    ],
 )
 
 zephyr_cc_library(
@@ -90,6 +100,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/ethernet/lldp",
+    ],
 )
 
 zephyr_cc_library(
@@ -100,6 +113,9 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = [
+        "//subsys/net/l2/ethernet/dsa",
+    ],
 )
 
 zephyr_cc_library(
@@ -117,4 +133,14 @@ filegroup(
     srcs = [
         "//include:zephyr/net/ethernet.h",
     ],
+)
+
+cc_library(
+    name = "hdrs",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["."],
+    visibility = ["//visibility:public"],
 )
