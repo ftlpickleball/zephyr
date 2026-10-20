@@ -495,13 +495,37 @@ class TestInputTracking(unittest.TestCase):
         self.assertEqual(tracker.files, set())
 
     def test_clean_output_path(self):
-        output_dir = os.path.join(self.test_dir, "ob", "external", "zc_app")
-        sibling_repo = os.path.join(self.test_dir, "ob", "external", "zephyr+")
-        checkout = os.path.join(self.test_dir, "checkout_a")
+        # Simulate a parent host directory having a .git marker (e.g. dotfiles repo)
+        # to ensure cached external repos without .git/MODULE.bazel do not climb into it.
+        host_home = os.path.join(self.test_dir, "host_home")
+        os.makedirs(os.path.join(host_home, ".git"), exist_ok=True)
+
+        output_dir = os.path.join(host_home, "ob", "external", "zc_app")
+        sibling_repo = os.path.join(host_home, "ob", "external", "zephyr+")
+        checkout = os.path.join(host_home, "checkout_a")
+        rcc_entry = os.path.join(host_home, "rcc", "contents", "deadbeef", "uuid-1234")
+        zephyr_mod = os.path.join(host_home, "oot_modules", "hal_custom")
+
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(sibling_repo, exist_ok=True)
         os.makedirs(os.path.join(checkout, "modules", "mod", "dts", "bindings"), exist_ok=True)
         Path(os.path.join(checkout, "MODULE.bazel")).touch()
+
+        os.makedirs(os.path.join(rcc_entry, "dts", "arm"), exist_ok=True)
+        Path(os.path.join(host_home, "rcc", "contents", "deadbeef", "uuid-1234.recorded_inputs")).touch()
+
+        os.makedirs(os.path.join(zephyr_mod, "zephyr"), exist_ok=True)
+        os.makedirs(os.path.join(zephyr_mod, "dts", "bindings"), exist_ok=True)
+        Path(os.path.join(zephyr_mod, "zephyr", "module.yml")).touch()
+
+        Path(os.path.join(host_home, "ob", "external", "@zephyr+.marker")).touch()
+        tmp_work = os.path.join(host_home, "tmp", "work")
+        os.makedirs(tmp_work, exist_ok=True)
+        # Ensure an internal 'external/<pkg>/BUILD.bazel' directory inside a workspace
+        # is not mistaken for $OUTPUT_BASE/external/<repo>.
+        internal_ext_pkg = os.path.join(checkout, "src", "external", "subpkg")
+        os.makedirs(internal_ext_pkg, exist_ok=True)
+        Path(os.path.join(internal_ext_pkg, "BUILD.bazel")).touch()
 
         self.assertEqual(
             kconfig_utils.clean_output_path(os.path.join(output_dir, "zephyr.dts"), output_dir),
@@ -512,11 +536,36 @@ class TestInputTracking(unittest.TestCase):
             os.path.join("..", "zephyr+", "dts", "bindings"),
         )
         self.assertEqual(
+            kconfig_utils.clean_output_path(os.path.join(sibling_repo, "dts", "bindings", "soc.yaml"), tmp_work),
+            os.path.join("dts", "bindings", "soc.yaml"),
+        )
+        self.assertEqual(
             kconfig_utils.clean_output_path(
                 os.path.join(checkout, "modules", "mod", "dts", "bindings", "foo.yaml"),
                 output_dir,
             ),
             os.path.join("modules", "mod", "dts", "bindings", "foo.yaml"),
+        )
+        self.assertEqual(
+            kconfig_utils.clean_output_path(
+                os.path.join(internal_ext_pkg, "bar.dtsi"),
+                output_dir,
+            ),
+            os.path.join("src", "external", "subpkg", "bar.dtsi"),
+        )
+        self.assertEqual(
+            kconfig_utils.clean_output_path(
+                os.path.join(rcc_entry, "dts", "arm", "soc.dtsi"),
+                output_dir,
+            ),
+            os.path.join("dts", "arm", "soc.dtsi"),
+        )
+        self.assertEqual(
+            kconfig_utils.clean_output_path(
+                os.path.join(zephyr_mod, "dts", "bindings", "bar.yaml"),
+                output_dir,
+            ),
+            os.path.join("dts", "bindings", "bar.yaml"),
         )
 
 

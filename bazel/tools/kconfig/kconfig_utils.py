@@ -18,12 +18,25 @@ _REPO_ROOT_MARKERS = ("MODULE.bazel", "REPO.bazel", "WORKSPACE.bazel", "WORKSPAC
 BINDING_SUFFIXES = (".yaml", ".yml")
 
 
+def _is_repo_root(path: Path) -> bool:
+    """Returns True if 'path' is the root of a workspace, module, or cached external repo."""
+    if any((path / m).exists() for m in _REPO_ROOT_MARKERS):
+        return True
+    if (path / "zephyr" / "module.yml").exists():
+        return True
+    if (path.parent / f"{path.name}.recorded_inputs").exists():
+        return True
+    if path.parent.name == "external" and (path.parent / f"@{path.name}.marker").exists():
+        return True
+    return False
+
+
 def clean_output_path(path, output_dir):
     """Formats 'path' for generated repository outputs without leaking checkout paths.
 
     Paths inside 'output_dir' or sibling external repositories ('../<repo>/...')
     stay relative to 'output_dir'. Paths that climb out of the external root into
-    a host workspace checkout are made relative to that checkout's root.
+    a host workspace checkout or cached repository are made relative to that root.
     """
     abs_out = os.path.abspath(output_dir)
     abs_path = os.path.abspath(os.path.join(abs_out, path) if not os.path.isabs(path) else path)
@@ -33,7 +46,7 @@ def clean_output_path(path, output_dir):
     for parent in Path(abs_path).parents:
         if os.path.commonpath([abs_out, str(parent)]) == str(parent):
             break
-        if any((parent / m).exists() for m in _REPO_ROOT_MARKERS):
+        if _is_repo_root(parent):
             return os.path.relpath(abs_path, parent)
     return os.path.basename(abs_path)
 
