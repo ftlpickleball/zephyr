@@ -16,10 +16,14 @@ filegroup(
 
 filegroup(
     name = "x86_stdlib",
-    srcs = glob([
-        "x86_64-zephyr-elf/include/**",
-        "x86_64-zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "x86_64-zephyr-elf/include/**",
+            "x86_64-zephyr-elf/lib/**",
+            "x86_64-zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -44,8 +48,7 @@ cc_tool(
     name = "x86-g++",
     src = "//:bin/x86_64-zephyr-elf-g++",
     data = glob([
-        "lib/gcc/x86_64-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/x86_64-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/x86_64-zephyr-elf/14.3.0/**",
         "libexec/gcc/x86_64-zephyr-elf/14.3.0/**",
         "x86_64-zephyr-elf/bin/**",
     ]) + [":x86_stdlib"],
@@ -55,8 +58,7 @@ cc_tool(
     name = "x86-gcc",
     src = "//:bin/x86_64-zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/x86_64-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/x86_64-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/x86_64-zephyr-elf/14.3.0/**",
         "libexec/gcc/x86_64-zephyr-elf/14.3.0/**",
         "x86_64-zephyr-elf/bin/**",
     ]) + [":x86_stdlib"],

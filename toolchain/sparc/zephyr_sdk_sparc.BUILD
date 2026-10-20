@@ -16,10 +16,14 @@ filegroup(
 
 filegroup(
     name = "sparc_stdlib",
-    srcs = glob([
-        "sparc-zephyr-elf/include/**",
-        "sparc-zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "sparc-zephyr-elf/include/**",
+            "sparc-zephyr-elf/lib/**",
+            "sparc-zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -44,8 +48,7 @@ cc_tool(
     name = "sparc-g++",
     src = "//:bin/sparc-zephyr-elf-g++",
     data = glob([
-        "lib/gcc/sparc-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/sparc-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/sparc-zephyr-elf/14.3.0/**",
         "libexec/gcc/sparc-zephyr-elf/14.3.0/**",
         "sparc-zephyr-elf/bin/**",
     ]) + [":sparc_stdlib"],
@@ -55,8 +58,7 @@ cc_tool(
     name = "sparc-gcc",
     src = "//:bin/sparc-zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/sparc-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/sparc-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/sparc-zephyr-elf/14.3.0/**",
         "libexec/gcc/sparc-zephyr-elf/14.3.0/**",
         "sparc-zephyr-elf/bin/**",
     ]) + [":sparc_stdlib"],

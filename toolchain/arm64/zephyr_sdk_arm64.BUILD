@@ -16,10 +16,14 @@ filegroup(
 
 filegroup(
     name = "arm64_stdlib",
-    srcs = glob([
-        "aarch64-zephyr-elf/include/**",
-        "aarch64-zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "aarch64-zephyr-elf/include/**",
+            "aarch64-zephyr-elf/lib/**",
+            "aarch64-zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -44,8 +48,7 @@ cc_tool(
     name = "aarch64-g++",
     src = "//:bin/aarch64-zephyr-elf-g++",
     data = glob([
-        "lib/gcc/aarch64-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/aarch64-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/aarch64-zephyr-elf/14.3.0/**",
         "libexec/gcc/aarch64-zephyr-elf/14.3.0/**",
         "aarch64-zephyr-elf/bin/**",
     ]) + [":arm64_stdlib"],
@@ -55,8 +58,7 @@ cc_tool(
     name = "aarch64-gcc",
     src = "//:bin/aarch64-zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/aarch64-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/aarch64-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/aarch64-zephyr-elf/14.3.0/**",
         "libexec/gcc/aarch64-zephyr-elf/14.3.0/**",
         "aarch64-zephyr-elf/bin/**",
     ]) + [":arm64_stdlib"],

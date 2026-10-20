@@ -16,10 +16,14 @@ filegroup(
 
 filegroup(
     name = "riscv_stdlib",
-    srcs = glob([
-        "riscv64-zephyr-elf/include/**",
-        "riscv64-zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "riscv64-zephyr-elf/include/**",
+            "riscv64-zephyr-elf/lib/**",
+            "riscv64-zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -44,8 +48,7 @@ cc_tool(
     name = "riscv-g++",
     src = "//:bin/riscv64-zephyr-elf-g++",
     data = glob([
-        "lib/gcc/riscv64-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/riscv64-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/riscv64-zephyr-elf/14.3.0/**",
         "libexec/gcc/riscv64-zephyr-elf/14.3.0/**",
         "riscv64-zephyr-elf/bin/**",
     ]) + [":riscv_stdlib"],
@@ -55,8 +58,7 @@ cc_tool(
     name = "riscv-gcc",
     src = "//:bin/riscv64-zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/riscv64-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/riscv64-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/riscv64-zephyr-elf/14.3.0/**",
         "libexec/gcc/riscv64-zephyr-elf/14.3.0/**",
         "riscv64-zephyr-elf/bin/**",
     ]) + [":riscv_stdlib"],

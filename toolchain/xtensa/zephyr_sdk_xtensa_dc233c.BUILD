@@ -18,10 +18,14 @@ filegroup(
 
 filegroup(
     name = "xtensa_core_stdlib",
-    srcs = glob([
-        "xtensa-dc233c_zephyr-elf/include/**",
-        "xtensa-dc233c_zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "xtensa-dc233c_zephyr-elf/include/**",
+            "xtensa-dc233c_zephyr-elf/lib/**",
+            "xtensa-dc233c_zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -46,8 +50,7 @@ cc_tool(
     name = "xt-g++",
     src = "//:bin/xtensa-dc233c_zephyr-elf-g++",
     data = glob([
-        "lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/include/**",
-        "lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/**",
         "libexec/gcc/xtensa-dc233c_zephyr-elf/14.3.0/**",
         "xtensa-dc233c_zephyr-elf/bin/**",
     ]) + [":xtensa_core_stdlib"],
@@ -57,8 +60,7 @@ cc_tool(
     name = "xt-gcc",
     src = "//:bin/xtensa-dc233c_zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/include/**",
-        "lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/xtensa-dc233c_zephyr-elf/14.3.0/**",
         "libexec/gcc/xtensa-dc233c_zephyr-elf/14.3.0/**",
         "xtensa-dc233c_zephyr-elf/bin/**",
     ]) + [":xtensa_core_stdlib"],

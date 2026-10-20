@@ -16,10 +16,14 @@ filegroup(
 
 filegroup(
     name = "rx_stdlib",
-    srcs = glob([
-        "rx-zephyr-elf/include/**",
-        "rx-zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "rx-zephyr-elf/include/**",
+            "rx-zephyr-elf/lib/**",
+            "rx-zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -44,8 +48,7 @@ cc_tool(
     name = "rx-g++",
     src = "//:bin/rx-zephyr-elf-g++",
     data = glob([
-        "lib/gcc/rx-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/rx-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/rx-zephyr-elf/14.3.0/**",
         "libexec/gcc/rx-zephyr-elf/14.3.0/**",
         "rx-zephyr-elf/bin/**",
     ]) + [":rx_stdlib"],
@@ -55,8 +58,7 @@ cc_tool(
     name = "rx-gcc",
     src = "//:bin/rx-zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/rx-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/rx-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/rx-zephyr-elf/14.3.0/**",
         "libexec/gcc/rx-zephyr-elf/14.3.0/**",
         "rx-zephyr-elf/bin/**",
     ]) + [":rx_stdlib"],

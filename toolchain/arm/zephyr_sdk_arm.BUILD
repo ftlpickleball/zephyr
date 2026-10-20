@@ -28,14 +28,17 @@ cc_tool(
 cc_tool(
     name = "arm-zephyr-eabi-g++",
     src = "//:bin/arm-zephyr-eabi-g++",
-    data = glob([
-        "arm-zephyr-eabi/bin/**",
-        "arm-zephyr-eabi/include/**",
-        "arm-zephyr-eabi/lib/**",
-        "lib/gcc/arm-zephyr-eabi/*/include/**",
-        "lib/gcc/arm-zephyr-eabi/*/include-fixed/**",
-        "libexec/gcc/arm-zephyr-eabi/*/**",
-    ]),
+    data = glob(
+        [
+            "arm-zephyr-eabi/bin/**",
+            "arm-zephyr-eabi/include/**",
+            "arm-zephyr-eabi/lib/**",
+            "arm-zephyr-eabi/sys-include/**",
+            "lib/gcc/arm-zephyr-eabi/*/**",
+            "libexec/gcc/arm-zephyr-eabi/*/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 # TODO: https://github.com/bazelbuild/rules_cc/issues/235 - Workaround until
@@ -48,14 +51,17 @@ alias(
 cc_tool(
     name = "arm-zephyr-eabi-gcc",
     src = "//:bin/arm-zephyr-eabi-gcc",
-    data = glob([
-        "arm-zephyr-eabi/bin/**",
-        "arm-zephyr-eabi/include/**",
-        "arm-zephyr-eabi/lib/**",
-        "lib/gcc/arm-zephyr-eabi/*/include/**",
-        "lib/gcc/arm-zephyr-eabi/*/include-fixed/**",
-        "libexec/gcc/arm-zephyr-eabi/*/**",
-    ]),
+    data = glob(
+        [
+            "arm-zephyr-eabi/bin/**",
+            "arm-zephyr-eabi/include/**",
+            "arm-zephyr-eabi/lib/**",
+            "arm-zephyr-eabi/sys-include/**",
+            "lib/gcc/arm-zephyr-eabi/*/**",
+            "libexec/gcc/arm-zephyr-eabi/*/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool(
@@ -71,8 +77,8 @@ filegroup(
             "arm-zephyr-eabi/bin/**",
             "arm-zephyr-eabi/include/**",
             "arm-zephyr-eabi/lib/**",
-            "lib/gcc/arm-zephyr-eabi/*/include/**",
-            "lib/gcc/arm-zephyr-eabi/*/include-fixed/**",
+            "arm-zephyr-eabi/sys-include/**",
+            "lib/gcc/arm-zephyr-eabi/*/**",
             "libexec/gcc/arm-zephyr-eabi/*/**",
         ],
         allow_empty = True,

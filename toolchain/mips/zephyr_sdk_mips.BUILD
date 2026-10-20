@@ -16,10 +16,14 @@ filegroup(
 
 filegroup(
     name = "mips_stdlib",
-    srcs = glob([
-        "mips-zephyr-elf/include/**",
-        "mips-zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "mips-zephyr-elf/include/**",
+            "mips-zephyr-elf/lib/**",
+            "mips-zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -44,8 +48,7 @@ cc_tool(
     name = "mips-g++",
     src = "//:bin/mips-zephyr-elf-g++",
     data = glob([
-        "lib/gcc/mips-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/mips-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/mips-zephyr-elf/14.3.0/**",
         "libexec/gcc/mips-zephyr-elf/14.3.0/**",
         "mips-zephyr-elf/bin/**",
     ]) + [":mips_stdlib"],
@@ -55,8 +58,7 @@ cc_tool(
     name = "mips-gcc",
     src = "//:bin/mips-zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/mips-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/mips-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/mips-zephyr-elf/14.3.0/**",
         "libexec/gcc/mips-zephyr-elf/14.3.0/**",
         "mips-zephyr-elf/bin/**",
     ]) + [":mips_stdlib"],

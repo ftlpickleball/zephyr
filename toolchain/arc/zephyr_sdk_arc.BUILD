@@ -16,10 +16,14 @@ filegroup(
 
 filegroup(
     name = "arc_stdlib",
-    srcs = glob([
-        "arc-zephyr-elf/include/**",
-        "arc-zephyr-elf/lib/**",
-    ]),
+    srcs = glob(
+        [
+            "arc-zephyr-elf/include/**",
+            "arc-zephyr-elf/lib/**",
+            "arc-zephyr-elf/sys-include/**",
+        ],
+        allow_empty = True,
+    ),
 )
 
 cc_tool_map(
@@ -44,8 +48,7 @@ cc_tool(
     name = "arc-g++",
     src = "//:bin/arc-zephyr-elf-g++",
     data = glob([
-        "lib/gcc/arc-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/arc-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/arc-zephyr-elf/14.3.0/**",
         "libexec/gcc/arc-zephyr-elf/14.3.0/**",
         "arc-zephyr-elf/bin/**",
     ]) + [":arc_stdlib"],
@@ -55,8 +58,7 @@ cc_tool(
     name = "arc-gcc",
     src = "//:bin/arc-zephyr-elf-gcc",
     data = glob([
-        "lib/gcc/arc-zephyr-elf/14.3.0/include/**",
-        "lib/gcc/arc-zephyr-elf/14.3.0/include-fixed/**",
+        "lib/gcc/arc-zephyr-elf/14.3.0/**",
         "libexec/gcc/arc-zephyr-elf/14.3.0/**",
         "arc-zephyr-elf/bin/**",
     ]) + [":arc_stdlib"],
