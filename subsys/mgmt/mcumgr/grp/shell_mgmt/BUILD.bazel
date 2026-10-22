@@ -14,7 +14,11 @@ zephyr_cc_library(
         "src/shell_mgmt.c",
     ],
     hdrs = glob(
-        ["*.h"],
+        [
+            "*.h",
+            "include/**/*.h",
+        ],
         allow_empty = True,
     ),
+    includes = ["include"],
 )

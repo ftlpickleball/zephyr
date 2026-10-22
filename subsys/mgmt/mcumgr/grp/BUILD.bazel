@@ -67,5 +67,10 @@ zephyr_cc_library(
             "//" + package_name() + "/enum_mgmt",
         ],
         "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_TRANSPORT=true": [
+            "//" + package_name() + "/transport_mgmt",
+        ],
+        "//conditions:default": [],
     }),
 )

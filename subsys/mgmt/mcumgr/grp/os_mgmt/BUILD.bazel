@@ -3,9 +3,19 @@
 # Auto-generated from corresponding CMakeLists.txt in Zephyr using scripts
 # in zephyr-bazel.
 
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
+
+cc_library(
+    name = "headers",
+    hdrs = glob(
+        ["include/**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["include"],
+)
 
 zephyr_cc_library(
     name = "os_mgmt",

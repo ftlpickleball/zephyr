@@ -442,10 +442,31 @@ cc_library(
         "@zephyr_kconfig//:CONFIG_MBEDTLS_BUILTIN=true": ["@mbedtls//:headers"],
         "//conditions:default": [],
     }) + select({
+        "@zephyr_kconfig//:CONFIG_LWM2M=true": [
+            "//subsys/net/lib/lwm2m:headers",
+        ],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_MCUBOOT_BOOTUTIL_LIB=true": ["@mcuboot//:headers"],
         "//conditions:default": [],
     }) + select({
         "@zephyr_kconfig//:CONFIG_LIBSBC=true": ["@libsbc//:headers"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR=true": [
+            "//subsys/mgmt/mcumgr/transport:headers",
+            "//subsys/mgmt/mcumgr/util:headers",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_MCUMGR_GRP_OS=true": [
+            "//subsys/mgmt/mcumgr/grp/os_mgmt:headers",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_ZCBOR=true": [
+            "//modules/zcbor:headers",
+        ],
         "//conditions:default": [],
     }),
 )

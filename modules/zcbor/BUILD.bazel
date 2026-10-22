@@ -1,0 +1,18 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "external.BUILD",
+])
+
+alias(
+    name = "headers",
+    actual = "@zcbor//:headers",
+)
+
+alias(
+    name = "zcbor",
+    actual = "@zcbor//:zcbor",
+)

@@ -17,9 +17,13 @@ zephyr_cc_library(
         "src/zephyr_img_mgmt.c",
     ],
     hdrs = glob(
-        ["*.h"],
+        [
+            "*.h",
+            "include/**/*.h",
+        ],
         allow_empty = True,
     ),
+    includes = ["include"],
     deps = [
     ] + select({
         "@zephyr_kconfig//:CONFIG_MCUBOOT_IMG_MANAGER=true": [":img_mgmt_config_mcuboot_img_manager_deps"],

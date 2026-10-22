@@ -29,9 +29,13 @@ zephyr_cc_library(
         ],
     }),
     hdrs = glob(
-        ["*.h"],
+        [
+            "*.h",
+            "include/**/*.h",
+        ],
         allow_empty = True,
     ),
+    includes = ["include"],
     deps = [
     ] + select({
         ":config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256": [":fs_mgmt_config_mcumgr_grp_fs_checksum_hash_and_config_mcumgr_grp_fs_hash_sha256_deps"],

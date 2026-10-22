@@ -4,9 +4,19 @@
 # in zephyr-bazel.
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("//bazel:cc.bzl", "zephyr_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
+
+cc_library(
+    name = "headers",
+    hdrs = glob(
+        ["include/**/*.h"],
+        allow_empty = True,
+    ),
+    includes = ["include"],
+)
 
 zephyr_cc_library(
     name = "util",
