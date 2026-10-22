@@ -436,6 +436,9 @@ cc_library(
         ":internal_zephyr_optional_deps",
         "//include:zephyr",
     ] + select({
+        "@zephyr_kconfig//:CONFIG_FAT_FILESYSTEM_ELM=true": ["@fatfs//:headers"],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_MBEDTLS_BUILTIN=true": ["@mbedtls//:headers"],
         "//conditions:default": [],
     }) + select({

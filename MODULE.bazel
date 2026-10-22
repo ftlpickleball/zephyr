@@ -213,6 +213,12 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/libsbc.git",
 )
 
+new_git_repository(
+    name = "fatfs",
+    build_file = "@zephyr//modules/fatfs:external.BUILD",
+    commit = "f4ead3bf4a6dab3a07d7b5f5315795c073db568d",
+    remote = "https://github.com/zephyrproject-rtos/fatfs.git",
+)
 
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
 zephyr_setup.env(

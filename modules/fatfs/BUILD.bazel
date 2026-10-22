@@ -1,0 +1,53 @@
+# Copyright 2026 Google LLC
+#
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files([
+    "external.BUILD",
+])
+
+cc_library(
+    name = "fatfs_config",
+    hdrs = [
+        "zephyr_fatfs_config.h",
+        "zfs_diskio.h",
+    ],
+    defines = [
+        "ZEPHYR_CONFIG_OVERRIDE=zephyr_fatfs_config.h",
+    ],
+    strip_include_prefix = ".",
+    deps = [
+        "//:autoconf_library",
+        "//:dts_cc_library",
+        "//include:zephyr",
+        "//kernel:headers",
+    ],
+)
+
+selects.config_setting_group(
+    name = "need_ffsystem",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_FS_FATFS_LFN=true",
+        "@zephyr_kconfig//:CONFIG_FS_FATFS_REENTRANT=true",
+    ],
+)
+
+zephyr_cc_library(
+    name = "zephyr_fatfs_support",
+    srcs = [
+        "zfs_diskio.c",
+    ] + select({
+        ":need_ffsystem": ["zfs_ffsystem.c"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        ":fatfs_config",
+        "@fatfs//:headers",
+    ],
+)

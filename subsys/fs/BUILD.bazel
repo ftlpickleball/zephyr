@@ -87,6 +87,12 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    deps = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_FAT_FILESYSTEM_ELM=true": [
+            "@fatfs",
+        ],
+    }),
 )
 
 zephyr_cc_library(
