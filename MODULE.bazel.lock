@@ -1088,7 +1088,7 @@
     },
     "@@pigweed+//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "IPJOjaITx1vbx40OgfBkuXpxkdlI+mMIIpKopsyKsLc=",
+        "bzlTransitiveDigest": "LsmHp3HyjSnXuQaBb2/ScvFqd/5Zk5UhuCUByyq295M=",
         "usagesDigest": "5l07FHx9GK/1nh6WWiaVKdhBiUvxrImJhYJhl61b7Nk=",
         "recordedInputs": [
           "REPO_MAPPING:pigweed+,bazel_tools bazel_tools"
