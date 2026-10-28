@@ -1045,7 +1045,7 @@
     },
     "@@pigweed+//pw_toolchain/cc:pw_cxx_toolchain.bzl%pw_cxx_toolchain": {
       "general": {
-        "bzlTransitiveDigest": "d7942JN5TheDRNFPvwPleg3sgY7VmlPbOjpTsmbsEPw=",
+        "bzlTransitiveDigest": "5sI5StdcYqH0PzMKFh7DiNIX+MGKLFkKPNBP7o2l7lE=",
         "usagesDigest": "MV36sSJPFOyvIE09gZFfN6l/jNE2llN1IdKQKUQ/P6U=",
         "recordedInputs": [
           "REPO_MAPPING:pigweed+,bazel_tools bazel_tools"
@@ -1088,7 +1088,7 @@
     },
     "@@pigweed+//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
-        "bzlTransitiveDigest": "LsmHp3HyjSnXuQaBb2/ScvFqd/5Zk5UhuCUByyq295M=",
+        "bzlTransitiveDigest": "wlVcmcJ2Kp/pJy09MJl8AslKG0hsAOLIlcqgTa5LG6g=",
         "usagesDigest": "0D5o8GLulR93gEIpxxGEn9ZPlIQ9qdzM0Eizw+6pWYA=",
         "recordedInputs": [
           "REPO_MAPPING:pigweed+,bazel_tools bazel_tools"
