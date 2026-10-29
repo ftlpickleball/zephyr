@@ -96,6 +96,7 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     strip_include_prefix = ".",
+    deps = ["//subsys/usb/device_next/app"],
 )
 
 zephyr_linker_fragment(

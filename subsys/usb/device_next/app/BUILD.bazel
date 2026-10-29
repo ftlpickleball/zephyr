@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "app",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_CDC_ACM_SERIAL_INITIALIZE_AT_BOOT=true": [
+            "cdc_acm_serial.c",
+        ],
+    }),
+)
