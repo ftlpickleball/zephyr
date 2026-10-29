@@ -16,6 +16,8 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    # CMake: zephyr_include_directories(.)
+    includes = ["."],
     deps = [
     ] + select({
         "@zephyr_kconfig//:CONFIG_NRF_USBD_COMMON=true": [":nrf_usbd_common_config_nrf_usbd_common_deps"],
