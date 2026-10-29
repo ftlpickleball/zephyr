@@ -100,3 +100,10 @@ py_binary(
     name = "file2hex",
     srcs = ["file2hex.py"],
 )
+
+# uf2conv.py reads uf2families.json from its own directory at runtime.
+py_binary(
+    name = "uf2conv",
+    srcs = ["uf2conv.py"],
+    data = ["uf2families.json"],
+)
