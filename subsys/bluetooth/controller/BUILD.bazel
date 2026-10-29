@@ -372,6 +372,7 @@ cc_library(
         allow_empty = True,
     ),
     includes = [
+        ".",
         "../crypto",
         "include",
         "ll_sw",

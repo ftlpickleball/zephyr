@@ -127,9 +127,16 @@ cc_library(
     textual_hdrs = glob(["nrfx/bsp/**/*.c"], allow_empty = True),
     includes = _NORDIC_INCLUDES,
     defines = _CHIP_DEFINES,
+    # nrfx_reserved_resources.h includes <bt_ctlr_used_resources.h> from the SW
+    # controller's nrfx_glue dir when the Nordic LLL is built.
     deps = [
         "@zephyr//modules/hal_nordic/nrfx:nrfx_hdrs",
-    ],
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_BT_LLL_VENDOR_NORDIC=true": [
+            "@zephyr//subsys/bluetooth/controller/ll_sw/nordic:hdrs",
+        ],
+        "//conditions:default": [],
+    }),
 )
 
 filegroup(

@@ -234,6 +234,7 @@ cc_library(
         allow_empty = True,
     ),
     includes = [
+        ".",
         "hci",
         "hal/nrf5/nrfx_glue",
     ],
