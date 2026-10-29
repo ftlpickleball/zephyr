@@ -1,0 +1,80 @@
+# Keeps ftlp/v4.4 current with Pigweed's in-tree Bazel Zephyr fork, and keeps
+# every inherited upstream Zephyr workflow disabled on this mirror.
+name: ftlp-sync-upstream
+
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ftlp-sync-upstream
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_URL: https://pigweed.googlesource.com/third_party/github/zephyrproject-rtos/zephyr
+  UPSTREAM_BRANCH: v4.4-branch
+  MIRROR_BRANCH: upstream/v4.4-branch
+  FTLP_BRANCH: ftlp/v4.4
+  SELF_PATH: .github/workflows/ftlp-sync-upstream.yml
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mint ftlp-creds installation token
+        # App token, not GITHUB_TOKEN: pushing upstream .github/workflows edits
+        # needs Workflows: write, and disabling workflows needs Actions: write.
+        id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.FTLP_CREDS_APP_ID }}
+          private-key: ${{ secrets.FTLP_CREDS_APP_KEY }}
+          repositories: zephyr
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.FTLP_BRANCH }}
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Gate inherited upstream workflows
+        # Before the push, so a merge cannot trigger an already-known workflow.
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh workflow list --all --json id,path,state \
+            --jq ".[] | select(.path != \"${SELF_PATH}\" and .state == \"active\") | .id" |
+            while read -r id; do gh workflow disable "$id"; done
+
+      - name: Merge upstream into the ftlp branch
+        # Merge, never rebase: xiao/MODULE.bazel pins ftlp/v4.4 commits by SHA,
+        # and a rebase orphans them. A conflict fails here and pushes nothing.
+        run: |
+          set -euo pipefail
+          git config user.name "ftlp-creds[bot]"
+          git config user.email "ftlp-creds[bot]@users.noreply.github.com"
+          git fetch "$UPSTREAM_URL" "$UPSTREAM_BRANCH"
+          git push --force origin "FETCH_HEAD:refs/heads/${MIRROR_BRANCH}"
+          git merge --no-edit FETCH_HEAD
+          git push origin "HEAD:refs/heads/${FTLP_BRANCH}"
+
+      - name: Gate workflows the merge added, cancel their runs
+        # A workflow file new in this merge fires on the push above before it
+        # has an id to disable; disable it now and cancel what it queued.
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh workflow list --all --json id,path,state \
+            --jq ".[] | select(.path != \"${SELF_PATH}\" and .state == \"active\") | .id" |
+            while read -r id; do gh workflow disable "$id"; done
+          for status in queued in_progress; do
+            gh run list --status "$status" --limit 100 --json databaseId,workflowName \
+              --jq ".[] | select(.workflowName != \"${GITHUB_WORKFLOW}\") | .databaseId" |
+              while read -r run; do gh run cancel "$run" || true; done
+          done
