@@ -39,10 +39,14 @@ def _requirement_to_py_repo_dir(ctx, dep):
 
     # rules_python >= 0.40.0 uses dynamically generated repository hashes for wheel targets.
     # Read the hub-level BUILD file to get the actual resolved repository name.
+    # The hub aliases one wheel repo per registered python version; take the one
+    # matching the default interpreter, or its compiled wheels fail to import.
+    version_tag = "_" + DEFAULT_PYTHON_VERSION.replace(".", "") + "_"
     if build_bazel_path.exists:
         build_content = ctx.read(build_bazel_path)
         for line in build_content.splitlines():
-            if '"' + _PIP_HUB_NAME + "_" in line and line.strip().endswith('",'):
+            if ('"' + _PIP_HUB_NAME + version_tag in line and
+                line.strip().endswith('",')):
                 parts = line.split('"')
                 if len(parts) >= 3:
                     actual_repo = parts[-2]
