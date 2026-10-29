@@ -241,7 +241,30 @@ filegroup(
     }) + select({
         "@zephyr_kconfig//:CONFIG_NRFX_UARTE=true": ["nrfx/drivers/src/nrfx_uarte.c"],
         "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NRFX_NVMC=true": ["nrfx/drivers/src/nrfx_nvmc.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NRFX_PDM=true": ["nrfx/drivers/src/nrfx_pdm.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NRFX_TWI=true": ["nrfx/drivers/src/nrfx_twi.c"],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_NRFX_TWIM=true": ["nrfx/drivers/src/nrfx_twim.c"],
+        "//conditions:default": [],
+    }) + select({
+        ":twi_or_twim_enabled": ["nrfx/drivers/src/nrfx_twi_twim.c"],
+        "//conditions:default": [],
     }),
+)
+
+selects.config_setting_group(
+    name = "twi_or_twim_enabled",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_NRFX_TWI=true",
+        "@zephyr_kconfig//:CONFIG_NRFX_TWIM=true",
+    ],
 )
 
 zephyr_module(
