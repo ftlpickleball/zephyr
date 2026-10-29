@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+load("//bazel:runner.bzl", "zephyr_runner_config")
+
+package(default_visibility = ["//visibility:public"])
+
+dts_library(
+    name = "devicetree_lib_nrf52840_sense",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "xiao_ble_nrf52840_sense.dts",
+    references = [
+        "seeed_xiao_connector.dtsi",
+        "xiao_ble-pinctrl.dtsi",
+        "xiao_ble_common.dtsi",
+        "//boards:common/usb/cdc_acm_serial.dtsi",
+        "//dts/arm/nordic",
+        "//dts/common",
+        "//dts/vendor",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated_nrf52840_sense",
+    bindings = ["//dts:bindings"],
+    dts_lib = ":devicetree_lib_nrf52840_sense",
+    target_compatible_with = [":seeed_xiao_ble"],
+)
+
+alias(
+    name = "devicetree_generated",
+    actual = ":devicetree_generated_nrf52840_sense",
+)
+
+constraint_value(
+    name = "seeed_xiao_ble",
+    constraint_setting = "//boards:board_name",
+)
+
+cc_library(
+    name = "hal_soc_headers_library",
+    deps = [
+        "//modules/hal_nordic/nrfx:nrfx_hdrs",
+        "//soc/nordic/nrf52:nrf52_hdrs",
+        "@hal_nordic//:dt_interface",
+    ],
+)
+
+zephyr_runner_config(
+    name = "nrf52840_runner",
+    args = [
+        "--device=nRF52840_xxAA",
+        "--speed=4000",
+    ],
+    runner = "jlink",
+)
+
+platform(
+    name = "nrf52840_sense",
+    constraint_values = [
+        ":seeed_xiao_ble",
+        "@platforms//cpu:armv7e-m",
+        "//constraints/arm:cortex-m4",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_runner_config": "@zephyr//boards/seeed/xiao_ble:nrf52840_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/seeed/xiao_ble:devicetree_generated_nrf52840_sense",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/seeed/xiao_ble:hal_soc_headers_library",
+        "@zephyr//:soc": "@zephyr//soc/nordic/nrf52",
+    }),
+    parents = ["//platforms:cortex_m"],
+)
+
+alias(
+    name = "xiao_ble",
+    actual = ":nrf52840_sense",
+)
