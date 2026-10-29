@@ -249,6 +249,11 @@ zephyr_cc_library(
             "//" + package_name() + "/st/lsm6dsv16x",
         ],
     }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LSM6DSL=true": [
+            "//" + package_name() + "/st/lsm6dsl",
+        ],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_INA2XX=true": [
             "//drivers/sensor/ti/ina2xx",
         ],
