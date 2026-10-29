@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: "17 9 * * *"
   workflow_dispatch:
+  # Registers the workflow; schedule/dispatch alone never trigger registration.
+  push:
+    branches: [ftlp/v4.4]
+    paths: [.github/workflows/ftlp-sync-upstream.yml]
 
 permissions:
   contents: read
