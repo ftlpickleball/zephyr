@@ -208,6 +208,45 @@ def zephyr_module(*, name, config, srcs = [], deps = [], **kwargs):
         **dict(remaining_kwargs, **gated_args)
     )
 
+_RUST_TOOLCHAIN_TYPE = "@rules_rust//rust:toolchain_type"
+
+def _rust_runtime_library_paths(ctx):
+    """Returns the paths of the Rust toolchain's runtime libraries.
+
+    rules_rust adds the Rust runtime libraries (core, alloc,
+    compiler_builtins, ...) and the toolchain's allocator library to the
+    CcInfo of every rust_library (rlib), so C/C++ binaries can link rlibs.
+    Like libc and the compiler runtime, these must be linked lazily: forcing
+    them into --whole-archive pulls in every object, whose references (e.g.
+    alloc's references to the global allocator) must then all resolve, and
+    compiler_builtins' definitions would take precedence over the C
+    toolchain's runtime library.
+
+    Args:
+        ctx: The rule context.
+
+    Returns:
+        A dict whose keys are the paths of the runtime library archives.
+    """
+    rust_toolchain = ctx.toolchains[_RUST_TOOLCHAIN_TYPE]
+    if not rust_toolchain:
+        return {}
+    paths = {}
+    for field in [
+        "libstd_and_allocator_ccinfo",
+        "libstd_and_global_allocator_ccinfo",
+        "nostd_and_global_allocator_ccinfo",
+    ]:
+        cc_info = getattr(rust_toolchain, field, None)
+        if not cc_info or not cc_info.linking_context:
+            continue
+        for linker_input in cc_info.linking_context.linker_inputs.to_list():
+            for lib in linker_input.libraries:
+                for f in [lib.static_library, lib.pic_static_library]:
+                    if f:
+                        paths[f.path] = True
+    return paths
+
 # Why transitive CcInfo transformation is used over grouped flags:
 # Passing archives inside a single -Wl,--whole-archive group on the
 # linker command line is brittle in Bazel. If an external library (such
@@ -219,6 +258,16 @@ def zephyr_module(*, name, config, srcs = [], deps = [], **kwargs):
 # native C++ toolchain topological link ordering and deduplication.
 def _zephyr_inject_alwayslink_to_deps_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
+    rust_runtime_libs = _rust_runtime_library_paths(ctx)
+
+    def is_generated_static(lib):
+        static_library = lib.static_library or lib.pic_static_library
+        return bool(
+            static_library and
+            not static_library.is_source and
+            static_library.path not in rust_runtime_libs,
+        )
+
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
@@ -252,11 +301,10 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
 
             # Pass through untouched if no library requires alwayslink.
             # Precompiled source archives (is_source == True) are external blobs
-            # and must not be forced into --whole-archive.
+            # and must not be forced into --whole-archive, nor must the Rust
+            # runtime libraries (see _rust_runtime_library_paths).
             needs_wrap = any([
-                not lib.alwayslink and
-                ((lib.static_library and not lib.static_library.is_source) or
-                 (lib.pic_static_library and not lib.pic_static_library.is_source))
+                not lib.alwayslink and is_generated_static(lib)
                 for lib in linker_input.libraries
             ])
             if not needs_wrap:
@@ -265,11 +313,7 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
 
             new_libraries = []
             for lib in linker_input.libraries:
-                is_generated_static = (
-                    (lib.static_library and not lib.static_library.is_source) or
-                    (lib.pic_static_library and not lib.pic_static_library.is_source)
-                )
-                if lib.alwayslink or not is_generated_static:
+                if lib.alwayslink or not is_generated_static(lib):
                     new_libraries.append(lib)
                     continue
                 new_libraries.append(cc_common.create_library_to_link(
@@ -327,7 +371,10 @@ _zephyr_inject_alwayslink_to_deps = rule(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    toolchains = [
+        "@bazel_tools//tools/cpp:toolchain_type",
+        config_common.toolchain_type(_RUST_TOOLCHAIN_TYPE, mandatory = False),
+    ],
     fragments = ["cpp"],
 )
 
