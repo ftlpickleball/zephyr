@@ -699,7 +699,7 @@
     "@@aspect_rules_js+//npm:extensions.bzl%pnpm": {
       "general": {
         "bzlTransitiveDigest": "m7HQA6bdfnOprO4uLlqLBAbdM41wrLXP3Slp2kpeqrM=",
-        "usagesDigest": "KF2nKYlqKCiZE6AQ8LDFAtrgCAibIMKiUNOBwNBCxGg=",
+        "usagesDigest": "UCPGCdTkoflpzf0ShZ9hsk2zN6bbQlRvpRRZJnniDDc=",
         "recordedInputs": [
           "REPO_MAPPING:aspect_bazel_lib+,bazel_lib bazel_lib+",
           "REPO_MAPPING:aspect_bazel_lib+,bazel_skylib bazel_skylib+",
