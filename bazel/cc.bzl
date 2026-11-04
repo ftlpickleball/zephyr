@@ -247,6 +247,30 @@ def _rust_runtime_library_paths(ctx):
                         paths[f.path] = True
     return paths
 
+def _toolchain_runtime_library_flags(cc_toolchain, feature_configuration):
+    """Returns the C toolchain's runtime library flags (e.g. -lc, -lm).
+
+    These are the -l flags that the C/C++ toolchain adds to every link of an
+    executable, i.e. its C/C++ runtime libraries (libc, libm, the compiler
+    runtime, ...).
+
+    Args:
+        cc_toolchain: The C/C++ toolchain.
+        feature_configuration: The feature configuration of the link.
+
+    Returns:
+        A list of flags.
+    """
+    command_line = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = "c++-link-executable",
+        variables = cc_common.create_link_variables(
+            cc_toolchain = cc_toolchain,
+            feature_configuration = feature_configuration,
+        ),
+    )
+    return [arg for arg in command_line if arg.startswith("-l")]
+
 # Why transitive CcInfo transformation is used over grouped flags:
 # Passing archives inside a single -Wl,--whole-archive group on the
 # linker command line is brittle in Bazel. If an external library (such
@@ -276,6 +300,7 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
     )
 
     new_linker_inputs = []
+    rust_runtime_files = []
     seen = {}
     comp_contexts = []
     for dep in ctx.attr.deps:
@@ -298,6 +323,30 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
             if owner_key in seen:
                 continue
             seen[owner_key] = True
+
+            # Take out the Rust runtime libraries; they are linked at the end
+            # (see below).
+            rust_runtime_in_input = [
+                lib.static_library or lib.pic_static_library
+                for lib in linker_input.libraries
+                if (lib.static_library or lib.pic_static_library) and
+                   (lib.static_library or lib.pic_static_library).path in rust_runtime_libs
+            ]
+            if rust_runtime_in_input:
+                rust_runtime_files.extend(rust_runtime_in_input)
+                add_inputs = linker_input.additional_inputs
+                if type(add_inputs) != "depset":
+                    add_inputs = depset(add_inputs or [])
+                linker_input = cc_common.create_linker_input(
+                    owner = linker_input.owner,
+                    libraries = depset([
+                        lib
+                        for lib in linker_input.libraries
+                        if (lib.static_library or lib.pic_static_library) not in rust_runtime_in_input
+                    ], order = "topological"),
+                    user_link_flags = linker_input.user_link_flags,
+                    additional_inputs = add_inputs,
+                )
 
             # Pass through untouched if no library requires alwayslink.
             # Precompiled source archives (is_source == True) are external blobs
@@ -339,6 +388,30 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
                 user_link_flags = linker_input.user_link_flags,
                 additional_inputs = add_inputs,
             ))
+
+    # Link the Rust runtime libraries after the C toolchain's runtime
+    # libraries. Rust's compiler_builtins defines many symbols that the C
+    # runtime also defines (C math functions, mem*, __aeabi_*, ...), as weak
+    # symbols. The linker resolves an undefined symbol from the first
+    # archive that defines it, so if the Rust runtime libraries came first,
+    # C code would use compiler_builtins' definitions instead of the C
+    # runtime's, e.g. a math function built for a different float ABI.
+    #
+    # The C runtime libraries are added by the toolchain at the end of the
+    # link, after all user link flags, so list them again here, after all
+    # other libraries of the binary and before the Rust runtime libraries.
+    # compiler_builtins still provides the symbols that only it defines
+    # (e.g. 128-bit integer intrinsics).
+    if rust_runtime_files:
+        rust_runtime_files = depset(rust_runtime_files).to_list()
+        new_linker_inputs.append(cc_common.create_linker_input(
+            owner = ctx.label,
+            user_link_flags = _toolchain_runtime_library_flags(
+                cc_toolchain,
+                feature_configuration,
+            ) + [f.path for f in rust_runtime_files],
+            additional_inputs = depset(rust_runtime_files),
+        ))
 
     if comp_contexts:
         comp_ctx = cc_common.merge_compilation_contexts(
