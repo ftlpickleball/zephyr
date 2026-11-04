@@ -656,9 +656,9 @@ cc_args(
         "-lc++",
         "-lc++abi",
         "-lunwind",
-        "-l:libclang_rt.builtins.a",
         "-lc",
         "-lm",
+        "-l:libclang_rt.builtins.a",
     ],
 )
 
