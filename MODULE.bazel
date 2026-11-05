@@ -17,8 +17,8 @@ bazel_dep(name = "pigweed")
 git_override(
     module_name = "pigweed",
     # ROLL: Warning: this is automatically updated by
-    # ROLL: https://cr-buildbucket.appspot.com/build/8665981474126834145
-    commit = "d6f58404d469a1b4757f3596b7293496d43dc8a4",
+    # ROLL: https://cr-buildbucket.appspot.com/build/8665936668499666049
+    commit = "14526ac9c8d58f3067146265573d23057a081e77",
     remote = "https://pigweed.googlesource.com/pigweed/pigweed",
 )
 
