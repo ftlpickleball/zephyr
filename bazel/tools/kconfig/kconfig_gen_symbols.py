@@ -242,8 +242,7 @@ def setup_kconfig_environment(zephyr_base, tmp_dir, modules=None):
             for m in modules:
                 if os.path.isdir(m):
                     module_name = (
-                        os.path.basename(m.rstrip("/"))
-                        .split("+")[-1]
+                        kconfig_utils.module_name_from_dir(m)
                         .replace("-", "_")
                         .upper()
                     )

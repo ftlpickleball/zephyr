@@ -609,6 +609,22 @@ class TestKconfigGenValues(unittest.TestCase):
         content = Path(kconfig_env_file).read_text()
         self.assertIn(f"ZEPHYR_HAL_NORDIC_MODULE_DIR={os.path.abspath(module_dir)}", content)
 
+    def test_setup_environment_with_bazel_module_repo(self):
+        args = MagicMock()
+        args.board = "nrf52840dk"
+        args.toolchain_variant = None
+        # A bazel_dep module's repo is named "<module>+".
+        module_dir = os.path.join(self.test_dir, "external", "hal_nordic+")
+        os.makedirs(module_dir, exist_ok=True)
+        args.modules = [module_dir]
+
+        output_dir = os.path.join(self.test_dir, "out")
+        board_dir = os.path.join(self.test_dir, "board")
+
+        kconfig_gen_values.setup_environment(args, str(self.zephyr_base), output_dir, board_dir)
+
+        self.assertEqual(os.environ["ZEPHYR_HAL_NORDIC_MODULE_DIR"], os.path.abspath(module_dir))
+
     def test_generate_kconfig_aggregations_with_modules(self):
         output_dir = os.path.join(self.test_dir, "out")
         board_dir = os.path.join(self.test_dir, "board")

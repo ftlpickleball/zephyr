@@ -359,6 +359,20 @@ board:
         )
         self.assertNotIn(self.test_dir, content)
 
+    def test_setup_kconfig_environment_with_bazel_module_repo(self):
+        tmp_dir = os.path.join(self.test_dir, "tmp")
+        # A bazel_dep module's repo is named "<module>+".
+        module_dir = os.path.join(self.test_dir, "external", "hal_nordic+")
+        os.makedirs(module_dir, exist_ok=True)
+
+        kconfig_gen_symbols.setup_kconfig_environment(
+            str(self.zephyr_base), tmp_dir, [module_dir]
+        )
+
+        self.assertEqual(
+            os.environ["ZEPHYR_HAL_NORDIC_MODULE_DIR"], os.path.abspath(module_dir)
+        )
+
     def test_setup_kconfig_environment_with_bzlmod_modules(self):
         tmp_dir = os.path.join(self.test_dir, "tmp")
         module_dir = os.path.join(self.test_dir, "external", "+_repo_rules+hal_nordic")

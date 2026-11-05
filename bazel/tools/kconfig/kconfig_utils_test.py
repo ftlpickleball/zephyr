@@ -152,6 +152,39 @@ class TestKconfigUtils(unittest.TestCase):
             # Verify config name is parsed correctly: '+_repo_rules+hal_nordic' -> 'HAL_NORDIC'
             self.assertIn('config ZEPHYR_HAL_NORDIC_MODULE', content)
 
+    def test_generate_kconfig_modules_with_bazel_dep_name(self):
+        zephyr_base = os.path.join(self.test_dir, "zephyr")
+        os.makedirs(os.path.join(zephyr_base, "modules"), exist_ok=True)
+
+        # A bazel_dep module's repo is named "<module>+".
+        extra_dir = os.path.join(self.test_dir, "hal_nordic+")
+        os.makedirs(extra_dir)
+        with open(os.path.join(extra_dir, "Kconfig"), 'w') as f:
+            f.write("hal_nordic kconfig")
+
+        output_file = os.path.join(self.test_dir, "Kconfig.modules")
+
+        kconfig_utils.generate_kconfig_modules(zephyr_base, [extra_dir], output_file)
+
+        with open(output_file, 'r') as f:
+            content = f.read()
+            self.assertIn('config ZEPHYR_HAL_NORDIC_MODULE', content)
+            self.assertNotIn('config ZEPHYR__MODULE', content)
+
+    def test_module_name_from_dir(self):
+        cases = {
+            "hal_foo+": "hal_foo",
+            "hal_foo+1.2.3": "hal_foo",
+            "+_repo_rules+hal_foo": "hal_foo",
+            "owner++ext+hal_foo": "hal_foo",
+            "hal_foo": "hal_foo",
+        }
+        for dirname, name in cases.items():
+            with self.subTest(dirname=dirname):
+                self.assertEqual(
+                    kconfig_utils.module_name_from_dir(f"/ext/{dirname}/"), name
+                )
+
     def test_generate_kconfig_modules_precedence(self):
         zephyr_base = os.path.join(self.test_dir, "zephyr")
         os.makedirs(os.path.join(zephyr_base, "modules"), exist_ok=True)

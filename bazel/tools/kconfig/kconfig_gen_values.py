@@ -76,7 +76,7 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
         if args.modules:
             for m in args.modules:
                 if os.path.isdir(m):
-                    module_name = os.path.basename(m.rstrip('/')).split('+')[-1].replace('-', '_').upper()
+                    module_name = kconfig_utils.module_name_from_dir(m).replace('-', '_').upper()
                     f.write(f"ZEPHYR_{module_name}_MODULE_DIR={os.path.abspath(m)}\n")
                     os.environ[f"ZEPHYR_{module_name}_MODULE_DIR"] = os.path.abspath(m)
     os.environ["KCONFIG_ENV_FILE"] = kconfig_env_file

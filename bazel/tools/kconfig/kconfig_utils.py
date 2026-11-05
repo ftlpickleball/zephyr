@@ -146,6 +146,20 @@ def sanitize_name_for_target(name):
     """Consistently sanitize for Bazel target names."""
     return name.replace("-", "_").replace(".", "_").replace("(", "_").replace(")", "_").replace("$", "_").replace('"', "").replace("'", "")
 
+def module_name_from_dir(module_dir):
+    """Returns the name of the Zephyr module in module_dir.
+
+    The name is the apparent name of the module's repository, as in
+    scan_modules.extract_apparent_name(): "hal_foo+" (a bazel_dep module)
+    and "hal_foo+1.2.3" give "hal_foo"; "+_repo_rules+hal_foo" and
+    "owner++ext+hal_foo" give the last part; a plain directory name is
+    kept as is.
+    """
+    parts = os.path.basename(str(module_dir).rstrip("/")).split("+")
+    if len(parts) == 2 and parts[0]:
+        return parts[0]
+    return parts[-1]
+
 def generate_aggregation_file(output_file, dirs, comment, include_wildcard = False, tracker = None):
     """Generates a Kconfig file that sources other Kconfig files in the given directories.
 
@@ -203,7 +217,7 @@ def generate_kconfig_modules(zephyr_base, extra_modules, output_file, tracker = 
                 if tracker is not None:
                     tracker.add(m)
                 continue
-            module_name = os.path.basename(m.rstrip('/')).split('+')[-1].replace('-', '_').upper()
+            module_name = module_name_from_dir(m).replace('-', '_').upper()
             k_candidates = []
             module_yml = os.path.join(m, "zephyr", "module.yml")
             if tracker is not None:
