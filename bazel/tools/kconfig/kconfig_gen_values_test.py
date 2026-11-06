@@ -1036,6 +1036,160 @@ class TestKconfigGenValues(unittest.TestCase):
         )
         self.assertNotIn("CONFIG_UNREFERENCED_SYM", build_content)
 
+    def test_can_reuse_kconfig_dts(self):
+        kconfig_dts = os.path.join(self.test_dir, "Kconfig.dts")
+        Path(kconfig_dts).write_text("# Generated devicetree Kconfig\n")
+        app_dir = os.path.join(self.test_dir, "app_reuse")
+        board_dir = os.path.join(self.test_dir, "board_reuse")
+        os.makedirs(app_dir, exist_ok=True)
+        os.makedirs(board_dir, exist_ok=True)
+        (self.zephyr_base / "dts" / "bindings").mkdir(parents=True, exist_ok=True)
+
+        args = MagicMock()
+        args.kconfig_dts_file = kconfig_dts
+        args.app_dir = app_dir
+        args.modules = []
+        args.oot_dts_roots = []
+
+        self.assertTrue(
+            kconfig_gen_values._can_reuse_kconfig_dts(
+                args, str(self.zephyr_base), board_dir
+            )
+        )
+
+        # App with its own unshared dts/bindings cannot reuse shared Kconfig.dts
+        os.makedirs(os.path.join(app_dir, "dts", "bindings"), exist_ok=True)
+        self.assertFalse(
+            kconfig_gen_values._can_reuse_kconfig_dts(
+                args, str(self.zephyr_base), board_dir
+            )
+        )
+
+        # If app_dir is also in oot_dts_roots, its bindings are already in shared Kconfig.dts
+        args.oot_dts_roots = [app_dir]
+        self.assertTrue(
+            kconfig_gen_values._can_reuse_kconfig_dts(
+                args, str(self.zephyr_base), board_dir
+            )
+        )
+
+    def test_run_kconfig_in_process_evaluates_and_records_inputs(self):
+        kconfigfunctions_mock = MagicMock()
+        sys.modules["kconfigfunctions"] = kconfigfunctions_mock
+
+        kconfig_root = str(self.zephyr_base / "Kconfig")
+        conf_a = os.path.join(self.test_dir, "board_defconfig")
+        conf_b = os.path.join(self.test_dir, "prj.conf")
+        Path(conf_a).write_text("CONFIG_FOO=y\n")
+        Path(conf_b).write_text("CONFIG_BAR=y\n")
+
+        out_dir = os.path.join(self.test_dir, "out_in_proc")
+        config_out = os.path.join(out_dir, ".config")
+        autoconf_out = os.path.join(out_dir, "zephyr", "autoconf.h")
+
+        mock_kconf = MagicMock()
+        mock_kconf.srctree = str(self.zephyr_base)
+        mock_kconf.kconfig_filenames = ["Kconfig", "arch/arm/Kconfig"]
+        mock_kconf.warnings = []
+        mock_kconf.y = MagicMock(tri_value=2)
+        mock_kconf.syms = {}
+        observed_edt = []
+
+        def make_kconf(*_args, **_kwargs):
+            observed_edt.append(kconfigfunctions_mock.edt)
+            return mock_kconf
+
+        self.kconfig_mock.Kconfig.side_effect = make_kconf
+
+        def write_cfg(path):
+            if path != os.devnull:
+                Path(path).write_text("CONFIG_FOO=y\nCONFIG_BAR=y\n")
+
+        def write_hdr(path):
+            Path(path).write_text("#define CONFIG_FOO 1\n#define CONFIG_BAR 1\n")
+
+        mock_kconf.write_config.side_effect = write_cfg
+        mock_kconf.write_autoconf.side_effect = write_hdr
+
+        dummy_edt = MagicMock()
+        tracker = kconfig_utils.InputRecorder()
+        kconf, _ = kconfig_gen_values.run_kconfig_in_process(
+            str(self.zephyr_base),
+            kconfig_root,
+            [conf_a, conf_b],
+            config_out,
+            autoconf_out,
+            tracker=tracker,
+            edt=dummy_edt,
+        )
+
+        self.assertIs(kconf, mock_kconf)
+        self.assertEqual(observed_edt, [dummy_edt])
+        self.assertIsNone(kconfigfunctions_mock.edt)
+        self.assertIsNone(kconfigfunctions_mock.edtlib)
+        mock_kconf.load_config.assert_any_call(conf_a)
+        mock_kconf.load_config.assert_any_call(conf_b, replace=False)
+        self.kconfig_wrapper_mock.check_no_promptless_assign.assert_called_once_with(
+            mock_kconf
+        )
+        self.kconfig_wrapper_mock.check_assigned_sym_values.assert_called_once_with(
+            mock_kconf
+        )
+        self.kconfig_wrapper_mock.check_assigned_choice_values.assert_called_once_with(
+            mock_kconf
+        )
+        self.assertTrue(os.path.isfile(config_out))
+        self.assertTrue(os.path.isfile(autoconf_out))
+        self.assertIn(os.path.realpath(kconfig_root), tracker.files)
+
+    def test_generate_dts_headers_in_process_does_not_mutate_stdlib_pickle(self):
+        import pickle as stdlib_pickle
+        import types
+
+        dts_dir = self.zephyr_base / "scripts" / "dts"
+        dts_dir.mkdir(parents=True, exist_ok=True)
+        gen_defines_py = dts_dir / "gen_defines.py"
+        gen_defines_py.write_text("# stub\n")
+
+        out_dir = os.path.join(self.test_dir, "out_dts_hdr")
+        os.makedirs(out_dir, exist_ok=True)
+        non_existent_pickle = os.path.join(out_dir, "missing_edt.pickle")
+
+        orig_stdlib_load = stdlib_pickle.load
+        dummy_edt = MagicMock()
+        observed = {}
+
+        fake_gen_defines = types.ModuleType("gen_defines")
+        fake_gen_defines.pickle = stdlib_pickle
+
+        def fake_main():
+            observed["stdlib_load_during_main"] = stdlib_pickle.load
+            observed["argv_during_main"] = list(sys.argv)
+            with open(sys.argv[sys.argv.index("--edt-pickle") + 1], "rb") as f:
+                observed["loaded_edt"] = fake_gen_defines.pickle.load(f)
+            hdr_out = sys.argv[sys.argv.index("--header-out") + 1]
+            Path(hdr_out).parent.mkdir(parents=True, exist_ok=True)
+            Path(hdr_out).write_text("/* generated */\n")
+
+        fake_gen_defines.main = fake_main
+
+        tracker = kconfig_utils.InputRecorder()
+        with patch.dict(sys.modules, {"gen_defines": fake_gen_defines}):
+            kconfig_gen_values.generate_dts_headers(
+                str(self.zephyr_base),
+                out_dir,
+                non_existent_pickle,
+                tracker=tracker,
+                edt=dummy_edt,
+            )
+
+        self.assertIs(observed["stdlib_load_during_main"], orig_stdlib_load)
+        self.assertIs(observed["loaded_edt"], dummy_edt)
+        self.assertIs(fake_gen_defines.pickle, stdlib_pickle)
+        self.assertTrue(
+            os.path.isfile(os.path.join(out_dir, "zephyr", "devicetree_generated.h"))
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

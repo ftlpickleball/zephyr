@@ -15,7 +15,9 @@ def _gen_zephyr_config_impl(rctx):
     # discovering a new app or board does not invalidate existing configurations.
     context = json.decode(rctx.read(rctx.attr._context))
     rctx.watch(rctx.attr._kconfig_symbols)
+    rctx.watch(rctx.attr._kconfig_dts)
     kconfig_symbols_path = str(rctx.path(rctx.attr._kconfig_symbols))
+    kconfig_dts_path = str(rctx.path(rctx.attr._kconfig_dts))
     tracker = new_tracker(rctx)
     zephyr_root = repo_root(tracker, Label("//:BUILD.bazel"))
     zephyr_root_path = str(zephyr_root)
@@ -81,6 +83,7 @@ def _gen_zephyr_config_impl(rctx):
         app_name = rctx.attr.app_label.name,
         oot_dts_roots = resolved_oot_dts_roots,
         kconfig_symbols_file = kconfig_symbols_path,
+        kconfig_dts_file = kconfig_dts_path,
         conf_fragments = resolved_conf_fragments,
         dtc_overlays = resolved_dtc_overlays,
         toolchain_variant = rctx.attr.toolchain_variant,
@@ -137,6 +140,7 @@ gen_zephyr_config = repository_rule(
         "toolchain_variant": attr.string(default = ""),
         "_context": attr.label(default = "@zephyr_state//:context.json"),
         "_kconfig_symbols": attr.label(default = "@zephyr_kconfig//:symbols.txt"),
+        "_kconfig_dts": attr.label(default = "@zephyr_kconfig//:Kconfig.dts"),
         "_kconfig_gen_values_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_values.py"),
         "_pip_deps": attr.label_list(
             default = [

@@ -808,7 +808,7 @@ def write_bazel_build_file(
         f.write('load("@rules_cc//cc:defs.bzl", "cc_library")\n')
         f.write('load("@zephyr//bazel:cc_library.bzl", "zephyr_cc_library")\n\n')
         f.write('package(default_visibility = ["//visibility:public"])\n\n')
-        f.write('exports_files(["symbols.txt"])\n\n')
+        f.write('exports_files(["symbols.txt", "Kconfig.dts"])\n\n')
         f.write("zephyr_cc_library(\n")
         f.write('    name = "kconfig_warnings",\n')
         f.write('    srcs = ["kconfig_warnings.c"],\n')
@@ -910,6 +910,12 @@ def main():
 
         # Python code that ran in this process; the per-arch parses reported theirs.
         output_dir = os.path.dirname(os.path.abspath(args.output))
+        kconfig_dts_src = os.path.join(tmp_dir, "Kconfig.dts")
+        kconfig_dts_dst = os.path.join(output_dir, "Kconfig.dts")
+        if os.path.exists(kconfig_dts_src):
+            shutil.copyfile(kconfig_dts_src, kconfig_dts_dst)
+        else:
+            Path(kconfig_dts_dst).touch()
         deps.add_python_modules(os.path.join(zephyr_base, "scripts"), os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         deps.add(*kconfig_files)
         deps.write(output_dir=output_dir, exclude_dirs=[tmp_dir])

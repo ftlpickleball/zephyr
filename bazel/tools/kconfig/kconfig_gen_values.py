@@ -4,10 +4,13 @@
 import os
 import sys
 import argparse
+import contextlib
+import inspect
 import pickle
 import shutil
 import subprocess
 import tempfile
+import types
 import json
 import re
 from pathlib import Path
@@ -29,6 +32,7 @@ def parse_args():
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--oot-dts-roots", nargs="+", default=[])
     parser.add_argument("--kconfig-symbols-file", default=None)
+    parser.add_argument("--kconfig-dts-file", default=None)
     parser.add_argument("--app-name", default="zephyr_app")
     parser.add_argument("--toolchain-variant", default=None)
     parser.add_argument("--conf-fragments", nargs="+", default=[])
@@ -321,45 +325,134 @@ def _dts_subprocess_env(zephyr_base):
     )
     return env
 
-def _normalize_edt_pickle(edt_pickle_path, zephyr_base, output_dir):
-    if not os.path.exists(edt_pickle_path):
-        return
-    dt_src = os.path.abspath(os.path.join(zephyr_base, "scripts", "dts", "python-devicetree", "src"))
-    if dt_src not in sys.path:
-        sys.path.insert(0, dt_src)
-    with open(edt_pickle_path, "rb") as f:
-        edt = pickle.load(f)
+
+def _is_mock(obj) -> bool:
+    return hasattr(obj, "_mock_name") or hasattr(obj, "assert_called")
+
+
+@contextlib.contextmanager
+def _chdir(path):
+    prev = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(prev)
+
+
+def _ensure_dts_sys_path(zephyr_base):
+    abs_base = os.path.abspath(zephyr_base)
+    for d in (
+        os.path.join(abs_base, "scripts", "dts", "python-devicetree", "src"),
+        os.path.join(abs_base, "scripts", "dts"),
+    ):
+        if d not in sys.path:
+            sys.path.insert(0, d)
+
+
+def _normalize_edt_obj(edt, output_dir):
+    """Normalizes paths inside an in-memory EDT object for reproducible outputs."""
     if getattr(edt, "dts_path", None):
         edt.dts_path = os.path.basename(edt.dts_path)
     if hasattr(edt, "_dt") and getattr(edt._dt, "filename", None):
         edt._dt.filename = os.path.basename(edt._dt.filename)
     if hasattr(edt, "_dt") and getattr(edt._dt, "_base_dir", None):
         edt._dt._base_dir = "."
-    edt.bindings_dirs = [kconfig_utils.clean_output_path(d, output_dir) for d in edt.bindings_dirs]
-    edt._binding_paths = [kconfig_utils.clean_output_path(p, output_dir) for p in edt._binding_paths]
+
+    abs_out = os.path.abspath(output_dir)
+    repo_root_cache = {}
+    dir_prefix_cache = {}
+    path_cache = {}
+
+    def _is_repo_root_cached(parent: Path) -> bool:
+        res = repo_root_cache.get(parent)
+        if res is None:
+            res = kconfig_utils._is_repo_root(parent)
+            repo_root_cache[parent] = res
+        return res
+
+    def _clean_dir_prefix(dir_path: str) -> str:
+        res = dir_prefix_cache.get(dir_path)
+        if res is not None:
+            return res
+        probe = os.path.join(dir_path, "__probe__")
+        rel = os.path.relpath(probe, abs_out)
+        if not rel.startswith(".." + os.sep + ".."):
+            res = os.path.dirname(rel)
+        else:
+            res = ""
+            for parent in Path(probe).parents:
+                if os.path.commonpath([abs_out, str(parent)]) == str(parent):
+                    break
+                if _is_repo_root_cached(parent):
+                    res = os.path.relpath(dir_path, parent)
+                    if res == ".":
+                        res = ""
+                    break
+        dir_prefix_cache[dir_path] = res
+        return res
+
+    def _clean(path_str: str) -> str:
+        res = path_cache.get(path_str)
+        if res is not None:
+            return res
+        abs_path = (
+            os.path.abspath(os.path.join(abs_out, path_str))
+            if not os.path.isabs(path_str)
+            else os.path.abspath(path_str)
+        )
+        res = path_cache.get(abs_path)
+        if res is not None:
+            path_cache[path_str] = res
+            return res
+        dir_path, base = os.path.split(abs_path)
+        if not base:
+            res = kconfig_utils.clean_output_path(abs_path, abs_out)
+        else:
+            prefix = _clean_dir_prefix(dir_path)
+            res = os.path.join(prefix, base) if prefix else base
+        path_cache[path_str] = res
+        path_cache[abs_path] = res
+        return res
+
+    edt.bindings_dirs = [
+        kconfig_utils.clean_output_path(d, abs_out) for d in edt.bindings_dirs
+    ]
+    edt._binding_paths = [_clean(p) for p in edt._binding_paths]
     for k, v in list(edt._binding_fname2path.items()):
-        edt._binding_fname2path[k] = kconfig_utils.clean_output_path(v, output_dir)
+        edt._binding_fname2path[k] = _clean(v)
     seen = set()
+
     def _clean_binding(b):
         while b is not None and id(b) not in seen:
             seen.add(id(b))
             if b.path:
-                b.path = kconfig_utils.clean_output_path(b.path, output_dir)
+                b.path = _clean(b.path)
             if getattr(b, "_included_binding_paths", None):
                 b._included_binding_paths = {
-                    kconfig_utils.clean_output_path(p, output_dir)
-                    for p in b._included_binding_paths
+                    _clean(p) for p in b._included_binding_paths
                 }
             b = getattr(b, "child_binding", None)
+
     for b in edt._compat2binding.values():
         _clean_binding(b)
     for node in edt.nodes:
         _clean_binding(getattr(node, "_binding", None))
+
+
+def _normalize_edt_pickle(edt_pickle_path, zephyr_base, output_dir):
+    if not os.path.exists(edt_pickle_path):
+        return
+    _ensure_dts_sys_path(zephyr_base)
+    with open(edt_pickle_path, "rb") as f:
+        edt = pickle.load(f)
+    _normalize_edt_obj(edt, output_dir)
     with open(edt_pickle_path, "wb") as f:
         pickle.dump(edt, f, protocol=4)
 
+
 def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, tracker):
-    """Runs gen_edt.py (or gen_defines.py) to write edt.pickle."""
+    """Runs edtlib (or gen_edt.py / gen_defines.py) to write edt.pickle."""
     output_edt_pickle_path = os.path.join(output_dir, "edt.pickle")
     output_header = os.path.join(output_dir, "zephyr", "devicetree_generated.h")
     os.makedirs(os.path.dirname(output_header), exist_ok=True)
@@ -384,13 +477,53 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
 
     tracker.add(gen_edt_py, *kconfig_utils.dts_python_sources(zephyr_base))
 
-    env = _dts_subprocess_env(zephyr_base)
-
     rel_edt_pickle = os.path.relpath(output_edt_pickle_path, output_dir)
     rel_merged_dts = os.path.relpath(merged_dts_path, output_dir)
     rel_dts_debug = os.path.relpath(f"{merged_dts_path}.debug", output_dir)
 
     if os.path.exists(gen_edt_py):
+        vendor_prefix_args = []
+        vendor_prefix_files = []
+        for bdir in bindings_dirs:
+            vp = os.path.join(bdir, "vendor-prefixes.txt")
+            vp_abs = os.path.join(output_dir, vp)
+            tracker.add(vp_abs)
+            if os.path.exists(vp_abs):
+                vendor_prefix_args.extend(["--vendor-prefixes", vp])
+                vendor_prefix_files.append(vp)
+
+        if not _is_mock(subprocess.run) and os.path.isfile(merged_dts_path):
+            _ensure_dts_sys_path(zephyr_base)
+            import edtlib_logger
+            from devicetree import edtlib
+
+            edtlib_logger.setup_edtlib_logging()
+            with _chdir(output_dir):
+                vendor_prefixes = {}
+                for vp in vendor_prefix_files:
+                    vendor_prefixes.update(edtlib.load_vendor_prefixes_txt(vp))
+                try:
+                    edt = edtlib.EDT(
+                        rel_merged_dts,
+                        bindings_dirs,
+                        workspace_dir=".",
+                        warn_reg_unit_address_mismatch=True,
+                        default_prop_types=True,
+                        infer_binding_for_paths=["/zephyr,user", "/cpus"],
+                        werror=False,
+                        vendor_prefixes=vendor_prefixes,
+                        warn_bus_mismatch=False,
+                    )
+                except edtlib.EDTError as e:
+                    sys.exit(f"devicetree error: {e}")
+                with open(rel_dts_debug, "w", encoding="utf-8") as f:
+                    print(edt.dts_source, file=f)
+            _normalize_edt_obj(edt, output_dir)
+            with open(output_edt_pickle_path, "wb") as f:
+                pickle.dump(edt, f, protocol=4)
+            os.environ["EDT_PICKLE"] = output_edt_pickle_path
+            return edt
+
         gen_edt_args = [
             sys.executable,
             "-B",
@@ -405,19 +538,19 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
             "--bindings-dirs",
         ]
         gen_edt_args.extend(bindings_dirs)
-        for bdir in bindings_dirs:
-            vp = os.path.join(bdir, "vendor-prefixes.txt")
-            vp_abs = os.path.join(output_dir, vp)
-            tracker.add(vp_abs)
-            if os.path.exists(vp_abs):
-                gen_edt_args.extend(["--vendor-prefixes", vp])
+        gen_edt_args.extend(vendor_prefix_args)
         gen_edt_args.extend([
             "--dts-out",
             rel_dts_debug,
             "--dtc-flags",
             "Wno-simple_bus_reg",
         ])
-        subprocess.run(gen_edt_args, env=env, cwd=output_dir, check=True)
+        subprocess.run(
+            gen_edt_args,
+            env=_dts_subprocess_env(zephyr_base),
+            cwd=output_dir,
+            check=True,
+        )
     else:
         tracker.add(gen_defines_py)
         cmd = [
@@ -440,29 +573,79 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
             "--dtc-flags",
             "Wno-simple_bus_reg",
         ])
-        subprocess.run(cmd, env=env, cwd=output_dir, check=True)
+        subprocess.run(
+            cmd,
+            env=_dts_subprocess_env(zephyr_base),
+            cwd=output_dir,
+            check=True,
+        )
 
     _normalize_edt_pickle(output_edt_pickle_path, zephyr_base, output_dir)
     os.environ["EDT_PICKLE"] = output_edt_pickle_path
+    return None
 
-def generate_dts_headers(zephyr_base, output_dir, edt_pickle_path, *, tracker):
+
+def generate_dts_headers(
+    zephyr_base, output_dir, edt_pickle_path, *, tracker, edt=None
+):
     output_header = os.path.join(output_dir, "zephyr", "devicetree_generated.h")
     if os.path.exists(output_header):
         return
-    gen_defines_py = os.path.abspath(os.path.join(zephyr_base, "scripts", "dts", "gen_defines.py"))
+    gen_defines_py = os.path.abspath(
+        os.path.join(zephyr_base, "scripts", "dts", "gen_defines.py")
+    )
     tracker.add(gen_defines_py, *kconfig_utils.dts_python_sources(zephyr_base))
     os.makedirs(os.path.dirname(output_header), exist_ok=True)
+
+    rel_edt_pickle = os.path.relpath(edt_pickle_path, output_dir)
+    rel_header = os.path.relpath(output_header, output_dir)
+
+    if (
+        not _is_mock(subprocess.run)
+        and os.path.isfile(gen_defines_py)
+        and (edt is not None or os.path.isfile(edt_pickle_path))
+    ):
+        _ensure_dts_sys_path(zephyr_base)
+        import gen_defines
+
+        prev_argv = sys.argv
+        prev_pickle = gen_defines.pickle
+        edt_pickle_arg = (
+            rel_edt_pickle
+            if os.path.isfile(edt_pickle_path)
+            else os.devnull
+        )
+        try:
+            sys.argv = [
+                gen_defines_py,
+                "--edt-pickle",
+                edt_pickle_arg,
+                "--header-out",
+                rel_header,
+            ]
+            if edt is not None:
+                gen_defines.pickle = types.SimpleNamespace(load=lambda _f: edt)
+            with _chdir(output_dir):
+                gen_defines.main()
+        finally:
+            gen_defines.pickle = prev_pickle
+            sys.argv = prev_argv
+        return
 
     cmd = [
         sys.executable,
         "-B",
         "-s",
         gen_defines_py,
-        "--edt-pickle", os.path.relpath(edt_pickle_path, output_dir),
-        "--header-out", os.path.relpath(output_header, output_dir),
+        "--edt-pickle",
+        rel_edt_pickle,
+        "--header-out",
+        rel_header,
     ]
 
-    subprocess.run(cmd, env=_dts_subprocess_env(zephyr_base), cwd=output_dir, check=True)
+    subprocess.run(
+        cmd, env=_dts_subprocess_env(zephyr_base), cwd=output_dir, check=True
+    )
 
 def get_conf_files(args, board_dir, *, tracker):
     board_name = os.environ["BOARD"]
@@ -744,6 +927,128 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
             f.write('    actual = ":zc_target_platform_%s",\n' % variant)
             f.write(')\n\n')
 
+def _can_reuse_kconfig_dts(args, zephyr_base, board_dir):
+    kconfig_dts_file = getattr(args, "kconfig_dts_file", None)
+    if not (
+        isinstance(kconfig_dts_file, (str, os.PathLike))
+        and os.path.isfile(kconfig_dts_file)
+    ):
+        return False
+    shared_bindings = set()
+    for root in (
+        [zephyr_base]
+        + list(getattr(args, "modules", None) or [])
+        + list(getattr(args, "oot_dts_roots", None) or [])
+    ):
+        for rel in ("zephyr/dts/bindings", "dts/bindings"):
+            bdir = Path(root) / rel
+            if bdir.exists():
+                shared_bindings.add(bdir.resolve())
+                break
+    for extra_root in (getattr(args, "app_dir", None), board_dir):
+        if not isinstance(extra_root, (str, os.PathLike)) or not extra_root:
+            continue
+        for rel in ("zephyr/dts/bindings", "dts/bindings"):
+            bdir = Path(extra_root) / rel
+            if bdir.exists():
+                if bdir.resolve() not in shared_bindings:
+                    return False
+                break
+    return True
+
+
+def run_kconfig_in_process(
+    zephyr_base,
+    kconfig_root,
+    conf_files,
+    config_out,
+    autoconf_out,
+    *,
+    tracker,
+    edt=None,
+):
+    """Evaluates Kconfig in-process in a single pass with validation checks."""
+    kconfig_dir = os.path.abspath(os.path.join(zephyr_base, "scripts", "kconfig"))
+    if kconfig_dir not in sys.path:
+        sys.path.insert(0, kconfig_dir)
+    kconfig_py = os.path.join(kconfig_dir, "kconfig.py")
+    tracker.add(kconfig_py)
+
+    saved_edt_pickle = os.environ.pop("EDT_PICKLE", None) if edt is not None else None
+    try:
+        import kconfig
+        import kconfigfunctions
+        import kconfiglib
+    finally:
+        if saved_edt_pickle is not None:
+            os.environ["EDT_PICKLE"] = saved_edt_pickle
+
+    kconfigfunctions.doc_mode = os.environ.get("KCONFIG_DOC_MODE") == "1"
+    try:
+        if not kconfigfunctions.doc_mode:
+            if edt is not None:
+                kconfigfunctions.edt = edt
+                kconfigfunctions.edtlib = inspect.getmodule(edt)
+            else:
+                edt_pickle = os.environ.get("EDT_PICKLE")
+                if edt_pickle and os.path.isfile(edt_pickle):
+                    with open(edt_pickle, "rb") as f:
+                        kconfigfunctions.edt = pickle.load(f)
+                        kconfigfunctions.edtlib = inspect.getmodule(
+                            kconfigfunctions.edt
+                        )
+                else:
+                    kconfigfunctions.edt = None
+                    kconfigfunctions.edtlib = None
+
+        with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
+            kconf = kconfiglib.Kconfig(
+                kconfig_root, warn_to_stderr=False, suppress_traceback=True
+            )
+
+        kconf.warn_assign_undef = True
+        kconf.warn_assign_override = False
+        kconf.warn_assign_redun = False
+
+        if conf_files:
+            kconf.load_config(conf_files[0])
+            for config in conf_files[1:]:
+                kconf.load_config(config, replace=False)
+
+        kconfig.check_no_promptless_assign(kconf)
+        kconfig.check_assigned_sym_values(kconf)
+        kconfig.check_assigned_choice_values(kconf)
+
+        if kconf.syms.get("WARN_DEPRECATED", kconf.y).tri_value == 2:
+            kconfig.check_deprecated(kconf)
+
+        if kconf.syms.get("WARN_EXPERIMENTAL", kconf.y).tri_value == 2:
+            kconfig.check_experimental(kconf)
+
+        kconfig.check_not_secure(kconf)
+        kconf.write_config(os.devnull)
+
+        if kconf.warnings:
+            for warning in kconf.warnings:
+                print("\n" + warning, file=sys.stderr)
+            kconfig.err("Aborting due to Kconfig warnings")
+
+        os.makedirs(os.path.dirname(os.path.abspath(config_out)), exist_ok=True)
+        os.makedirs(
+            os.path.dirname(os.path.abspath(autoconf_out)), exist_ok=True
+        )
+        kconf.write_config(config_out)
+        kconf.write_autoconf(autoconf_out)
+
+        for path in set(kconf.kconfig_filenames):
+            tracker.add(os.path.realpath(os.path.join(kconf.srctree, path)))
+
+        return kconf, kconfiglib
+    finally:
+        kconfigfunctions.edt = None
+        kconfigfunctions.edtlib = None
+
+
 def main():
     args = parse_args()
 
@@ -778,77 +1083,116 @@ def main():
         merged_dts_path, dts_roots = preprocess_dts(
             args, zephyr_base, tmp_dir, board_dir, tracker=tracker, rel_base_dir=output_dir
         )
-        generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, tracker=tracker)
-        generate_dts_headers(zephyr_base, output_dir, os.path.join(output_dir, "edt.pickle"), tracker=tracker)
-        kconfig_utils.generate_kconfig_dts(zephyr_base, os.path.join(tmp_dir, "Kconfig.dts"), dts_roots, tracker=tracker)
+        edt = generate_edt_pickle(
+            zephyr_base,
+            output_dir,
+            dts_roots,
+            merged_dts_path,
+            tracker=tracker,
+        )
+        generate_dts_headers(
+            zephyr_base,
+            output_dir,
+            os.path.join(output_dir, "edt.pickle"),
+            tracker=tracker,
+            edt=edt,
+        )
+        if _can_reuse_kconfig_dts(args, zephyr_base, board_dir):
+            tracker.add(
+                os.path.join(
+                    zephyr_base,
+                    "scripts",
+                    "dts",
+                    "gen_driver_kconfig_dts.py",
+                )
+            )
+            shutil.copyfile(
+                args.kconfig_dts_file, os.path.join(tmp_dir, "Kconfig.dts")
+            )
+        else:
+            kconfig_utils.generate_kconfig_dts(
+                zephyr_base,
+                os.path.join(tmp_dir, "Kconfig.dts"),
+                dts_roots,
+                tracker=tracker,
+            )
 
         conf_files = get_conf_files(args, board_dir, tracker=tracker)
         conf_files.extend(args.conf_fragments)
 
         os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
 
-        env = os.environ.copy()
-
         kconfig_root = os.path.join(zephyr_base, "Kconfig")
         app_kconfig = os.path.join(args.app_dir, "Kconfig")
         if os.path.exists(app_kconfig):
             kconfig_root = app_kconfig
 
-        # Call the definitive Zephyr's kconfig.py
+        autoconf_out = os.path.join(output_dir, "zephyr", "autoconf.h")
+        config_out = os.path.join(output_dir, ".config")
         kconfig_py = os.path.join(zephyr_base, "scripts", "kconfig", "kconfig.py")
-        tracker.add(kconfig_py)
-        tmp_config_path = os.path.join(tmp_dir, ".config")
-        kconfig_list_path = os.path.join(tmp_dir, "kconfig_list.txt")
-        cmd = [
-            sys.executable,
-            "-B",
-            "-s",
-            kconfig_py,
-            "--handwritten-input-configs",
-            kconfig_root,
-            tmp_config_path,
-            os.path.join(output_dir, "zephyr", "autoconf.h"),
-            kconfig_list_path,
-        ] + conf_files
 
-        res = subprocess.run(cmd, env=env, capture_output=True, text=True)
+        if not _is_mock(subprocess.run) and os.path.isfile(kconfig_py):
+            kconf, kconfiglib = run_kconfig_in_process(
+                zephyr_base,
+                kconfig_root,
+                conf_files,
+                config_out,
+                autoconf_out,
+                tracker=tracker,
+                edt=edt,
+            )
+        else:
+            env = os.environ.copy()
+            tracker.add(kconfig_py)
+            tmp_config_path = os.path.join(tmp_dir, ".config")
+            kconfig_list_path = os.path.join(tmp_dir, "kconfig_list.txt")
+            cmd = [
+                sys.executable,
+                "-B",
+                "-s",
+                kconfig_py,
+                "--handwritten-input-configs",
+                kconfig_root,
+                tmp_config_path,
+                autoconf_out,
+                kconfig_list_path,
+            ] + conf_files
 
-        if res.stderr:
-            print(res.stderr, file=sys.stderr)
+            res = subprocess.run(cmd, env=env, capture_output=True, text=True)
 
-        if res.returncode != 0:
-            sys.exit(f"Kconfig generation failed with exit code {res.returncode}")
+            if res.stderr:
+                print(res.stderr, file=sys.stderr)
 
-        if os.path.exists(tmp_config_path):
-            shutil.copyfile(tmp_config_path, os.path.join(output_dir, ".config"))
+            if res.returncode != 0:
+                sys.exit(f"Kconfig generation failed with exit code {res.returncode}")
 
-        # Add the app name to the autoconf.h natively
-        with open(os.path.join(output_dir, "zephyr", "autoconf.h"), "a") as f:
+            if os.path.exists(tmp_config_path):
+                shutil.copyfile(tmp_config_path, config_out)
+
+            import kconfiglib
+            # This parse sees the same environment as kconfig.py's, so its 'source'
+            # globs and optional sources are the ones kconfig_list.txt doesn't show.
+            with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
+                kconf = kconfiglib.Kconfig(kconfig_root)
+            kconf.load_config(config_out)
+            tracker.add_kconfig_sources(kconfig_list_path)
+
+        # Add the app name to autoconf.h
+        with open(autoconf_out, "a") as f:
             f.write(f'#define APP_NAME "{args.app_name}"\n')
-
-        # Load final cleanly resolved config
-        import kconfiglib
-        # This parse sees the same environment as kconfig.py's, so its 'source'
-        # globs and optional sources are the ones kconfig_list.txt doesn't show.
-        with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
-            kconf = kconfiglib.Kconfig(kconfig_root)
-        kconf.load_config(os.path.join(output_dir, ".config"))
 
         extra_autoconf_defines = [
             ("ZVFS_EVENTFD_SIZE", _get_zvfs_eventfd_size(kconf)),
             ("ZVFS_OPEN_SIZE", _get_zvfs_open_size(kconf)),
         ]
         if any(val is not None for _, val in extra_autoconf_defines):
-            with open(os.path.join(output_dir, "zephyr", "autoconf.h"), "a") as f:
+            with open(autoconf_out, "a") as f:
                 for macro_name, macro_val in extra_autoconf_defines:
                     if macro_val is not None:
                         f.write(f"#define {macro_name} {macro_val}\n")
 
         generate_config_c(kconf, output_dir, args)
         generate_bazel_build(args, kconf, output_dir, kconfiglib)
-
-        # Record out-of-tree Kconfigs
-        tracker.add_kconfig_sources(kconfig_list_path)
 
         # Python code that ran: this script, its helpers, kconfiglib and
         # kconfigfunctions, and the devicetree modules loaded from edt.pickle.

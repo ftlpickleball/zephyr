@@ -54,6 +54,7 @@ def get_kconfig_args(
         oot_dts_roots = [],
         build_files = [],
         kconfig_symbols_file = None,
+        kconfig_dts_file = None,
         conf_fragments = [],
         dtc_overlays = [],
         toolchain_variant = None):
@@ -95,6 +96,9 @@ def get_kconfig_args(
 
     if kconfig_symbols_file:
         args.extend(["--kconfig-symbols-file", str(kconfig_symbols_file)])
+
+    if kconfig_dts_file:
+        args.extend(["--kconfig-dts-file", str(kconfig_dts_file)])
 
     if conf_fragments:
         args.append("--conf-fragments")

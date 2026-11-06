@@ -658,6 +658,11 @@ board:
             symbols_txt,
             ["CONFIG_MODULE_BOOL", "CONFIG_USED_BOOL", "CONFIG_USED_INT"],
         )
+        self.assertIn(
+            'exports_files(["symbols.txt", "Kconfig.dts"])',
+            content,
+        )
+        self.assertTrue((out_dir / "Kconfig.dts").is_file())
 
     def test_scan_build_content_preserves_authoritative_string_type(self):
         symbols = {"CONFIG_MY_VERSION": "string"}
