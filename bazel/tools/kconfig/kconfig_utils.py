@@ -271,6 +271,11 @@ def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
 
     Records the script, every binding file and directory it walks, and missing
     bindings dir candidates into 'tracker'.
+
+    Returns:
+        The sorted paths of the binding files below the bindings dirs passed to
+        gen_driver_kconfig_dts.py (including ones that add no new
+        `compatible:`, such as bus variants or shared base bindings).
     """
     bindings_dirs = []
     for dts_root in dts_roots:
@@ -281,6 +286,13 @@ def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
                 break # Only use the first one found
             elif tracker is not None:
                 tracker.add(str(bdir))
+
+    binding_files = set()
+    for bdir in bindings_dirs:
+        for root, _, filenames in os.walk(bdir):
+            binding_files.update(
+                os.path.join(root, f) for f in filenames if f.endswith(BINDING_SUFFIXES)
+            )
 
     gen_driver_kconfig_dts_py = os.path.join(zephyr_base, "scripts", "dts", "gen_driver_kconfig_dts.py")
     cmd = [
@@ -304,6 +316,7 @@ def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
             tracker.add_tree(bdir, BINDING_SUFFIXES)
 
     subprocess.run(cmd, env=env, check=True)
+    return sorted(binding_files)
 
 
 def filtered_walk(top, tracker = None, followlinks=False):

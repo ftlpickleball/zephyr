@@ -4,6 +4,7 @@
 import unittest
 import os
 import pickle
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -522,7 +523,7 @@ board:
             kconfig_utils.__file__,
         ]
         if kconfig_gen_symbols.yaml is not None:
-            expected += [board_dir / "board.yml", board_dir / "board.yaml", soc_dir / "soc.yml"]
+            expected += [board_dir / "board.yml", soc_dir / "soc.yml"]
         for path in expected:
             self.assertIn(real(path), deps)
         for path in [self.zephyr_base, self.zephyr_base / "boards", board_dir, soc_dir, self.zephyr_base / "arch"]:
@@ -602,6 +603,100 @@ board:
 
         self.assertEqual(symbols.get("CONFIG_DT_HAS_TEST_DEVICE_PM_ENABLED"), "bool")
         self.assertIn(os.path.realpath(str(binding_file)), tracker.files)
+
+    def test_scan_files_records_build_files_without_config_references(self):
+        # Adding the first CONFIG_ reference to a BUILD file must re-run the rule.
+        plain = self.zephyr_base / "lib" / "plain" / "BUILD.bazel"
+        plain.parent.mkdir(parents=True)
+        plain.write_text('cc_library(name = "plain")\n')
+        tracker = kconfig_utils.InputRecorder()
+        kconfig_gen_symbols.scan_files_for_dynamic_symbols(
+            str(self.zephyr_base),
+            [],
+            [],
+            {},
+            kconfig_gen_symbols.collections.defaultdict(set),
+            set(),
+            tracker,
+        )
+        self.assertIn(os.path.realpath(str(plain)), tracker.files)
+
+    @patch("kconfig_utils.generate_kconfig_dts")
+    def test_kconfig_dts_digest_covers_kconfig_paths_and_contents(self, mock_gen_dts):
+        self.mock_kconf.syms = {}
+
+        def kconfig_inputs_sha256():
+            output_dir = tempfile.mkdtemp(dir=self.test_dir)
+            output_file = os.path.join(output_dir, "BUILD.bazel")
+            with patch(
+                "sys.argv",
+                ["kconfig_gen_symbols.py", "--zephyr-base", str(self.zephyr_base), "--output", output_file],
+            ):
+                kconfig_gen_symbols.main()
+            content = Path(output_dir, "Kconfig.dts").read_text()
+            m = re.search(r"^# kconfig_inputs_sha256: ([0-9a-f]{64})$", content, re.MULTILINE)
+            self.assertIsNotNone(m)
+            self.assertNotIn(self.test_dir, content)
+            return m.group(1)
+
+        extra = self.zephyr_base / "drivers" / "foo" / "Kconfig"
+        extra.parent.mkdir(parents=True)
+        extra.write_text("config FOO\n\tbool\n")
+        d0 = kconfig_inputs_sha256()
+        self.assertEqual(kconfig_inputs_sha256(), d0)
+
+        # Same contents at another path.
+        moved = self.zephyr_base / "drivers" / "bar" / "Kconfig"
+        moved.parent.mkdir(parents=True)
+        os.rename(extra, moved)
+        d_moved = kconfig_inputs_sha256()
+        self.assertNotEqual(d_moved, d0)
+
+        # Edited contents at the same path.
+        moved.write_text("config FOO\n\tbool \"edited\"\n")
+        self.assertNotEqual(kconfig_inputs_sha256(), d_moved)
+
+    @patch("kconfig_utils.generate_kconfig_dts")
+    def test_kconfig_dts_digest_covers_scanned_bindings(self, mock_gen_dts):
+        """Bindings that add no new `compatible:` still change kconfig_inputs_sha256."""
+        self.mock_kconf.syms = {}
+
+        def kconfig_inputs_sha256():
+            output_dir = tempfile.mkdtemp(dir=self.test_dir)
+            output_file = os.path.join(output_dir, "BUILD.bazel")
+            with patch(
+                "sys.argv",
+                ["kconfig_gen_symbols.py", "--zephyr-base", str(self.zephyr_base), "--output", output_file],
+            ):
+                kconfig_gen_symbols.main()
+            content = Path(output_dir, "Kconfig.dts").read_text()
+            m = re.search(r"^# kconfig_inputs_sha256: ([0-9a-f]{64})$", content, re.MULTILINE)
+            self.assertIsNotNone(m)
+            self.assertNotIn(self.test_dir, content)
+            return m.group(1)
+
+        bindings = self.zephyr_base / "dts" / "bindings" / "vnd"
+        bindings.mkdir(parents=True)
+        base = bindings / "vnd,foo.yaml"
+        base.write_text('compatible: "vnd,foo"\n')
+        mock_gen_dts.return_value = [str(base)]
+        d0 = kconfig_inputs_sha256()
+
+        # A bus variant of the same compatible leaves the DT_COMPAT_* symbols as they are.
+        spi = bindings / "vnd,foo-spi.yaml"
+        spi.write_text('compatible: "vnd,foo"\non-bus: spi\n')
+        mock_gen_dts.return_value = [str(base), str(spi)]
+        d_added = kconfig_inputs_sha256()
+        self.assertNotEqual(d_added, d0)
+
+        # Edited contents of an existing binding.
+        spi.write_text('compatible: "vnd,foo"\non-bus: i2c\n')
+        self.assertNotEqual(kconfig_inputs_sha256(), d_added)
+
+        # Removing it restores the original digest.
+        spi.unlink()
+        mock_gen_dts.return_value = [str(base)]
+        self.assertEqual(kconfig_inputs_sha256(), d0)
 
     @patch("kconfig_utils.generate_kconfig_dts")
     def test_filters_to_referenced_symbols_and_writes_symbols_txt(

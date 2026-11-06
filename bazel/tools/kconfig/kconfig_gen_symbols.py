@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import argparse
+import hashlib
 import tempfile
 import re
 import subprocess
@@ -217,6 +218,7 @@ def discover_board_variants(board_dirs, soc_to_clusters, symbols, tracker):
                                         symbols[full_name] = "bool"
                 except Exception as e:
                     raise Exception("DEBUG: Failed to parse %s: %s" % (bpath, e))
+                break
 
 
 def setup_kconfig_environment(zephyr_base, tmp_dir, modules=None):
@@ -261,6 +263,10 @@ def generate_kconfig_scaffolding(
 
     If 'tracker' (a kconfig_utils.InputRecorder) is given, the inputs of the
     generated files are recorded.
+
+    Returns:
+        The binding files scanned to generate Kconfig.dts (see
+        kconfig_utils.generate_kconfig_dts()).
     """
     os.makedirs(tmp_dir, exist_ok=True)
 
@@ -311,7 +317,7 @@ def generate_kconfig_scaffolding(
         + [Path(r) for r in oot_dts_roots]
     )
     kconfig_dts = os.path.join(tmp_dir, "Kconfig.dts")
-    kconfig_utils.generate_kconfig_dts(
+    binding_files = kconfig_utils.generate_kconfig_dts(
         zephyr_base, kconfig_dts, dts_roots, tracker=tracker
     )
     if not os.path.exists(kconfig_dts):
@@ -327,6 +333,8 @@ def generate_kconfig_scaffolding(
     ]:
         with open(os.path.join(tmp_dir, f_name), "w") as f:
             f.write("# Dummy\n")
+
+    return binding_files
 
 
 _SHARED_SCAFFOLDING_FILES = (
@@ -479,13 +487,15 @@ def parse_kconfig_authoritative(
     kconfig_files,
     jobs=None,
     tracker=None,
+    binding_files=None,
 ):
     """Uses kconfiglib to perform an authoritative parse for each architecture in parallel.
 
     If 'tracker' (a kconfig_utils.InputRecorder) is given, the inputs of every
-    per-arch parse are merged into it.
+    per-arch parse are merged into it. If 'binding_files' (a set) is given, the
+    binding files scanned to generate Kconfig.dts are added to it.
     """
-    generate_kconfig_scaffolding(
+    scanned_bindings = generate_kconfig_scaffolding(
         tmp_dir,
         zephyr_base,
         soc_dirs,
@@ -494,6 +504,8 @@ def parse_kconfig_authoritative(
         oot_dts_roots,
         tracker=tracker,
     )
+    if binding_files is not None:
+        binding_files.update(scanned_bindings)
 
     if jobs == 1:
         results = [
@@ -737,6 +749,8 @@ def scan_files_for_dynamic_symbols(
                         pass
                 elif fname in ["BUILD.bazel", "BUILD"] or fname.endswith(".bzl") or fname.endswith(".BUILD"):
                     fpath = os.path.join(root, fname)
+                    # Recorded whether or not it references a symbol yet, so that adding the
+                    # first CONFIG_ reference re-runs the rule.
                     tracker.add(fpath)
                     build_files_to_scan.append(fpath)
                 elif fname.endswith((".yaml", ".yml")) and (
@@ -779,15 +793,17 @@ def scan_files_for_dynamic_symbols(
     for fpath in build_files_to_scan:
         try:
             with open(fpath, "r", errors="ignore") as f:
-                _scan_build_or_bzl_content(
-                    f.read(),
-                    symbols,
-                    symbol_settings,
-                    referenced_symbols,
-                    untyped_symbols,
-                )
-        except:
-            pass
+                content = f.read()
+        except OSError:
+            continue
+        if "CONFIG_" in content:
+            _scan_build_or_bzl_content(
+                content,
+                symbols,
+                symbol_settings,
+                referenced_symbols,
+                untyped_symbols,
+            )
 
 
 def write_bazel_build_file(
@@ -841,6 +857,37 @@ def write_bazel_build_file(
             f.write("\n".join(sorted_names) + "\n")
 
 
+def kconfig_inputs_digest(paths, zephyr_base, output_dir, tmp_dir):
+    """Returns the SHA-256 over the checkout-independent paths and contents of `paths`.
+
+    Files under `tmp_dir` (generated scaffolding) are skipped. Paths under
+    `zephyr_base` are named `zephyr/<relpath>`, others relative to `output_dir`
+    (see kconfig_utils.clean_output_path()), since the result is stored in
+    --repo_contents_cache.
+    """
+    abs_tmp_prefix = os.path.abspath(tmp_dir) + os.sep
+    real_tmp_prefix = os.path.realpath(tmp_dir) + os.sep
+    zephyr_real_prefix = os.path.realpath(zephyr_base) + os.sep
+    entries = {}
+    for path in paths:
+        if (os.path.abspath(path) + os.sep).startswith(abs_tmp_prefix):
+            continue
+        real = os.path.realpath(path)
+        if real in entries or real.startswith(real_tmp_prefix):
+            continue
+        if real.startswith(zephyr_real_prefix):
+            name = "zephyr/" + os.path.relpath(real, zephyr_real_prefix)
+        else:
+            name = kconfig_utils.clean_output_path(real, output_dir)
+        try:
+            with open(real, "rb") as fp:
+                content_digest = hashlib.file_digest(fp, "sha256").hexdigest()
+        except OSError:
+            content_digest = "missing"
+        entries[real] = f"{name.replace(os.sep, '/')} {content_digest}"
+    return hashlib.sha256("\n".join(sorted(entries.values())).encode("utf-8")).hexdigest()
+
+
 def main():
     args = parse_args()
 
@@ -849,6 +896,7 @@ def main():
     symbol_settings = collections.defaultdict(set)
     referenced_symbols = set()
     kconfig_files = set()
+    binding_files = set()
     # Every input of this run, written to deps.txt and dep_dirs.txt.
     deps = kconfig_utils.InputRecorder()
 
@@ -885,6 +933,7 @@ def main():
             kconfig_files,
             jobs=args.jobs,
             tracker=deps,
+            binding_files=binding_files,
         )
 
         # 4. Fallback: Scan files for dynamic symbols and BUILD/.bzl references
@@ -916,6 +965,16 @@ def main():
             shutil.copyfile(kconfig_dts_src, kconfig_dts_dst)
         else:
             Path(kconfig_dts_dst).touch()
+        # Digest of the paths and contents of every Kconfig file read and every binding scanned
+        # for Kconfig.dts, so that @zc_* (which watches Kconfig.dts) re-runs when a global Kconfig
+        # file or a binding is edited, added or removed, even if the generated DT_COMPAT_* symbols
+        # stay the same (e.g. a bus variant of an existing compatible, an out-of-tree binding
+        # overriding an in-tree compatible, or a shared base binding without `compatible:`).
+        kconfig_hash = kconfig_inputs_digest(
+            set(kconfig_files) | binding_files, zephyr_base, output_dir, tmp_dir
+        )
+        with open(kconfig_dts_dst, "a", encoding="utf-8") as f:
+            f.write(f"\n# kconfig_inputs_sha256: {kconfig_hash}\n")
         deps.add_python_modules(os.path.join(zephyr_base, "scripts"), os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         deps.add(*kconfig_files)
         deps.write(output_dir=output_dir, exclude_dirs=[tmp_dir])

@@ -491,12 +491,14 @@ class TestInputTracking(unittest.TestCase):
         os.makedirs(root2)
 
         tracker = kconfig_utils.InputRecorder()
-        kconfig_utils.generate_kconfig_dts(
+        scanned = kconfig_utils.generate_kconfig_dts(
             zephyr_base, os.path.join(self.test_dir, "Kconfig.dts"), [root1, root2], tracker=tracker
         )
 
         cmd = mock_run.call_args[0][0]
         self.assertEqual(cmd[cmd.index("--bindings-dirs") + 1:], [bindings])
+        # Every binding file below the bindings dirs, for kconfig_inputs_sha256.
+        self.assertEqual(scanned, sorted([x, y]))
         self.assertEqual(tracker.files, {
             os.path.join(zephyr_base, "scripts", "dts", "gen_driver_kconfig_dts.py"),
             x,

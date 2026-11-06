@@ -35,7 +35,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import time
 import unittest
 
 ZEPHYR_ROOT = Path(__file__).resolve().parents[2]
@@ -145,6 +144,22 @@ def _prepare_downstream_checkout(dest_dir: Path, zephyr_dir: Path) -> None:
     )
     assert count == 1, f"Expected to sync pigweed commit in {module_bazel}"
     module_bazel.write_text(content, encoding="utf-8")
+
+
+def _replace_file(path: Path, content: str) -> None:
+    """Writes `path` through a new inode.
+
+    Without --watchfs, Bazel notices an edit by comparing a file's inode number
+    and timestamps with the ones it saw in the previous build (and caches
+    digests by inode, mtime and size). A new inode makes the edit visible even
+    when it lands in the same timestamp tick as the previous write, so the
+    tests need no sleeps. The staged Zephyr
+    tree also hardlinks the files of this checkout, so writing to them in place
+    would modify the checkout itself.
+    """
+    tmp = path.with_name(path.name + ".it_tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _tree_sha256(directory: Path) -> dict[str, str]:
@@ -261,7 +276,11 @@ class DownstreamIntegrationTest(unittest.TestCase):
         return (anchor.stat().st_mtime_ns, str(repo_dir))
 
     def _audit_output_base(
-        self, output_base: Path, checkout: Path, max_batches: int = 20
+        self,
+        output_base: Path,
+        checkout: Path,
+        max_batches: int = 20,
+        max_inputs: int = 25000,
     ) -> dict[str, audit_recorded_inputs.Entry]:
         lockfiles = []
         ws_lock = checkout / "MODULE.bazel.lock"
@@ -274,6 +293,7 @@ class DownstreamIntegrationTest(unittest.TestCase):
                 "--filter=@zephyr",
                 "--filter=zc_",
                 f"--max-batches={max_batches}",
+                f"--max-inputs={max_inputs}",
             ]
         )
         self.assertEqual(
@@ -294,6 +314,21 @@ class DownstreamIntegrationTest(unittest.TestCase):
                 f"Absolute path inputs leaked in {entry.name}: {abs_inputs}",
             )
         return {e.name: e for e in entries}
+
+    def _kconfig_inputs_sha256(self, output_base: Path) -> str:
+        """Returns the `# kconfig_inputs_sha256:` value of @zephyr_kconfig//:Kconfig.dts."""
+        kconfig_dts = self._find_repo_dir(output_base, "zephyr_kconfig") / "Kconfig.dts"
+        m = re.search(
+            r"^# kconfig_inputs_sha256: ([0-9a-f]{64})$",
+            kconfig_dts.read_text(encoding="utf-8"),
+            re.MULTILINE,
+        )
+        self.assertIsNotNone(m, f"No kconfig_inputs_sha256 line in {kconfig_dts}")
+        return m.group(1)
+
+    def _state_apps(self, output_base: Path) -> dict[str, str]:
+        state_dir = self._find_repo_dir(output_base, "zephyr_state")
+        return json.loads((state_dir / "state.json").read_text(encoding="utf-8"))["apps"]
 
     def _ensure_baseline_built(self):
         """Ensures test_01's baseline builds in ob_a have run if tests are run standalone."""
@@ -511,14 +546,13 @@ class DownstreamIntegrationTest(unittest.TestCase):
         zc_tok_0 = self._repo_eval_token(self.ob_a, ZC_MAIN_CUSTOM_SIM)
 
         # 1. Editing .c files in app and module must NOT re-fetch any repo rules
-        time.sleep(0.05)
         main_c = self.checkout_a / "apps" / "main_app" / "src" / "main.c"
         mod_c = self.checkout_a / "modules" / "sample_mod" / "sample_mod.c"
         orig_main_c = main_c.read_text(encoding="utf-8")
         orig_mod_c = mod_c.read_text(encoding="utf-8")
         try:
-            main_c.write_text(orig_main_c + "\n// comment edit\n", encoding="utf-8")
-            mod_c.write_text(orig_mod_c + "\n// module comment edit\n", encoding="utf-8")
+            _replace_file(main_c, orig_main_c + "\n// comment edit\n")
+            _replace_file(mod_c, orig_mod_c + "\n// module comment edit\n")
             self._run_bazel(
                 self.checkout_a,
                 self.ob_a,
@@ -544,25 +578,25 @@ class DownstreamIntegrationTest(unittest.TestCase):
                 f"@{ZC_MAIN_CUSTOM_SIM} should not re-evaluate on .c edit",
             )
         finally:
-            main_c.write_text(orig_main_c, encoding="utf-8")
-            mod_c.write_text(orig_mod_c, encoding="utf-8")
+            _replace_file(main_c, orig_main_c)
+            _replace_file(mod_c, orig_mod_c)
 
         # 2. Editing prj.conf and app.overlay re-evaluates @zc_* without re-evaluating @zephyr_state
-        time.sleep(0.05)
         prj_conf = self.checkout_a / "apps" / "main_app" / "prj.conf"
         app_overlay = self.checkout_a / "apps" / "main_app" / "app.overlay"
         orig_prj_conf = prj_conf.read_text(encoding="utf-8")
         orig_overlay = app_overlay.read_text(encoding="utf-8")
         try:
-            prj_conf.write_text(
+            _replace_file(
+                prj_conf,
                 orig_prj_conf.replace(
                     "CONFIG_SAMPLE_MOD_VALUE=11", "CONFIG_SAMPLE_MOD_VALUE=456"
                 ),
-                encoding="utf-8",
             )
-            app_overlay.write_text(
+            # Same size as the original: only the new inode reveals the edit.
+            _replace_file(
+                app_overlay,
                 orig_overlay.replace("sample-prop = <200>;", "sample-prop = <300>;"),
-                encoding="utf-8",
             )
             self._run_bazel(
                 self.checkout_a,
@@ -600,8 +634,8 @@ class DownstreamIntegrationTest(unittest.TestCase):
                 ),
             )
         finally:
-            prj_conf.write_text(orig_prj_conf, encoding="utf-8")
-            app_overlay.write_text(orig_overlay, encoding="utf-8")
+            _replace_file(prj_conf, orig_prj_conf)
+            _replace_file(app_overlay, orig_overlay)
 
         # 3. Creating and deleting boards/custom_sim_native.{conf,overlay}
         # and sysbuild/helper_app/boards/custom_sim_native.conf recovers cleanly
@@ -691,7 +725,94 @@ class DownstreamIntegrationTest(unittest.TestCase):
             "#define DT_N_S_sample_dev_P_sample_prop 200",
             (zc_dir / "zephyr" / "devicetree_generated.h").read_text(encoding="utf-8"),
         )
-        self._audit_output_base(self.ob_a, self.checkout_a)
+
+        # 4. Adding a new application below apps_dirs (no DIRENTS inputs are
+        # recorded) re-runs zephyr_setup through @zephyr_workspace_manifest,
+        # and removing it again drops it from @zephyr_state.
+        self.assertNotIn("apps/new_app", self._state_apps(self.ob_a))
+        new_app = self.checkout_a / "apps" / "new_app"
+        build_main = [
+            "build",
+            "--platforms=//boards/vendor/custom_sim:native",
+            "//apps/main_app:main_app",
+        ]
+        try:
+            new_app.mkdir()
+            (new_app / "BUILD.bazel").write_text("", encoding="utf-8")
+            (new_app / "prj.conf").write_text(
+                "CONFIG_SAMPLE_MOD_VALUE=5\n", encoding="utf-8"
+            )
+            self._run_bazel(self.checkout_a, self.ob_a, build_main)
+            self.assertEqual(
+                self._state_apps(self.ob_a).get("apps/new_app"),
+                "@@//apps/new_app:BUILD.bazel",
+                "Expected zephyr_setup to discover an app added on a warm server",
+            )
+        finally:
+            shutil.rmtree(new_app, ignore_errors=True)
+        self._run_bazel(self.checkout_a, self.ob_a, build_main)
+        self.assertNotIn("apps/new_app", self._state_apps(self.ob_a))
+
+        # 5. Adding a binding that defines no new compatible (so Kconfig.dts's
+        # DT_COMPAT_* symbols stay the same) to a workspace module re-runs
+        # @zephyr_kconfig through @zephyr_workspace_manifest//:kconfig_done
+        # and @zc_* through Kconfig.dts's kconfig_inputs_sha256; removing it
+        # restores the original digest.
+        base_binding = (
+            self.checkout_a
+            / "modules"
+            / "sample_mod"
+            / "dts"
+            / "bindings"
+            / "vendor"
+            / "vendor,zz-bazel-it-base.yaml"
+        )
+        self.assertFalse(base_binding.exists())
+        kconfig_tok_0 = self._repo_eval_token(self.ob_a, "zephyr_kconfig")
+        zc_tok_0 = self._repo_eval_token(self.ob_a, ZC_MAIN_CUSTOM_SIM)
+        kconfig_sha_0 = self._kconfig_inputs_sha256(self.ob_a)
+        try:
+            base_binding.write_text(
+                "description: Integration test base binding\n"
+                "properties:\n"
+                "  zz-bazel-it-prop:\n"
+                "    type: int\n",
+                encoding="utf-8",
+            )
+            self._run_bazel(self.checkout_a, self.ob_a, build_main)
+            self.assertNotEqual(
+                self._repo_eval_token(self.ob_a, "zephyr_kconfig"),
+                kconfig_tok_0,
+                "Expected @zephyr_kconfig to re-evaluate when a workspace binding is added",
+            )
+            self.assertNotEqual(self._kconfig_inputs_sha256(self.ob_a), kconfig_sha_0)
+            self.assertNotEqual(
+                self._repo_eval_token(self.ob_a, ZC_MAIN_CUSTOM_SIM),
+                zc_tok_0,
+                f"Expected @{ZC_MAIN_CUSTOM_SIM} to re-evaluate when a workspace binding is added",
+            )
+        finally:
+            base_binding.unlink(missing_ok=True)
+        self._run_bazel(self.checkout_a, self.ob_a, build_main)
+        self.assertEqual(self._kconfig_inputs_sha256(self.ob_a), kconfig_sha_0)
+
+        entries = self._audit_output_base(self.ob_a, self.checkout_a)
+        manifest_entry = next(
+            e for name, e in entries.items() if name.endswith("+zephyr_workspace_manifest")
+        )
+        self.assertEqual(
+            sorted(
+                i.path.split("//", 1)[-1]
+                for i in manifest_entry.inputs
+                if i.kind == "DIRTREE"
+            ),
+            ["apps", "boards", "modules/sample_mod"],
+        )
+        for entry in entries.values():
+            self.assertFalse(
+                [i for i in entry.inputs if i.kind == "DIRENTS"],
+                f"Unexpected DIRENTS inputs in {entry.name}",
+            )
 
     def test_04_local_git_override_and_audit(self):
         """Verifies local git checkout override (--override_repository with .git)."""
@@ -703,21 +824,18 @@ class DownstreamIntegrationTest(unittest.TestCase):
             shutil.move(str(self.zephyr_tree), str(override_dir))
             (override_dir / ".git").write_text("gitdir: ./.git\n", encoding="utf-8")
 
-            self._run_bazel(
-                self.checkout_a,
-                self.ob_a,
-                [
-                    "build",
-                    f"--override_repository=zephyr+={override_dir}",
-                    "--platforms=//boards/vendor/custom_sim:native",
-                    "//apps/main_app:main_app",
-                ],
-            )
+            build_override = [
+                "build",
+                f"--override_repository=zephyr+={override_dir}",
+                "--platforms=//boards/vendor/custom_sim:native",
+                "//apps/main_app:main_app",
+            ]
+            self._run_bazel(self.checkout_a, self.ob_a, build_override)
 
             entries = self._audit_output_base(self.ob_a, self.checkout_a)
             # When .git is present in repository_overrides/zephyr, @zephyr inputs
             # are tracked as main-workspace files (`@@//repository_overrides/zephyr/...`)
-            # with 0 absolute paths.
+            # with 0 absolute paths and uncapped coverage.
             setup_entry = next(
                 e
                 for name, e in entries.items()
@@ -731,8 +849,129 @@ class DownstreamIntegrationTest(unittest.TestCase):
             ]
             self.assertGreater(
                 len(main_override_inputs),
-                100,
-                "Expected repository_overrides/zephyr files to be watched under main workspace",
+                1000,
+                "Expected all discovered repository_overrides/zephyr hardware files to be watched under main workspace",
+            )
+            kconfig_entry = next(
+                e
+                for name, e in entries.items()
+                if name.endswith("zephyr_kconfig")
+            )
+            kconfig_override_inputs = [
+                i
+                for i in kconfig_entry.inputs
+                if i.location == "main"
+                and "repository_overrides/zephyr" in (i.path or "")
+            ]
+            self.assertGreater(
+                len(kconfig_override_inputs),
+                10000,
+                "Expected all repository_overrides/zephyr Kconfig and binding files to be watched uncapped",
+            )
+
+            warmer_entry = next(
+                e for name, e in entries.items() if name.endswith("+skyframe_warmer")
+            )
+            self.assertGreaterEqual(
+                len([i for i in warmer_entry.inputs if i.kind == "DIRTREE"]), 10
+            )
+            self.assertFalse(
+                [e.name for e in entries.values() if "zc_" in e.name and any(
+                    "skyframe_warmer" in (i.path or "") for i in e.inputs
+                )],
+                "@zc_* repositories must not watch @skyframe_warmer",
+            )
+
+            def tokens():
+                return (
+                    self._repo_eval_token(self.ob_a, "zephyr_state"),
+                    self._repo_eval_token(self.ob_a, "zephyr_kconfig"),
+                    self._repo_eval_token(self.ob_a, ZC_MAIN_CUSTOM_SIM),
+                )
+
+            # (a) Editing a .c file inside the mutable override re-runs only
+            # @skyframe_warmer (whose digests stay the same): zephyr_setup,
+            # @zephyr_kconfig and @zc_* are not re-evaluated.
+            state_tok_0, kconfig_tok_0, zc_tok_0 = tokens()
+            kconfig_sha_0 = self._kconfig_inputs_sha256(self.ob_a)
+            log_core_c = override_dir / "subsys" / "logging" / "log_core.c"
+            orig_log_core_c = log_core_c.read_text(encoding="utf-8")
+            try:
+                _replace_file(log_core_c, orig_log_core_c + "\n/* integration test edit */\n")
+                self._run_bazel(self.checkout_a, self.ob_a, build_override)
+                self.assertEqual(
+                    tokens(),
+                    (state_tok_0, kconfig_tok_0, zc_tok_0),
+                    "zephyr_setup/@zephyr_kconfig/@zc_* must not re-evaluate on a .c edit",
+                )
+            finally:
+                _replace_file(log_core_c, orig_log_core_c)
+
+            # (b) Editing an existing global Kconfig file re-runs @zephyr_kconfig,
+            # which changes Kconfig.dts's kconfig_inputs_sha256 and re-runs @zc_*.
+            logging_kconfig = override_dir / "subsys" / "logging" / "Kconfig"
+            orig_logging_kconfig = logging_kconfig.read_text(encoding="utf-8")
+            try:
+                _replace_file(
+                    logging_kconfig, orig_logging_kconfig + "\n# integration test edit\n"
+                )
+                self._run_bazel(self.checkout_a, self.ob_a, build_override)
+                _, kconfig_tok_1, zc_tok_1 = tokens()
+                self.assertNotEqual(
+                    kconfig_tok_1,
+                    kconfig_tok_0,
+                    "Expected @zephyr_kconfig to re-evaluate on a global Kconfig edit",
+                )
+                self.assertNotEqual(self._kconfig_inputs_sha256(self.ob_a), kconfig_sha_0)
+                self.assertNotEqual(
+                    zc_tok_1,
+                    zc_tok_0,
+                    f"Expected @{ZC_MAIN_CUSTOM_SIM} to re-evaluate on a global Kconfig edit",
+                )
+            finally:
+                _replace_file(logging_kconfig, orig_logging_kconfig)
+            self._run_bazel(self.checkout_a, self.ob_a, build_override)
+            self.assertEqual(self._kconfig_inputs_sha256(self.ob_a), kconfig_sha_0)
+
+            # (c) Adding a brand-new Kconfig file matched by a wildcard
+            # `rsource "*/Kconfig"` re-runs @zephyr_kconfig through
+            # @skyframe_warmer//:kconfig_done and @zc_* through Kconfig.dts;
+            # removing it restores the original schema.
+            wildcard_parent = override_dir / "drivers" / "pinctrl" / "renesas"
+            self.assertIn(
+                'rsource "*/Kconfig"',
+                (wildcard_parent / "Kconfig").read_text(encoding="utf-8"),
+            )
+            new_kconfig_dir = wildcard_parent / "zz_bazel_it_new"
+            new_kconfig = new_kconfig_dir / "Kconfig"
+            self.assertFalse(new_kconfig_dir.exists())
+            _, kconfig_tok_0, zc_tok_0 = tokens()
+            try:
+                new_kconfig_dir.mkdir()
+                new_kconfig.write_text(
+                    "config ZZ_BAZEL_IT_NEW_SYMBOL\n\tbool \"Integration test symbol\"\n",
+                    encoding="utf-8",
+                )
+                self._run_bazel(self.checkout_a, self.ob_a, build_override)
+                _, kconfig_tok_1, zc_tok_1 = tokens()
+                self.assertNotEqual(
+                    kconfig_tok_1,
+                    kconfig_tok_0,
+                    "Expected @zephyr_kconfig to re-evaluate when a new Kconfig file is added",
+                )
+                self.assertNotEqual(self._kconfig_inputs_sha256(self.ob_a), kconfig_sha_0)
+                self.assertNotEqual(
+                    zc_tok_1,
+                    zc_tok_0,
+                    f"Expected @{ZC_MAIN_CUSTOM_SIM} to re-evaluate when a new Kconfig file is added",
+                )
+            finally:
+                shutil.rmtree(new_kconfig_dir, ignore_errors=True)
+            self._run_bazel(self.checkout_a, self.ob_a, build_override)
+            self.assertEqual(
+                self._kconfig_inputs_sha256(self.ob_a),
+                kconfig_sha_0,
+                "Expected @zephyr_kconfig to drop a removed Kconfig file",
             )
         finally:
             if override_dir.exists():

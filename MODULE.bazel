@@ -28,6 +28,18 @@ use_repo(pw_cxx_toolchain, "llvm_toolchain")
 bazel_supports_repo = use_repo_rule("//bazel:bazel_supports.bzl", "bazel_supports_repo")
 bazel_supports_repo(name = "bazel_supports")
 
+# Directory-tree trackers for dependency tracking (see bazel/docs/dependency_tracking.md).
+# Downstream modules do not declare these: deps.bzl refers to them through @zephyr's own repo
+# mapping (Label("@skyframe_warmer//...")), and zephyr_workspace_manifest reads the root module's
+# zephyr_setup.env() tags itself.
+skyframe_warmer = use_repo_rule("//bazel/private:deps.bzl", "skyframe_warmer")
+
+skyframe_warmer(name = "skyframe_warmer")
+
+zephyr_workspace_manifest = use_repo_rule("//bazel/private:deps.bzl", "zephyr_workspace_manifest")
+
+zephyr_workspace_manifest(name = "zephyr_workspace_manifest")
+
 # Register Zephyr C++ toolchains.
 register_toolchains(
     "//toolchain:all",

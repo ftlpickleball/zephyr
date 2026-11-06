@@ -13,15 +13,16 @@ This tool reads repository marker files ($OUTPUT_BASE/external/@<repo>.marker or
 entries of lockfiles (by default the hidden lockfile $OUTPUT_BASE/MODULE.bazel.lock),
 prints what was recorded where, and checks that:
 
-  * there are no DIRTREE inputs (they hash whole directory trees);
+  * there are no DIRTREE inputs (they hash whole directory trees), except in the dedicated
+    directory-tree trackers (`_DIRTREE_REPO_SUFFIXES`, see bazel/private/deps.bzl);
   * there are no external DIRENTS inputs (directory listings are only watched in the main workspace);
-  * no entry needs more than --max-batches batches;
+  * no entry records more than --max-inputs inputs or needs more than --max-batches batches;
   * every DIRENTS input follows a FILE input on the same path in an earlier batch. Bazel fails
     the build (instead of re-running the rule) when a listed directory was deleted, unless the
     deletion is noticed through such a FILE input first.
 
 Usage:
-  audit_recorded_inputs.py [--filter SUBSTRING]... [--max-batches N] [--verbose]
+  audit_recorded_inputs.py [--filter SUBSTRING]... [--max-batches N] [--max-inputs N] [--verbose]
       OUTPUT_BASE [LOCKFILE]...
 
 The exit status is 1 if a check failed.
@@ -33,6 +34,17 @@ import dataclasses
 import json
 import os
 import sys
+
+# Canonical name suffixes of the repositories that are expected to record DIRTREE inputs.
+_DIRTREE_REPO_SUFFIXES = ("+skyframe_warmer", "+zephyr_workspace_manifest")
+
+# Default --max-batches. @skyframe_warmer needs one batch per watched @zephyr tree (17 in total),
+# and zephyr_setup one per external repository root it probes (about 16).
+_DEFAULT_MAX_BATCHES = 20
+
+# Default --max-inputs. @zephyr_kconfig watches every Kconfig, binding and BUILD file of a mutable
+# @zephyr (about 16,000 files), so leave headroom for Zephyr's growth.
+_DEFAULT_MAX_INPUTS = 25000
 
 # Kinds of inputs that start a new batch when they live in another external repository.
 _REPO_PATH_KINDS = ("FILE", "DIRENTS", "DIRTREE")
@@ -57,12 +69,11 @@ class Input:
 
     @property
     def starts_batch(self):
-        # Models Bazel 8's canBeRequestedUnconditionally(), where only external-repo inputs start a
-        # new batch. Newer Bazel (9+) also starts a batch on every DIRENTS/DIRTREE input, so
-        # enforcing the stricter Bazel 8 batching guarantees that an explicit external-repo barrier
-        # (@bazel_tools//tools:BUILD) separates directory FILE watches from DIRENTS on both Bazel 8
-        # and Bazel 9+.
-        return self.location == "external"
+        # In Bazel 9+, RepoRecordedInput.Dirents.canBeRequestedUnconditionally()
+        # and DirTree.canBeRequestedUnconditionally() return false (even for
+        # main-repository paths), so every external-repo input, DIRENTS input,
+        # and DIRTREE input starts a new batch in splitIntoBatches().
+        return self.location == "external" or self.kind in ("DIRENTS", "DIRTREE")
 
 
 @dataclasses.dataclass
@@ -123,11 +134,13 @@ def split_into_batches(inputs):
     return batches
 
 
-def check_entry(entry, max_batches):
+def check_entry(entry, max_batches, max_inputs=_DEFAULT_MAX_INPUTS):
     """Returns a list of problems found in 'entry'."""
     problems = []
+    if len(entry.inputs) > max_inputs:
+        problems.append("%d inputs (max %d)" % (len(entry.inputs), max_inputs))
     dirtrees = [i.path for i in entry.inputs if i.kind == "DIRTREE"]
-    if dirtrees:
+    if dirtrees and not entry.name.endswith(_DIRTREE_REPO_SUFFIXES):
         problems.append("%d DIRTREE input(s), e.g. %s" % (len(dirtrees), dirtrees[0]))
     ext_dirents = [i.path for i in entry.inputs if i.kind == "DIRENTS" and i.location == "external"]
     if ext_dirents:
@@ -139,13 +152,17 @@ def check_entry(entry, max_batches):
         problems.append("%d batches (max %d)" % (len(batches), max_batches))
     if not entry.ordered:
         return problems
+    pending_files = set()
     watched_before = set()
     unsafe = []
-    for batch in batches:
-        for i in batch:
-            if i.kind == "DIRENTS" and i.path not in watched_before:
-                unsafe.append(i.path)
-        watched_before.update(i.path for i in batch if i.kind == "FILE")
+    for i in entry.inputs:
+        if i.location == "external":
+            watched_before.update(pending_files)
+            pending_files.clear()
+        if i.kind == "DIRENTS" and i.path not in watched_before:
+            unsafe.append(i.path)
+        elif i.kind == "FILE":
+            pending_files.add(i.path)
     if unsafe:
         problems.append(
             "%d DIRENTS input(s) without a FILE input on the same path in an earlier batch, "
@@ -276,8 +293,14 @@ def main(argv=None):
     parser.add_argument(
         "--max-batches",
         type=int,
-        default=64,
+        default=_DEFAULT_MAX_BATCHES,
         help="Maximum number of verification batches per entry (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--max-inputs",
+        type=int,
+        default=_DEFAULT_MAX_INPUTS,
+        help="Maximum number of recorded inputs per entry (default: %(default)s).",
     )
     parser.add_argument(
         "--verbose",
@@ -292,7 +315,7 @@ def main(argv=None):
         return 1
     failed = 0
     for entry in entries:
-        problems = check_entry(entry, args.max_batches)
+        problems = check_entry(entry, args.max_batches, args.max_inputs)
         failed += bool(problems)
         print("\n".join(format_entry(entry, problems, args.verbose)))
     print("%d entries audited, %d failed." % (len(entries), failed))

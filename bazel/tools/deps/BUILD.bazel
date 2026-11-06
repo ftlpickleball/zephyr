@@ -8,6 +8,7 @@ package(default_visibility = ["//visibility:public"])
 exports_files([
     "find_pin_files.py",
     "input_recorder.py",
+    "tree_manifest.py",
 ])
 
 py_library(
@@ -20,6 +21,19 @@ py_test(
     name = "find_pin_files_test",
     srcs = ["find_pin_files_test.py"],
     deps = [":find_pin_files_lib"],
+)
+
+py_library(
+    name = "tree_manifest_lib",
+    srcs = ["tree_manifest.py"],
+    imports = ["."],
+    deps = [":find_pin_files_lib"],
+)
+
+py_test(
+    name = "tree_manifest_test",
+    srcs = ["tree_manifest_test.py"],
+    deps = [":tree_manifest_lib"],
 )
 
 py_library(

@@ -440,6 +440,28 @@ def _normalize_edt_obj(edt, output_dir):
         _clean_binding(getattr(node, "_binding", None))
 
 
+def _record_edt_bindings(edt, base_dir, tracker):
+    """Records the binding YAML files actually matched by `edt`."""
+    seen = set()
+
+    def _visit(b):
+        while b is not None and id(b) not in seen:
+            seen.add(id(b))
+            b_path = getattr(b, "path", None)
+            if b_path:
+                tracker.add(
+                    b_path if os.path.isabs(b_path) else os.path.join(base_dir, b_path)
+                )
+            for inc in getattr(b, "_included_binding_paths", None) or ():
+                tracker.add(inc if os.path.isabs(inc) else os.path.join(base_dir, inc))
+            b = getattr(b, "child_binding", None)
+
+    for b in getattr(edt, "_compat2binding", {}).values():
+        _visit(b)
+    for node in getattr(edt, "nodes", ()):
+        _visit(getattr(node, "_binding", None))
+
+
 def _normalize_edt_pickle(edt_pickle_path, zephyr_base, output_dir):
     if not os.path.exists(edt_pickle_path):
         return
@@ -457,17 +479,21 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
     output_header = os.path.join(output_dir, "zephyr", "devicetree_generated.h")
     os.makedirs(os.path.dirname(output_header), exist_ok=True)
 
+    zephyr_real_prefix = os.path.realpath(zephyr_base) + os.sep
     bindings_dirs = []
+    resolved_bindings_dirs = []
     seen_resolved = set()
     for dts_root in dts_roots:
         for b in ("zephyr/dts/bindings", "dts/bindings"):
             bdir = dts_root / b
             if bdir.exists():
                 resolved = bdir.resolve()
-                tracker.add_tree(resolved, kconfig_utils.BINDING_SUFFIXES)
                 if resolved not in seen_resolved:
                     seen_resolved.add(resolved)
+                    resolved_bindings_dirs.append(resolved)
                     bindings_dirs.append(os.path.relpath(bdir, output_dir))
+                if not (str(resolved) + os.sep).startswith(zephyr_real_prefix):
+                    tracker.add_tree(resolved, kconfig_utils.BINDING_SUFFIXES)
                 break
             else:
                 tracker.add(str(bdir))
@@ -518,11 +544,17 @@ def generate_edt_pickle(zephyr_base, output_dir, dts_roots, merged_dts_path, *, 
                     sys.exit(f"devicetree error: {e}")
                 with open(rel_dts_debug, "w", encoding="utf-8") as f:
                     print(edt.dts_source, file=f)
+            _record_edt_bindings(edt, output_dir, tracker)
             _normalize_edt_obj(edt, output_dir)
             with open(output_edt_pickle_path, "wb") as f:
                 pickle.dump(edt, f, protocol=4)
             os.environ["EDT_PICKLE"] = output_edt_pickle_path
             return edt
+
+        # gen_edt.py runs in a subprocess and cannot report which bindings it matched, so every
+        # binding file in the bindings directories is an input.
+        for resolved in resolved_bindings_dirs:
+            tracker.add_tree(resolved, kconfig_utils.BINDING_SUFFIXES)
 
         gen_edt_args = [
             sys.executable,

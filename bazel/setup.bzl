@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:naming.bzl", "derive_module_label", "find_package_boards", "get_app_hash", "get_zc_repo_name_from_precomputed", "normalize_app_label", "parse_label", "resolve_board_id", "sanitize_board_id")
-load("//bazel/private:deps.bzl", "find_pin_files", "label_path", "new_tracker", "read_path_list", "readdir", "realpath_of", "repo_root", "watch_deps", "watch_pins", "workspace_relpath")
+load("//bazel/private:deps.bzl", "find_pin_files", "label_path", "new_tracker", "read_path_list", "readdir", "realpath_of", "repo_root", "watch_deps", "watch_pins", "watch_workspace_manifest", "workspace_relpath")
 load("//bazel/private:repo_rule_python.bzl", "get_python")
 load("//bazel/private:zephyr_kconfig_gen_symbols.bzl", "zephyr_kconfig_schema")
 load("//bazel/private:zephyr_kconfig_gen_values.bzl", "gen_zephyr_config")
@@ -318,9 +318,11 @@ def _find_app_dirs(tracker, root, deps_files):
     """Returns the directories below `root` (inclusive) that contain a prj.conf.
 
     Equivalent to `find <root> -name out -prune -o -name 'bazel-*' -prune -o -name '.*' -prune
-    -o -name prj.conf -print` (plus pruning `__pycache__`), in a deterministic order. The listing
-    of every directory visited is watched, so adding an application anywhere below `root` re-runs
-    the extension. Symlinked directories are not followed.
+    -o -name prj.conf -print` (plus pruning `__pycache__`), in a deterministic order. Every
+    directory visited is watched as a path (so creating or deleting it is noticed); adding an
+    application anywhere below `root` re-runs the extension through `@skyframe_warmer//:done`
+    (`root` in @zephyr) or `@zephyr_workspace_manifest//:done` (`root` in the main workspace).
+    Symlinked directories are not followed.
     """
     if not root.is_dir:
         deps_files.append(realpath_of(root))
@@ -357,7 +359,7 @@ def _zephyr_setup_core_impl(mctx):
     # find_pin_files(). Fetched repositories are covered by watching workspace pin files; mutable
     # workspace files and directory listings (including in-workspace overrides) are watched at the
     # end via watch_deps().
-    tracker = new_tracker(mctx)
+    tracker = new_tracker(mctx, zephyr_manifest = "done")
     zephyr_root = repo_root(tracker, Label("//:BUILD.bazel"))
     python = get_python(
         mctx,
@@ -396,6 +398,11 @@ def _zephyr_setup_core_impl(mctx):
 
     for l in modules_labels + boards_dir_labels + apps_dir_labels + pin_labels:
         repo_root(tracker, l)
+
+    # New applications, boards and override files in the main-workspace directories named by the
+    # tags above are noticed through this digest of their file names (module extensions cannot
+    # watch directory trees, and per-directory DIRENTS inputs would each cost a Skyframe batch).
+    watch_workspace_manifest(tracker)
 
     # Fetched repositories get no per-file watches. Their content can only change with their
     # definitions, which these files pin: MODULE.bazel (and those of in-workspace overrides), the
@@ -748,8 +755,8 @@ def _zephyr_setup_core_impl(mctx):
         has_yaml_boards = yaml_res != None and len(yaml_res) > 0
 
         # Entries of the app's boards/ directory, listed at most once per app_path when a board
-        # reaches the filesystem check. Its listing is watched, so adding or removing an override
-        # re-runs the filter.
+        # reaches the filesystem check. Adding or removing an override re-runs the filter through
+        # @skyframe_warmer//:done or @zephyr_workspace_manifest//:done (see _find_app_dirs()).
         needs_boards_listing = False
         if not has_yaml_boards:
             for b in board_index.keys():

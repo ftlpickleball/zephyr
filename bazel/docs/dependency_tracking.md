@@ -17,12 +17,16 @@ is re-read.
 ## The cost model
 
 Bazel re-verifies recorded inputs in order, in batches
-(`RepoRecordedInput.WithValue.splitIntoBatches`). Each `FILE`, `DIRENTS` or `DIRTREE` input that
-lives in *another external repository* starts a new batch, and each batch costs a Skyframe restart.
-Inputs in the main repository and absolute paths join the current batch and are checked in
-parallel. So 10,000 workspace files are cheap to re-verify, but 200 files spread over external
-repositories take 200 sequential restarts. `DIRTREE` (`watch_tree`) inputs hash whole trees on
-every check.
+(`RepoRecordedInput.WithValue.splitIntoBatches`). Each input that lives in
+*another external repository* (`!canBeRequestedUnconditionally()`) or is a
+directory listing (`DIRENTS`/`DIRTREE` in Bazel 9+) starts a new batch, and
+each batch costs a Skyframe restart (and a synchronous remote cache round-trip
+when `--experimental_remote_repo_contents_cache` is enabled). `FILE` inputs in
+the main repository (`FILE:@@//...`) join the current batch and are checked in
+parallel. However, on a cold `--output_base`, watching tens of thousands of
+uncached `FileValue`s sequentially via `ctx.watch()` triggers $O(N^2)$
+`SkyFunctionEnvironment.batchPrefetch()` restarts on the Starlark worker thread.
+`DIRTREE` (`watch_tree`) inputs hash whole trees on every check.
 
 ## How inputs are classified
 
@@ -36,9 +40,11 @@ really lives:
    sequential Skyframe restarts. Immutable repos are covered by watching the pin files
    (`MODULE.bazel`, patches, overlays) that define them (see `find_pin_files()`).
 2. **Main workspace content:**
-   These are mutable and actively edited by developers.
-   `deps.bzl` watches them through their workspace-relative path (`@@//...`), so they are verified
-   in parallel in batch 0 with zero restarts.
+   These are mutable and actively edited by developers. `deps.bzl` watches them
+   through their workspace-relative path (`@@//...`) as `FILE` inputs, so they
+   are verified in parallel in batch 0 with zero extra batches. Additions and
+   removals inside directories are tracked by the directory-tree trackers
+   described [below](#directory-trees), not by `DIRENTS` inputs.
 3. **External repo overrides (`repo_root`):**
    To detect if an external repository transitions between a fetched repo and a local git checkout
    override, it watches `<root>/.git` once per repository.
@@ -46,8 +52,8 @@ really lives:
 | Realpath is in | Watched how | Why |
 |---|---|---|
 | The main workspace | One `FILE` input per file, through its workspace path | Mutable; cheap to verify |
-| A workspace directory whose listing matters (application trees, app `boards/` dirs, OOT board roots, OOT bindings directories) | `FILE` on the directory, then `DIRENTS` (see below) | Adding a file must re-run discovery |
-| Fetched content under `$OUTPUT_BASE/external` | Not watched per file | Immutable; covered by the pin files |
+| A workspace directory whose listing matters (application trees, app `boards/` dirs, `snippets/` dirs, OOT board roots, OOT bindings directories) | One `FILE` input on the directory (`DIR` or missing); its listing is covered by a [directory-tree tracker](#directory-trees) | Creating or deleting the directory re-runs discovery without one `DIRENTS` batch per directory |
+| A fetched external repository (`fetched_roots`: no `<root>/.git`, under `$OUTPUT_BASE/external/` or `--repo_contents_cache`) | Not watched per file | Immutable; covered by the pin files and `.git` probes |
 | Anywhere else (repository rules only) | One `FILE` input per file | Module extensions cannot watch such paths |
 
 **Pin files.** Fetched content only changes when its definition changes. `find_pin_files()`
@@ -74,6 +80,68 @@ sorted and unique, one per line:
 
 When a script reads a new kind of input, it must add it to these lists.
 
+## Directory trees
+
+Module extensions cannot watch directory trees, and every `DIRENTS` or
+`DIRTREE` input starts its own batch, so neither is recorded by `zephyr_setup`,
+`@zephyr_kconfig` or `zc_*`. Instead, two small repository rules in
+[deps.bzl](../private/deps.bzl) call `watch_tree()` on the relevant trees and
+write SHA-256 digests of the sorted names of the discovery-relevant files below
+them ([tree_manifest.py](../tools/deps/tree_manifest.py)). The consumers watch
+those digest files. Editing an existing file re-runs the tracker but leaves the
+digests unchanged, so only adding or removing a relevant file re-runs the
+consumers; edits to existing files are noticed through per-file watches.
+
+* **`@skyframe_warmer`**, used only when `@zephyr` is a mutable checkout (the
+  main workspace or a local git checkout override). It watches 16 top-level
+  directories of `@zephyr` (`arch`, `bazel`, `boards`, `cmake`, `drivers`,
+  `dts`, `include`, `lib`, `modules`, `samples`, `scripts`, `snippets`, `soc`,
+  `subsys`, `tests` and `toolchain`), which also makes Bazel's
+  `DirectoryTreeDigestFunction` compute all their `FileValue`s in parallel
+  before the consumers watch ~3,000 files in `zephyr_setup` and ~16,000 files
+  in `@zephyr_kconfig` one at a time. It writes:
+  * `done`, over Kconfig, DTS, YAML, conf, CMake and Bazel files, watched by
+    `zephyr_setup` (`new_tracker(zephyr_manifest = "done")`);
+  * `kconfig_done`, over Kconfig, `BUILD`/`.bzl`, board/SoC/arch/module
+    metadata and binding files, watched by `@zephyr_kconfig`
+    (`new_tracker(zephyr_manifest = "kconfig_done")`).
+
+  `zc_*` repositories do not watch it. `kconfig_gen_symbols.py` appends
+  `# kconfig_inputs_sha256: <sha256>` over the paths and contents of every
+  Kconfig file it read and every binding it scanned for `Kconfig.dts` to
+  `@zephyr_kconfig//:Kconfig.dts`, which every `zc_*` watches. Editing, adding
+  or removing a global Kconfig file or a binding therefore re-runs `zc_*`, even
+  when the generated `DT_COMPAT_*` symbols stay the same (a bus variant of an
+  existing compatible, an out-of-tree binding overriding an in-tree compatible,
+  or a shared base binding without `compatible:`), while adding an unrelated
+  `testcase.yaml` does not. Other `@zephyr` inputs of a `zc_*` repository are
+  watched per file only when `filter_zc_deps()` in
+  [zephyr_kconfig_gen_values.bzl](../private/zephyr_kconfig_gen_values.bzl)
+  keeps them: files of the application and board directories, DTS, conf,
+  header and Python files, hardware and module metadata, matched bindings,
+  `version.h.in`, and the sysbuild Kconfig files (`share/sysbuild/` and
+  `Kconfig.sysbuild`), which `kconfig_inputs_sha256` does not cover.
+* **`@zephyr_workspace_manifest`**, used when `@zephyr` is not the main
+  repository (`watch_workspace_manifest()`). It parses the root `MODULE.bazel`
+  and the files it includes for `zephyr_setup.env()` tags and watches the
+  main-workspace trees they name: `apps_dirs`, the `boards/`, `dts/`, `soc/`,
+  `snippets/` and `zephyr/dts/` subdirectories of `boards_dirs`, and
+  `modules`. Like `@skyframe_warmer`, it writes:
+  * `done`, watched by `zephyr_setup`, which changes when an application, a
+    board, or an app `boards/<board>.conf`/`.overlay` override is added or
+    removed;
+  * `kconfig_done`, watched by `@zephyr_kconfig`, which changes when a
+    Kconfig, binding, board/SoC metadata or `BUILD`/`.bzl` file is added to or
+    removed from a workspace module or board root. `zephyr_setup` re-running
+    does not change the attributes of `@zephyr_kconfig` in that case, so
+    without this digest it would not re-run.
+
+Both trackers are not `reproducible`: their results depend on where the trees
+live, which is not an attribute. `audit_recorded_inputs.py` allows `DIRTREE`
+inputs only in them. Both are declared in `@zephyr`'s own `MODULE.bazel` and
+referenced through its repo mapping, so downstream modules do not declare or
+configure them.
+
 ## Ordering, and deleted directories
 
 Bazel fails the build, and keeps failing it (also after a restart), when a directory whose
@@ -83,50 +151,69 @@ listing was recorded (`DIRENTS`) is deleted:
 Inconsistent filesystem operations. ... is no longer an existing directory
 ```
 
-`DirectoryListingFunction` throws instead of reporting the input as changed. The failure is avoided
-when a `FILE` input on the same directory is verified in an *earlier batch*: its change marks the
-rule outdated before the listing is requested. `watch_deps()` therefore records, in this order:
+`DirectoryListingFunction` throws instead of reporting the input as changed, and
+in Bazel 9+ every `DIRENTS` input starts a separate Skyframe/RBE batch
+(`RepoRecordedInput.Dirents.canBeRequestedUnconditionally()` returns `false`).
+`watch_deps()` therefore watches reported directories via `ctx.watch()` as
+`FILE` inputs (`DIR` when present, missing when absent) rather than recording
+`DIRENTS`. Creating or deleting a directory transitions its `FILE` input in
+batch 0 without throwing `InconsistentFilesystemException` or multiplying
+batches.
 
-1. a `FILE` input for each directory whose listing is watched;
-2. a barrier: one input in another repository (`@bazel_tools//tools:BUILD`), which starts a new
-   batch;
-3. the `DIRENTS` inputs, for directories that exist;
-4. the `FILE` inputs of the reported files.
-
-Record other inputs first and call `watch_deps()` once, at the end. `readdir()` lists a directory
-without watching it and queues its listing for `watch_deps()`.
+Record repository roots and pin files first and call `watch_deps()` once, at the
+end. `readdir()` lists a directory with `watch = "no"` and queues its path for
+`watch_deps()`.
 
 ## What is noticed
 
 | Change | Noticed |
 |---|---|
-| Edit an application's `prj.conf`, overlay, `Kconfig`, `sample.yaml`, `sysbuild.*` | Yes |
-| Add an application, or a `boards/<board>.conf/.overlay` file | Yes (listings of workspace dirs) |
-| Edit or add OOT board, DTS or binding files in the workspace | Yes |
+| Edit an application's `prj.conf`, overlay, `Kconfig`, `sample.yaml`/`testcase.yaml`, `sysbuild.*` | Yes |
+| Add an application, or a `boards/<board>.conf/.overlay` file | Yes (`@zephyr_workspace_manifest` or `@skyframe_warmer`) |
+| Edit or add OOT board, DTS or binding files in the workspace | Yes (additions: `@zephyr_workspace_manifest`) |
 | Edit a file of an in-workspace override: Kconfig, bindings, DTS, scripts | Yes |
-| Add a file to a directory of an in-workspace override | Yes |
+| Add a Kconfig, binding, board, `BUILD` or application file to an in-workspace override | Yes (`@skyframe_warmer`, except in `doc`, `kernel`, `misc`, `platforms`, `share`) |
 | Bump a `git_override`/`archive_override`, edit a patch or BUILD overlay | Yes (pin files) |
 | Turn an override on or off | Yes (`.git` probes) |
 
 ## Limitations and hazards
 
-* Adding or removing any file below the `apps_dirs` trees (which may include all of `//src`)
-  re-runs the `zephyr_setup` extension on the next build (about 2.5 s), including temporary files
-  created by editors. `out`, `bazel-*`, `__pycache__` and dot directories are not walked. The
-  `zc_*` repositories and `zephyr_setup_apps` only re-run if the result changes.
-* Overrides must be git checkouts (or worktrees/submodules) for the probe to notice them being
-  switched on or off. Switching between two checkouts of the same repository is not noticed.
-* Overrides outside the workspace are only tracked by repository rules; module extensions cannot
-  watch paths outside the workspace.
-* Retargeting a symlink is only noticed if the realpath of an input changes content too.
-* With `--watchfs`, Bazel does not notice changes under `.bazelignore`d directories, which include
-  `repository_overrides/`. Do not combine `--watchfs` with overrides.
+* Adding or removing a Kconfig, DTS, YAML, conf, CMake or Bazel file below the
+  `apps_dirs` trees (which may include all of `//src`) re-runs the
+  `zephyr_setup` extension on the next build (about 2.5 s). Other files, and
+  `out`, `bazel-*`, `__pycache__` and dot directories, are ignored. The `zc_*`
+  repositories and `zephyr_setup_apps` only re-run if the result changes.
+* `@zephyr_workspace_manifest` only understands string-literal labels (or list
+  variables of them) in the root module's `zephyr_setup.env()` tags; it prints
+  a warning for anything else. Directories named by non-root modules checked
+  out inside the workspace are not tracked for additions. Each watched tree is
+  one `DIRTREE` input and batch; an `apps_dirs` label naming the workspace root
+  is expanded to its top-level directories, which can exceed `--max-batches`
+  in a large workspace. Prefer specific `apps_dirs`.
+* `@skyframe_warmer` does not watch `doc`, `kernel`, `misc`, `platforms`,
+  `share` or other top-level `@zephyr` directories (each watched tree costs a
+  batch). Their Kconfig files are sourced by name, so a new one is noticed
+  through the edit that sources it, but a new `BUILD` file there is not.
+* Overrides must be git checkouts (or worktrees/submodules) for the probe to
+  notice them being switched on or off. Switching between two checkouts of the
+  same repository is not noticed.
+* Overrides outside the workspace are only tracked by repository rules; module
+  extensions cannot watch paths outside the workspace.
+* Retargeting a symlink is only noticed if the realpath of an input changes
+  content too.
+* With `--watchfs`, Bazel does not notice changes under `.bazelignore`d
+  directories, which include `repository_overrides/`. Do not combine `--watchfs`
+  with overrides.
 
 ## Auditing
 
-[audit_recorded_inputs.py](../tools/deps/audit_recorded_inputs.py) prints what was recorded for
-each Zephyr repository and module extension, and fails on `DIRTREE` inputs, too many batches, or
-unguarded `DIRENTS` inputs:
+[audit_recorded_inputs.py](../tools/deps/audit_recorded_inputs.py) reads
+repository marker files (`$OUTPUT_BASE/external/@<repo>.marker` or
+`<realpath(external/<repo>)>.recorded_inputs` in `--repo_contents_cache`) and
+lockfile module extension entries, prints what was recorded for each Zephyr
+repository and module extension, and fails on `DIRTREE` inputs (outside the
+[directory-tree trackers](#directory-trees)), too many inputs (`--max-inputs`,
+default 25,000) or batches (`--max-batches`), or unguarded `DIRENTS` inputs:
 
 ```
 bazel run @zephyr//bazel/tools/deps:audit_recorded_inputs -- $(bazel info output_base)

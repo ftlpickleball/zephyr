@@ -8,6 +8,66 @@ load("//bazel/private:deps.bzl", "label_path", "new_tracker", "read_path_list", 
 load("//bazel/private:kconfig_args.bzl", "get_kconfig_args", "resolve_module_roots")
 load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
 
+# Suffixes of the @zephyr inputs recorded by kconfig_gen_values.py that zc_* watches per file: DTS,
+# conf, header and Python files, hardware and module metadata, the `version.h.in` template of
+# `app_version.h`, and sysbuild Kconfig files (`Kconfig.sysbuild` is not parsed by
+# kconfig_gen_symbols.py, so `kconfig_inputs_sha256` does not cover it).
+_ZC_ZEPHYR_DEP_SUFFIXES = (
+    ".dts",
+    ".dtsi",
+    ".overlay",
+    ".conf",
+    "_defconfig",
+    ".h",
+    ".py",
+    "/board.yml",
+    "/board.yaml",
+    "/soc.yml",
+    "/soc.yaml",
+    "/archs.yml",
+    "/module.yml",
+    "/module.yaml",
+    "/version.h.in",
+    "/Kconfig.sysbuild",
+)
+
+# Substrings of the @zephyr inputs that zc_* watches per file: matched bindings, and the sysbuild
+# Kconfig tree (`share/sysbuild/Kconfig` and the files it sources), which `@zephyr_kconfig` does not
+# parse either.
+_ZC_ZEPHYR_DEP_SUBSTRINGS = (
+    "/dts/bindings/",
+    "/share/sysbuild/",
+)
+
+def filter_zc_deps(raw_deps, zephyr_real_prefix, priority_prefixes):
+    """Returns the recorded inputs of a zc_* repository that it watches per file.
+
+    Inputs outside @zephyr, and @zephyr inputs under one of `priority_prefixes` (the application
+    and board directories), are always kept. Other @zephyr inputs are only
+    kept when they match `_ZC_ZEPHYR_DEP_SUFFIXES` or `_ZC_ZEPHYR_DEP_SUBSTRINGS`: the contents and
+    the set of the global Kconfig files and bindings are covered by the `# kconfig_inputs_sha256:`
+    line of `@zephyr_kconfig//:Kconfig.dts`, which every zc_* repository watches.
+
+    Args:
+        raw_deps: Realpaths listed in the generator's `deps.txt`.
+        zephyr_real_prefix: Realpath of the @zephyr root, with a trailing `/`.
+        priority_prefixes: Realpaths of directories, each with a trailing `/`, whose inputs are
+            always kept.
+
+    Returns:
+        The kept realpaths, in their original order.
+    """
+    return [
+        d
+        for d in raw_deps
+        if (
+            not d.startswith(zephyr_real_prefix) or
+            any([d.startswith(pref) for pref in priority_prefixes]) or
+            d.endswith(_ZC_ZEPHYR_DEP_SUFFIXES) or
+            any([s in d for s in _ZC_ZEPHYR_DEP_SUBSTRINGS])
+        )
+    ]
+
 def _gen_zephyr_config_impl(rctx):
     # Inputs in other repositories are recorded first: they are the only ones that make
     # re-verification expensive (see deps.bzl). The context holds what all configurations share
@@ -96,18 +156,30 @@ def _gen_zephyr_config_impl(rctx):
         fail("Zephyr config generation failed: %s" % result.stderr)
 
     # The generator lists every file it read (plus probed candidates that don't exist) and every
-    # directory whose listing matters, as realpaths. Only mutable locations get watched.
-    deps = (read_path_list(rctx, rctx.path("deps.txt")) or []) + [
+    # directory whose listing matters, as realpaths. Only mutable locations get watched, and
+    # @zephyr inputs are filtered by filter_zc_deps().
+    raw_deps = read_path_list(rctx, rctx.path("deps.txt")) or []
+    zephyr_real_prefix = str(zephyr_root.realpath) + "/"
+    priority_prefixes = [
+        realpath_of(rctx.path(p)) + "/"
+        for p in [app_dir_path, board_dir_path]
+    ]
+    priority_deps = [
         realpath_of(p)
         for p in [kconfig_gen_values_py, kconfig_utils_py]
     ] + [
         realpath_of(rctx.path(f))
         for f in resolved_conf_fragments + resolved_dtc_overlays
+    ] + filter_zc_deps(raw_deps, zephyr_real_prefix, priority_prefixes)
+    raw_dirs = read_path_list(rctx, rctx.path("dep_dirs.txt")) or []
+    dep_dirs = [
+        d
+        for d in raw_dirs
+        if not d.startswith(zephyr_real_prefix) or any([d.startswith(pref) for pref in priority_prefixes])
     ]
-    dep_dirs = read_path_list(rctx, rctx.path("dep_dirs.txt")) or []
 
     watch_pins(tracker, context["pin_files"])
-    watch_deps(tracker, files = deps, dirs = dep_dirs)
+    watch_deps(tracker, priority_files = priority_deps, dirs = dep_dirs)
 
     rctx.delete("deps.txt")
     rctx.delete("dep_dirs.txt")
