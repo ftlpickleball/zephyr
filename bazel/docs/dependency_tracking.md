@@ -51,11 +51,12 @@ really lives:
 | Anywhere else (repository rules only) | One `FILE` input per file | Module extensions cannot watch such paths |
 
 **Pin files.** Fetched content only changes when its definition changes. `find_pin_files()`
-collects the files that define it: `MODULE.bazel`, the `*.MODULE.bazel` files it includes, and the
-patches, BUILD overlays and lock files they reference (also `@zephyr//` labels when `@zephyr` is
-overridden inside the workspace). The extension and every generated repository watch them, so
-bumping a `git_override` commit or editing a patch re-runs everything once. Extra files can be
-added with `zephyr_setup.env(pin_files = [...])`.
+([find_pin_files.py](../tools/deps/find_pin_files.py)) parses the Starlark AST to collect the files
+that define it: `MODULE.bazel`, the `*.MODULE.bazel` files it includes, and the patches, BUILD
+overlays and lock files they reference (also `@zephyr//` labels when `@zephyr` is the main
+workspace or overridden inside the workspace). The extension and every generated repository watch
+them, so bumping a `git_override` commit or editing a patch re-runs everything once. Extra files
+can be added with `zephyr_setup.env(pin_files = [...])`.
 
 **Override probes.** `repo_root()` resolves each external repository once and watches
 `<root>/.git`: it doesn't exist in fetched repositories and exists in git checkouts used as

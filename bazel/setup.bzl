@@ -407,7 +407,7 @@ def _zephyr_setup_core_impl(mctx):
             fail("zephyr_setup.env(pin_files) must be files in the main workspace: %s" % l)
         extra_pins.append(rel)
     override_relpaths = [workspace_relpath(tracker, r[:-1]) for r in tracker["local_roots"]]
-    pin_files = find_pin_files(tracker, [""] + override_relpaths, extra_pins)
+    pin_files = find_pin_files(tracker, python, [""] + override_relpaths, extra_pins)
     watch_pins(tracker, pin_files)
 
     # Realpaths reported by the discovery scripts, watched at the end.

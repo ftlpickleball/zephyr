@@ -313,123 +313,22 @@ def read_path_list(ctx, path):
         return None
     return [line for line in ctx.read(path).splitlines() if line.strip()]
 
-def string_literals(content):
-    """Returns the single-line string literals in Starlark source, ignoring comments.
-
-    Args:
-        content: Starlark source code, e.g. the contents of a MODULE.bazel file.
-
-    Returns:
-        A list of the literal strings, without quotes. Escape sequences are not decoded.
-    """
-    literals = []
-    for line in content.splitlines():
-        if "\"" not in line and "'" not in line:
-            continue
-        quote = ""
-        escaped = False
-        buf = []
-        for c in line.elems():
-            if quote:
-                if escaped:
-                    escaped = False
-                    buf.append(c)
-                elif c == "\\":
-                    escaped = True
-                    buf.append(c)
-                elif c == quote:
-                    literals.append("".join(buf))
-                    quote = ""
-                    buf = []
-                else:
-                    buf.append(c)
-            elif c == "#":
-                break
-            elif c == "\"" or c == "'":
-                quote = c
-    return literals
-
-def label_literal_to_relpath(literal, repo_relpath, repo_relpaths_by_name = {}):
-    """Maps a label literal from a MODULE.bazel or .bzl file to a workspace-relative path.
-
-    Args:
-        literal: The string literal, e.g. "//patches/openair:0001-fix.patch".
-        repo_relpath: Workspace-relative path of the repository the literal appears in ("" for
-            the main repository). `//` labels are relative to it; `@//` and `@@//` labels always
-            refer to the main repository.
-        repo_relpaths_by_name: Module name -> workspace-relative root of in-workspace overrides,
-            for `@name//` labels.
-
-    Returns:
-        A struct(relpath, explicit_name, repo_relpath) or None if the literal is not a label of a
-        local file. `repo_relpath` is the root of the repository the label refers to.
-    """
-    if literal.startswith("@@//"):
-        rest, base = literal[4:], ""
-    elif literal.startswith("@//"):
-        rest, base = literal[3:], ""
-    elif literal.startswith("//"):
-        rest, base = literal[2:], repo_relpath
-    elif literal.startswith("@") and not literal.startswith("@@") and "//" in literal:
-        name, _, rest = literal[1:].partition("//")
-        if name not in repo_relpaths_by_name:
-            return None
-        base = repo_relpaths_by_name[name]
-    else:
-        return None
-    for c in [" ", "\t", "%", "{", "}", "$", "*", "\\", "..", "//"]:
-        if c in rest:
-            return None
-    explicit_name = ":" in rest
-    if explicit_name:
-        pkg, name = rest.split(":", 1)
-    else:
-        pkg, name = rest, rest.rpartition("/")[2]
-    if not name or name.startswith("/") or name.endswith("/"):
-        return None
-    parts = [p for p in [base, pkg, name] if p]
-    return struct(relpath = "/".join(parts), explicit_name = explicit_name, repo_relpath = base)
-
-def module_name(content):
-    """Returns the `name` of the module() call in MODULE.bazel content.
-
-    Args:
-        content: The contents of a MODULE.bazel file.
-
-    Returns:
-        The module name, or None if there is no module() call with a literal name.
-    """
-    in_module = False
-    for line in content.splitlines():
-        s = line.strip()
-        if not in_module:
-            if not s.startswith("module("):
-                continue
-            in_module = True
-            s = s[len("module("):]
-        for part in s.split(","):
-            key, eq, value = part.partition("=")
-            if eq and key.strip() == "name":
-                literals = string_literals(value)
-                return literals[0] if literals else None
-        if ")" in s:
-            return None
-    return None
-
-def find_pin_files(tracker, repo_relpaths = [""], extra_relpaths = []):
+def find_pin_files(tracker, python, repo_relpaths = [""], extra_relpaths = []):
     """Returns the workspace files that pin fetched content.
 
-    Scans the MODULE.bazel of each given repository for labels of local files: patches, BUILD
-    overlays, lock files, included `*.MODULE.bazel` files and (in the main repository) `.bzl`
-    files, which are scanned in turn. Reading the files watches them, as main-repository inputs.
-    `@name//` labels are followed when `name` is the module name of one of the given in-workspace
-    overrides.
+    Runs `//bazel/tools/deps:find_pin_files.py`, which parses the Starlark AST of the
+    `MODULE.bazel` of each given repository for labels of local files: patches, BUILD overlays,
+    lock files, included `*.MODULE.bazel` files, and (in the main repository) `.bzl` files, which
+    are scanned in turn. `@name//` labels are followed when `name` is the module name of the main
+    repository or one of the given in-workspace overrides. Pass the returned list to `watch_pins()`
+    to watch them as main-repository inputs.
 
     A label is a pin if it names an existing file, or has an explicit target name with an
     extension (so that a missing patch is watched too).
 
     Args:
         tracker: The dict returned by new_tracker().
+        python: The Python runner struct returned by get_python().
         repo_relpaths: Workspace-relative roots of the repositories to scan: "" for the main
             repository, plus in-workspace overrides (whose MODULE.bazel may pin other repos).
         extra_relpaths: Additional workspace-relative pin files.
@@ -437,51 +336,20 @@ def find_pin_files(tracker, repo_relpaths = [""], extra_relpaths = []):
     Returns:
         A sorted list of workspace-relative paths.
     """
-    ctx = tracker["ctx"]
-    ws = tracker["ws_path"]
-    pins = {}
-    queue = []
-    by_name = {}
-    for repo_rel in repo_relpaths:
-        module_rel = repo_rel + "/MODULE.bazel" if repo_rel else "MODULE.bazel"
-        queue.append((module_rel, repo_rel))
-        p = ws.get_child(module_rel)
-        if repo_rel and p.exists and not p.is_dir:
-            name = module_name(ctx.read(p))
-            if name:
-                by_name[name] = repo_rel
-    for rel in extra_relpaths:
-        pins[rel] = True
-
-    # Breadth-first search (BFS) to find the transitive closure of pin files:
-    # Starlark disallows 'while' loops, so range(1000) bounds the queue traversal.
-    # Discovers MODULE.bazel, included *.MODULE.bazel segments, and referenced .bzl
-    # files, tracking visited paths in `scanned` to prevent cycles.
-    scanned = {}
-    for _ in range(1000):
-        if not queue:
-            break
-        rel, repo_rel = queue.pop(0)
-        if rel in scanned:
-            continue
-        scanned[rel] = True
-        p = ws.get_child(rel)
-        pins[rel] = True
-        if not p.exists or p.is_dir:
-            ctx.watch(p)
-            continue
-        for literal in string_literals(ctx.read(p)):
-            pin = label_literal_to_relpath(literal, repo_rel, by_name)
-            if pin == None:
-                continue
-            pin_path = ws.get_child(pin.relpath)
-            is_file = pin_path.exists and not pin_path.is_dir
-            if not is_file and not (pin.explicit_name and "." in pin.relpath.rpartition("/")[2]):
-                continue
-            pins[pin.relpath] = True
-            if not is_file:
-                continue
-            pin_repo = pin.repo_relpath
-            if pin.relpath.endswith(".MODULE.bazel") or (pin.relpath.endswith(".bzl") and pin_repo == ""):
-                queue.append((pin.relpath, pin_repo))
-    return sorted(pins.keys())
+    script = label_path(tracker, Label("//bazel/tools/deps:find_pin_files.py"))
+    script_rel = workspace_relpath(tracker, realpath_of(script))
+    extras = list(extra_relpaths)
+    if script_rel != None and script_rel not in extras:
+        extras.append(script_rel)
+    res = python.execute([
+        str(script),
+        "--workspace-root",
+        tracker["ws"],
+        "--repo-relpaths-json",
+        json.encode(repo_relpaths),
+        "--extra-relpaths-json",
+        json.encode(extras),
+    ])
+    if res.return_code != 0:
+        fail("Failed to find pin files:\n" + res.stderr)
+    return json.decode(res.stdout)

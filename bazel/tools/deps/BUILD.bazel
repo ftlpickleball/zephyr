@@ -6,8 +6,21 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 package(default_visibility = ["//visibility:public"])
 
 exports_files([
+    "find_pin_files.py",
     "input_recorder.py",
 ])
+
+py_library(
+    name = "find_pin_files_lib",
+    srcs = ["find_pin_files.py"],
+    imports = ["."],
+)
+
+py_test(
+    name = "find_pin_files_test",
+    srcs = ["find_pin_files_test.py"],
+    deps = [":find_pin_files_lib"],
+)
 
 py_library(
     name = "input_recorder_lib",
