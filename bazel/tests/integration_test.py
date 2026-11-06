@@ -376,6 +376,16 @@ class DownstreamIntegrationTest(unittest.TestCase):
         self.assertIn(ZC_MAIN_NATIVE_SIM, index_bzl)
         self.assertIn(ZC_MAIN_QEMU_CM3, index_bzl)
 
+        # Verify @zephyr_kconfig is pruned to referenced symbols and exports symbols.txt
+        kconfig_dir = self._find_repo_dir(self.ob_a, "zephyr_kconfig")
+        symbols_txt = (kconfig_dir / "symbols.txt").read_text(encoding="utf-8").splitlines()
+        self.assertIn("CONFIG_SAMPLE_MOD_ENABLED", symbols_txt)
+        self.assertLess(len(symbols_txt), 6000)
+        kconfig_build_lines = (
+            (kconfig_dir / "BUILD.bazel").read_text(encoding="utf-8").splitlines()
+        )
+        self.assertLess(len(kconfig_build_lines), 20000)
+
         # Verify CMake parity in generated headers of @zc_<main_app>_custom_sim_native
         zc_dir = self._find_repo_dir(self.ob_a, ZC_MAIN_CUSTOM_SIM)
         autoconf_h = (zc_dir / "zephyr" / "autoconf.h").read_text(encoding="utf-8")

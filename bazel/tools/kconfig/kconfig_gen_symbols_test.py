@@ -212,6 +212,9 @@ board:
         sym2.name = "MY_INT"
 
         mock_kconf.syms = {"MY_SYMBOL": sym1, "MY_INT": sym2}
+        (self.zephyr_base / "BUILD.bazel").write_text(
+            "# CONFIG_MY_SYMBOL CONFIG_MY_INT\n"
+        )
 
         # Set kconfiglib constants
         self.kconfig_mock.UNKNOWN = 0
@@ -275,6 +278,7 @@ board:
         (app_dir / "Kconfig").write_text(
             'module = MY_APP\nsource "subsys/logging/Kconfig.template.log_config"'
         )
+        (app_dir / "BUILD.bazel").write_text("# CONFIG_MY_APP_LOG_LEVEL\n")
 
         output_file = os.path.join(self.test_dir, "BUILD.bazel")
         self.kconfig_mock.Kconfig.return_value.syms = {}
@@ -432,6 +436,9 @@ board:
         (mod2 / "Kconfig").write_text(
             'module = MCUBOOT\nsource "subsys/logging/Kconfig.template.log_config"\n'
         )
+        (mod2 / "BUILD.bazel").write_text(
+            "# CONFIG_MCUBOOT_LOG_LEVEL CONFIG_ONLY_UNTYPED_SYM\n"
+        )
 
         output_file = os.path.join(self.test_dir, "BUILD.bazel")
         self.kconfig_mock.Kconfig.return_value.syms = {}
@@ -567,6 +574,158 @@ board:
             real(self.zephyr_base / "soc" / "nordic"),
             real(self.zephyr_base / "soc" / "nordic" / "nrf52"),
         })
+
+    def test_scan_files_discovers_dts_bindings_compat(self):
+        binding_dir = (
+            self.zephyr_base / "tests" / "subsys" / "pm" / "dts" / "bindings"
+        )
+        binding_dir.mkdir(parents=True)
+        binding_file = binding_dir / "test-device-pm.yaml"
+        binding_file.write_text(
+            'description: Test binding\ncompatible: "test,device-pm"\n'
+        )
+
+        symbols = {}
+        symbol_settings = kconfig_gen_symbols.collections.defaultdict(set)
+        kconfig_files = set()
+        tracker = kconfig_utils.InputRecorder()
+
+        kconfig_gen_symbols.scan_files_for_dynamic_symbols(
+            str(self.zephyr_base),
+            [],
+            [],
+            symbols,
+            symbol_settings,
+            kconfig_files,
+            tracker,
+        )
+
+        self.assertEqual(symbols.get("CONFIG_DT_HAS_TEST_DEVICE_PM_ENABLED"), "bool")
+        self.assertIn(os.path.realpath(str(binding_file)), tracker.files)
+
+    @patch("kconfig_utils.generate_kconfig_dts")
+    def test_filters_to_referenced_symbols_and_writes_symbols_txt(
+        self, mock_gen_dts
+    ):
+        subsys_dir = self.zephyr_base / "subsys" / "sample"
+        subsys_dir.mkdir(parents=True)
+        (subsys_dir / "Kconfig").write_text(
+            "config USED_BOOL\n    bool\n\n"
+            "config USED_INT\n    int\n\n"
+            "config MODULE_BOOL\n    bool\n\n"
+            "config UNUSED_BOOL\n    bool\n"
+        )
+        (subsys_dir / "BUILD.bazel").write_text(
+            'select({"@zephyr_kconfig//:CONFIG_USED_BOOL=true": []})\n'
+            'zephyr_module(name = "mod", config = "CONFIG_MODULE_BOOL")\n'
+        )
+        app_build = Path(self.test_dir) / "app_BUILD.bazel"
+        app_build.write_text(
+            'config_setting(name = "cfg", flag_values = {"@zephyr_kconfig//:CONFIG_USED_INT": "1024"})\n'
+        )
+
+        out_dir = Path(self.test_dir) / "out_filtered"
+        out_dir.mkdir()
+        output_file = out_dir / "BUILD.bazel"
+        self.mock_kconf.syms = {}
+
+        with patch(
+            "sys.argv",
+            [
+                "kconfig_gen_symbols.py",
+                "--zephyr-base",
+                str(self.zephyr_base),
+                "--build-files",
+                str(app_build),
+                "--output",
+                str(output_file),
+            ],
+        ):
+            kconfig_gen_symbols.main()
+
+        content = output_file.read_text()
+        self.assertIn('bool_flag(name = "CONFIG_USED_BOOL"', content)
+        self.assertIn('bool_flag(name = "CONFIG_MODULE_BOOL"', content)
+        self.assertIn('int_flag(name = "CONFIG_USED_INT"', content)
+        self.assertNotIn("CONFIG_UNUSED_BOOL", content)
+
+        symbols_txt = (out_dir / "symbols.txt").read_text().splitlines()
+        self.assertEqual(
+            symbols_txt,
+            ["CONFIG_MODULE_BOOL", "CONFIG_USED_BOOL", "CONFIG_USED_INT"],
+        )
+
+    def test_scan_build_content_preserves_authoritative_string_type(self):
+        symbols = {"CONFIG_MY_VERSION": "string"}
+        symbol_settings = kconfig_gen_symbols.collections.defaultdict(set)
+        referenced = set()
+        kconfig_gen_symbols._scan_build_or_bzl_content(
+            'select({"@zephyr_kconfig//:CONFIG_MY_VERSION=1": []})',
+            symbols,
+            symbol_settings,
+            referenced,
+        )
+        self.assertEqual(symbols["CONFIG_MY_VERSION"], "string")
+        self.assertIn("1", symbol_settings["CONFIG_MY_VERSION"])
+        self.assertIn("CONFIG_MY_VERSION", referenced)
+
+    def test_write_bazel_build_file_empty_referenced_symbols_set(self):
+        out_dir = Path(self.test_dir) / "out_empty_ref"
+        out_dir.mkdir()
+        output_file = out_dir / "BUILD.bazel"
+        symbols = {"CONFIG_A": "bool", "CONFIG_B": "int"}
+        symbol_settings = kconfig_gen_symbols.collections.defaultdict(set)
+
+        kconfig_gen_symbols.write_bazel_build_file(
+            str(output_file),
+            symbols,
+            symbol_settings,
+            referenced_symbols=set(),
+        )
+
+        content = output_file.read_text()
+        self.assertNotIn("CONFIG_A", content)
+        self.assertNotIn("CONFIG_B", content)
+        self.assertEqual((out_dir / "symbols.txt").read_text(), "")
+
+    def test_oot_app_dir_kconfig_and_subpackage_build_scanned(self):
+        oot_app = Path(self.test_dir) / "oot_app"
+        subpkg = oot_app / "subpkg"
+        subpkg.mkdir(parents=True)
+        (oot_app / "Kconfig").write_text(
+            "config OOT_CUSTOM_INT\n    int\n\n"
+            "config OOT_CUSTOM_STR\n    string\n"
+        )
+        (oot_app / "BUILD.bazel").write_text(
+            "# top-level OOT app referencing CONFIG_OOT_CUSTOM_INT\n"
+        )
+        (subpkg / "BUILD.bazel").write_text(
+            'select({"@zephyr_kconfig//:CONFIG_OOT_CUSTOM_STR=1": []})\n'
+        )
+
+        symbols = {}
+        symbol_settings = kconfig_gen_symbols.collections.defaultdict(set)
+        referenced = set()
+        kconfig_files = set()
+        tracker = kconfig_utils.InputRecorder()
+
+        kconfig_gen_symbols.scan_files_for_dynamic_symbols(
+            str(self.zephyr_base),
+            [],
+            [],
+            symbols,
+            symbol_settings,
+            kconfig_files,
+            tracker,
+            referenced_symbols=referenced,
+            extra_build_files=[str(oot_app / "BUILD.bazel")],
+        )
+
+        self.assertEqual(symbols.get("CONFIG_OOT_CUSTOM_INT"), "int")
+        self.assertEqual(symbols.get("CONFIG_OOT_CUSTOM_STR"), "string")
+        self.assertIn("CONFIG_OOT_CUSTOM_INT", referenced)
+        self.assertIn("CONFIG_OOT_CUSTOM_STR", referenced)
+
 
 if __name__ == "__main__":
     unittest.main()

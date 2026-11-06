@@ -634,15 +634,21 @@ def _zephyr_setup_core_impl(mctx):
                 package_to_boards[pkg_path].append(mb)
 
     # Discover Apps
+    zephyr_packages_prefix = zephyr_canonical + "//"
     discovered_apps = {}
     discovered_apps_labels = {}
+    oot_app_build_files = {}
     collision_registry = {}  # hash -> label
 
     for l in apps_dir_labels:
+        if not str(l).startswith(zephyr_packages_prefix):
+            oot_app_build_files[str(l)] = True
         dir_path = get_dir_from_label(mctx, l, tracker)
         for app_path in _find_app_dirs(tracker, dir_path, deps_files):
             app_pkg = get_package_for_path(mctx, app_path, apps_dir_labels, tracker, pkg_cache)
             if app_pkg:
+                if not app_pkg.startswith(zephyr_packages_prefix):
+                    oot_app_build_files[app_pkg] = True
                 norm_app = normalize_app_label(app_pkg)
 
                 build_dir = find_nearest_build_file(mctx, app_path)
@@ -921,6 +927,7 @@ def _zephyr_setup_core_impl(mctx):
     board_dirs = {board_index[b]: True for b in sorted(board_index.keys())}.keys()
     zephyr_kconfig_schema(
         name = "zephyr_kconfig",
+        app_build_files = sorted(oot_app_build_files.keys()),
         board_dirs = board_dirs,
         context = context_json,
         local_modules = local_modules,

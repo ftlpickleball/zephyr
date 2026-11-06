@@ -39,6 +39,15 @@ def _zephyr_kconfig_schema_impl(rctx):
 
     resolved_modules = resolve_module_roots(tracker, context["modules"])
 
+    resolved_build_files = []
+    for b_label in rctx.attr.app_build_files:
+        b_path = label_path(tracker, b_label)
+        if not b_path.exists:
+            b_path = b_path.dirname
+        path_str = str(b_path)
+        if path_str not in resolved_build_files:
+            resolved_build_files.append(path_str)
+
     args = get_kconfig_args(
         script = kconfig_gen_symbols_py,
         zephyr_root = zephyr_root_path,
@@ -46,6 +55,7 @@ def _zephyr_kconfig_schema_impl(rctx):
         output = "BUILD.bazel",
         board_dirs = resolved_board_dirs,
         oot_dts_roots = resolved_oot_dts_roots,
+        build_files = resolved_build_files,
     )
 
     result = python.execute(args)
@@ -76,6 +86,9 @@ def _zephyr_kconfig_schema_impl(rctx):
 zephyr_kconfig_schema = repository_rule(
     implementation = _zephyr_kconfig_schema_impl,
     attrs = {
+        "app_build_files": attr.string_list(
+            doc = "Canonical labels of the BUILD files of out-of-tree application packages, from discovery.",
+        ),
         "board_dirs": attr.string_list(
             doc = "Canonical labels of the BUILD files of all board packages, from discovery.",
         ),

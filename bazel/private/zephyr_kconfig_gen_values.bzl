@@ -14,6 +14,8 @@ def _gen_zephyr_config_impl(rctx):
     # (module roots, OOT DTS roots, pin files); per-configuration data comes from attributes, so
     # discovering a new app or board does not invalidate existing configurations.
     context = json.decode(rctx.read(rctx.attr._context))
+    rctx.watch(rctx.attr._kconfig_symbols)
+    kconfig_symbols_path = str(rctx.path(rctx.attr._kconfig_symbols))
     tracker = new_tracker(rctx)
     zephyr_root = repo_root(tracker, Label("//:BUILD.bazel"))
     zephyr_root_path = str(zephyr_root)
@@ -78,6 +80,7 @@ def _gen_zephyr_config_impl(rctx):
         output_dir = ".",
         app_name = rctx.attr.app_label.name,
         oot_dts_roots = resolved_oot_dts_roots,
+        kconfig_symbols_file = kconfig_symbols_path,
         conf_fragments = resolved_conf_fragments,
         dtc_overlays = resolved_dtc_overlays,
         toolchain_variant = rctx.attr.toolchain_variant,
@@ -133,6 +136,7 @@ gen_zephyr_config = repository_rule(
         "extra_kconfig": attr.string(),
         "toolchain_variant": attr.string(default = ""),
         "_context": attr.label(default = "@zephyr_state//:context.json"),
+        "_kconfig_symbols": attr.label(default = "@zephyr_kconfig//:symbols.txt"),
         "_kconfig_gen_values_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_values.py"),
         "_pip_deps": attr.label_list(
             default = [

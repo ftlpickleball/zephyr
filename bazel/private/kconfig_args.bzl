@@ -52,6 +52,8 @@ def get_kconfig_args(
         app_name = None,
         board_dirs = [],
         oot_dts_roots = [],
+        build_files = [],
+        kconfig_symbols_file = None,
         conf_fragments = [],
         dtc_overlays = [],
         toolchain_variant = None):
@@ -86,6 +88,13 @@ def get_kconfig_args(
     if oot_dts_roots:
         args.append("--oot-dts-roots")
         args.extend(oot_dts_roots)
+
+    if build_files:
+        args.append("--build-files")
+        args.extend(build_files)
+
+    if kconfig_symbols_file:
+        args.extend(["--kconfig-symbols-file", str(kconfig_symbols_file)])
 
     if conf_fragments:
         args.append("--conf-fragments")

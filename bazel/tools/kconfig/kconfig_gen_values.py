@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument("--modules", nargs="+", default=[])
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--oot-dts-roots", nargs="+", default=[])
+    parser.add_argument("--kconfig-symbols-file", default=None)
     parser.add_argument("--app-name", default="zephyr_app")
     parser.add_argument("--toolchain-variant", default=None)
     parser.add_argument("--conf-fragments", nargs="+", default=[])
@@ -662,6 +663,16 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
         f.write('    ],\n')
         f.write(')\n\n')
 
+        allowed_symbols = None
+        kconfig_symbols_file = getattr(args, "kconfig_symbols_file", None)
+        if isinstance(kconfig_symbols_file, (str, Path)) and os.path.exists(
+            kconfig_symbols_file
+        ):
+            with open(kconfig_symbols_file, "r", encoding="utf-8") as sym_f:
+                allowed_symbols = {
+                    line.strip() for line in sym_f if line.strip()
+                }
+
         flags_lines = []
         for sym in kconf.unique_defined_syms:
              if not sym.nodes:
@@ -669,6 +680,8 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
 
              sname = kconfig_utils.sanitize_name_for_target(sym.name)
              full_name = "CONFIG_" + sname
+             if allowed_symbols is not None and full_name not in allowed_symbols:
+                 continue
 
              if sym.type in [kconfiglib.BOOL, kconfiglib.TRISTATE]:
                  if sym.str_value == "y":

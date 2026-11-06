@@ -996,5 +996,46 @@ class TestKconfigGenValues(unittest.TestCase):
         }, tracker.dirs)
         self.assertNotIn(real(self.zephyr_base), tracker.dirs)
 
+    def test_generate_bazel_build_filters_flags_by_kconfig_symbols_file(self):
+        out_dir = os.path.join(self.test_dir, "out_filtered_flags")
+        os.makedirs(out_dir, exist_ok=True)
+        symbols_file = os.path.join(self.test_dir, "symbols.txt")
+        Path(symbols_file).write_text("CONFIG_ALLOWED_SYM\n")
+
+        def make_bool_sym(name, val):
+            s = MagicMock()
+            s.name = name
+            s.str_value = val
+            s.type = self.kconfig_mock.BOOL
+            s.nodes = [MagicMock()]
+            return s
+
+        kconf = MagicMock()
+        kconf.syms = {
+            "ARCH_POSIX": MagicMock(str_value="y"),
+            "SOC": MagicMock(str_value="inf_clock"),
+        }
+        kconf.unique_defined_syms = [
+            make_bool_sym("ALLOWED_SYM", "y"),
+            make_bool_sym("UNREFERENCED_SYM", "y"),
+        ]
+
+        args = MagicMock()
+        args.app_dir = self.test_dir
+        args.zephyr_base = str(self.zephyr_base)
+        args.parent_platform = "@zephyr//boards/native/native_sim:native"
+        args.kconfig_symbols_file = symbols_file
+
+        kconfig_gen_values.generate_bazel_build(
+            args, kconf, out_dir, self.kconfig_mock
+        )
+
+        build_content = Path(out_dir, "BUILD.bazel").read_text()
+        self.assertIn(
+            '"--@zephyr_kconfig//:CONFIG_ALLOWED_SYM=true"', build_content
+        )
+        self.assertNotIn("CONFIG_UNREFERENCED_SYM", build_content)
+
+
 if __name__ == '__main__':
     unittest.main()
