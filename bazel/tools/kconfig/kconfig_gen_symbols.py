@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import shutil
 import sys
 import argparse
 import tempfile
@@ -309,9 +310,12 @@ def generate_kconfig_scaffolding(
         + [Path(m) for m in modules]
         + [Path(r) for r in oot_dts_roots]
     )
+    kconfig_dts = os.path.join(tmp_dir, "Kconfig.dts")
     kconfig_utils.generate_kconfig_dts(
-        zephyr_base, os.path.join(tmp_dir, "Kconfig.dts"), dts_roots, tracker=tracker
+        zephyr_base, kconfig_dts, dts_roots, tracker=tracker
     )
+    if not os.path.exists(kconfig_dts):
+        Path(kconfig_dts).touch()
 
     # Mock currently unsupported parts of the Kconfig tree
     for f_name in [
@@ -323,6 +327,41 @@ def generate_kconfig_scaffolding(
     ]:
         with open(os.path.join(tmp_dir, f_name), "w") as f:
             f.write("# Dummy\n")
+
+
+_SHARED_SCAFFOLDING_FILES = (
+    os.path.join("soc", "Kconfig.defconfig"),
+    os.path.join("soc", "Kconfig"),
+    os.path.join("soc", "Kconfig.soc"),
+    os.path.join("soc", "Kconfig.sysbuild"),
+    os.path.join("boards", "Kconfig.defconfig"),
+    os.path.join("boards", "Kconfig"),
+    os.path.join("boards", "Kconfig.sysbuild"),
+    "Kconfig.modules",
+    "Kconfig.dts",
+    "Kconfig.defconfig",
+    "Kconfig.board",
+    "Kconfig.sysbuild.modules",
+    "Kconfig.shield",
+    "Kconfig.shield.defconfig",
+)
+
+
+def _link_kconfig_scaffolding(src_dir, dst_dir):
+    """Hardlinks (or copies) pre-generated Kconfig scaffolding into dst_dir."""
+    for sub in ("soc", "boards", "arch"):
+        os.makedirs(os.path.join(dst_dir, sub), exist_ok=True)
+    for rel in _SHARED_SCAFFOLDING_FILES:
+        src = os.path.join(src_dir, rel)
+        dst = os.path.join(dst_dir, rel)
+        if not os.path.exists(src):
+            continue
+        if os.path.exists(dst):
+            os.unlink(dst)
+        try:
+            os.link(src, dst)
+        except OSError:
+            shutil.copyfile(src, dst)
 
 
 def parse_arch_symbols(
@@ -344,9 +383,18 @@ def parse_arch_symbols(
 
     # Scaffolding must be arch-specific to avoid conflicts during parallel execution
     setup_kconfig_environment(zephyr_base, arch_tmp_dir, modules)
-    generate_kconfig_scaffolding(
-        arch_tmp_dir, zephyr_base, soc_dirs, board_dirs, modules, oot_dts_roots, tracker=deps
-    )
+    if os.path.exists(os.path.join(global_tmp_dir, "Kconfig.modules")):
+        _link_kconfig_scaffolding(global_tmp_dir, arch_tmp_dir)
+    else:
+        generate_kconfig_scaffolding(
+            arch_tmp_dir,
+            zephyr_base,
+            soc_dirs,
+            board_dirs,
+            modules,
+            oot_dts_roots,
+            tracker=deps,
+        )
 
     symbols = {}
     warnings_list = []
@@ -437,6 +485,16 @@ def parse_kconfig_authoritative(
     If 'tracker' (a kconfig_utils.InputRecorder) is given, the inputs of every
     per-arch parse are merged into it.
     """
+    generate_kconfig_scaffolding(
+        tmp_dir,
+        zephyr_base,
+        soc_dirs,
+        board_dirs,
+        modules,
+        oot_dts_roots,
+        tracker=tracker,
+    )
+
     if jobs == 1:
         results = [
             parse_arch_symbols(
@@ -470,7 +528,8 @@ def parse_kconfig_authoritative(
     for arch, arch_symbols, arch_warnings, arch_kconfig_files, arch_inputs in results:
         warnings_list.extend(arch_warnings)
         kconfig_files.update(arch_kconfig_files)
-        tracker.update(arch_inputs)
+        if tracker is not None:
+            tracker.update(arch_inputs)
         for name, stype in arch_symbols.items():
             if name not in symbols or (stype != "bool" and symbols[name] == "bool"):
                 symbols[name] = stype
@@ -747,9 +806,9 @@ def write_bazel_build_file(
             'load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "int_flag", "string_flag")\n'
         )
         f.write('load("@rules_cc//cc:defs.bzl", "cc_library")\n')
-        f.write('load("@zephyr//bazel:cc.bzl", "zephyr_cc_library")\n\n')
+        f.write('load("@zephyr//bazel:cc_library.bzl", "zephyr_cc_library")\n\n')
         f.write('package(default_visibility = ["//visibility:public"])\n\n')
-        f.write('exports_files(["local_modules.bzl", "symbols.txt"])\n\n')
+        f.write('exports_files(["symbols.txt"])\n\n')
         f.write("zephyr_cc_library(\n")
         f.write('    name = "kconfig_warnings",\n')
         f.write('    srcs = ["kconfig_warnings.c"],\n')

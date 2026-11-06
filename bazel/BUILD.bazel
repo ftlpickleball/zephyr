@@ -25,6 +25,7 @@ string_flag(
 exports_files([
     "defs.bzl",
     "cc.bzl",
+    "cc_library.bzl",
     "cc_test.bzl",
     "flags.bzl",
     "linker_fragment.bzl",

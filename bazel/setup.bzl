@@ -699,85 +699,102 @@ def _zephyr_setup_core_impl(mctx):
     # repository, whose canonical name is zephyr_canonical ("@@" when Zephyr is the root module).
     zephyr_packages_prefix = zephyr_canonical + "//"
 
+    default_sim_names = {
+        "native_sim": True,
+        "native_sim_64": True,
+        "qemu_cortex_m3": True,
+        "qemu_x86": True,
+        "qemu_riscv32": True,
+    }
+    board_order = {}
+    oot_board_set = {}
+    manual_matched_set = {}
+    default_sim_set = {}
+    override_file_to_boards = {}
+
+    for idx, (board_id, board_path) in enumerate(board_index.items()):
+        board_order[board_id] = idx
+        if not board_path.startswith(zephyr_packages_prefix):
+            oot_board_set[board_id] = True
+
+        has_rev = "@" in board_id
+        board_base = board_id.split("/")[0]
+        for mb in manual_boards:
+            mb_has_rev = "@" in mb
+            if has_rev != mb_has_rev:
+                continue
+            if has_rev:
+                if board_id == mb:
+                    manual_matched_set[board_id] = True
+                    break
+            elif board_id == mb or board_base == mb:
+                manual_matched_set[board_id] = True
+                break
+
+        clean_b = board_base.split("@")[0]
+        if clean_b in default_sim_names:
+            default_sim_set[board_id] = True
+
+        b_name, b_quals, b_rev = _parse_board_id(board_id)
+        for ext in ("conf", "overlay", "sysbuild.yml"):
+            for cand in _get_override_candidates(b_name, b_quals, b_rev, ext):
+                override_file_to_boards.setdefault(cand, []).append(board_id)
+
     surviving_combinations = {}
+    boards_fs_matched_cache = {}
     for app_pkg, app_path in discovered_apps.items():
-        surviving_combinations[app_pkg] = []
         yaml_res = yaml_metadata.get(app_pkg, None)
         is_oot_app = not app_path.startswith(str(zephyr_root))
+        has_yaml_boards = yaml_res != None and len(yaml_res) > 0
 
-        # Entries of the app's boards/ directory (None if it does not exist), listed at most once
-        # per app. Its listing is watched, so adding or removing an override re-runs the filter.
-        boards_dir = mctx.path(app_path).get_child("boards")
-        boards_listed = False
-        boards_names = None
-
-        for board_id, board_path in board_index.items():
-            is_oot_board = not board_path.startswith(zephyr_packages_prefix)
-
-            # OOT Exemption
-            if is_oot_app and is_oot_board:
-                surviving_combinations[app_pkg].append(board_id)
-                continue
-
-            # Manual fallback
-            found_manual = False
-            has_rev = "@" in board_id
-            for mb in manual_boards:
-                mb_has_rev = "@" in mb
-                if has_rev != mb_has_rev:
+        # Entries of the app's boards/ directory, listed at most once per app_path when a board
+        # reaches the filesystem check. Its listing is watched, so adding or removing an override
+        # re-runs the filter.
+        needs_boards_listing = False
+        if not has_yaml_boards:
+            for b in board_index.keys():
+                if is_oot_app and b in oot_board_set:
                     continue
-                if has_rev:
-                    if board_id == mb:
-                        found_manual = True
-                        break
-                elif board_id == mb or board_id.split("/")[0] == mb:
-                    found_manual = True
-                    break
+                if b in manual_matched_set:
+                    continue
+                needs_boards_listing = True
+                break
 
-            if found_manual:
-                surviving_combinations[app_pkg].append(board_id)
-                continue
-
-            # YAML
-            if yaml_res != None and len(yaml_res) > 0:
-                if board_id in yaml_res:
-                    surviving_combinations[app_pkg].append(board_id)
-                continue
-
-            # Filesystem
-            if not boards_listed:
-                boards_listed = True
+        fs_matched_boards = {}
+        if needs_boards_listing:
+            if app_path not in boards_fs_matched_cache:
+                boards_dir = mctx.path(app_path).get_child("boards")
+                app_fs_matched = {}
                 if boards_dir.is_dir:
-                    boards_names = {e.basename: True for e in readdir(tracker, boards_dir)}
+                    for e in readdir(tracker, boards_dir):
+                        c = e.basename
+                        if c in override_file_to_boards and boards_dir.get_child(c).exists:
+                            for b in override_file_to_boards[c]:
+                                app_fs_matched[b] = True
                 else:
                     # Recorded as a (missing) path, so that creating the directory is noticed.
                     deps_files.append(realpath_of(boards_dir))
-            if boards_names != None:
-                board_name, qualifiers, board_rev = _parse_board_id(board_id)
-                override_candidates = (
-                    _get_override_candidates(board_name, qualifiers, board_rev, "conf") +
-                    _get_override_candidates(board_name, qualifiers, board_rev, "overlay") +
-                    _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
-                )
+                boards_fs_matched_cache[app_path] = app_fs_matched
+            fs_matched_boards = boards_fs_matched_cache[app_path]
 
-                found = False
-                for c in override_candidates:
-                    if c in boards_names and boards_dir.get_child(c).exists:
-                        found = True
-                        break
-                if found:
-                    surviving_combinations[app_pkg].append(board_id)
-                    continue
-                elif yaml_res == None:
-                    clean_b = board_id.split("/")[0].split("@")[0]
-                    if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
-                        surviving_combinations[app_pkg].append(board_id)
-                    continue
-            elif yaml_res == None:
-                clean_b = board_id.split("/")[0].split("@")[0]
-                if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
-                    surviving_combinations[app_pkg].append(board_id)
-                continue
+        matched_boards = {}
+        if is_oot_app:
+            for b in oot_board_set.keys():
+                matched_boards[b] = True
+        for b in manual_matched_set.keys():
+            matched_boards[b] = True
+        if has_yaml_boards:
+            for b in yaml_res:
+                if b in board_index:
+                    matched_boards[b] = True
+        else:
+            for b in fs_matched_boards.keys():
+                matched_boards[b] = True
+            if yaml_res == None:
+                for b in default_sim_set.keys():
+                    matched_boards[b] = True
+
+        surviving_combinations[app_pkg] = sorted(matched_boards.keys(), key = board_order.get)
 
     # Resolve custom_repos board_ids against package_to_boards and surviving_combinations,
     # and normalize conf_fragments and dtc_overlays relative to workspace root.
@@ -920,6 +937,7 @@ def _zephyr_setup_core_impl(mctx):
     zephyr_index_repo(
         name = "zephyr_index",
         content = index_content,
+        local_modules = local_modules,
     )
 
     # The order the schema generator used to see these in, from state.json (sorted keys): board
@@ -930,7 +948,6 @@ def _zephyr_setup_core_impl(mctx):
         app_build_files = sorted(oot_app_build_files.keys()),
         board_dirs = board_dirs,
         context = context_json,
-        local_modules = local_modules,
     )
 
     watch_deps(tracker, files = deps_files, dirs = deps_dirs)
@@ -969,6 +986,7 @@ def _zephyr_setup_apps_impl(mctx):
     repo_name_to_canonical = {}
     board_id_to_safe = {b: sanitize_board_id(b) for b in board_index.keys()}
     board_toolchains = state.get("board_toolchains", {})
+    board_overlay_keys_cache = {}
     surviving_combinations = state["surviving_combinations"]
     for app_pkg, boards in surviving_combinations.items():
         app_hash = get_app_hash(app_pkg)
@@ -984,13 +1002,15 @@ def _zephyr_setup_apps_impl(mctx):
             main_fragment = app_fragments.get("main", "")
             raw_meta = state.get("sysbuild_metadata", {}).get("raw_metadata", {}).get(app_pkg, {})
             safe_b = board_id_to_safe[board_id]
-            board_name, qualifiers, board_rev = _parse_board_id(board_id)
             board_overlays_map = raw_meta.get("board_overlays", {})
             dtc_overlays = list(raw_meta.get("overlays", []))
-            overlay_keys = [
-                c[:-len(".sysbuild.yml")]
-                for c in _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
-            ] + [safe_b, board_id]
+            if board_id not in board_overlay_keys_cache:
+                board_name, qualifiers, board_rev = _parse_board_id(board_id)
+                board_overlay_keys_cache[board_id] = [
+                    c[:-len(".sysbuild.yml")]
+                    for c in _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
+                ] + [safe_b, board_id]
+            overlay_keys = board_overlay_keys_cache[board_id]
             for k in overlay_keys:
                 for ov in board_overlays_map.get(k, []):
                     if ov not in dtc_overlays:

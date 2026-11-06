@@ -4,9 +4,22 @@
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load(
+    "//bazel:cc_library.bzl",
+    _if_compiler_is_clang = "if_compiler_is_clang",
+    _if_compiler_is_gcc = "if_compiler_is_gcc",
+    _if_linker_is_clang = "if_linker_is_clang",
+    _if_linker_is_gcc = "if_linker_is_gcc",
+    _if_zephyr_platform = "if_zephyr_platform",
+    _manual_tags = "manual_tags",
+    _with_zephyr_compatible = "with_zephyr_compatible",
+    _zephyr_cc_library = "zephyr_cc_library",
+    _zephyr_freestanding_library = "zephyr_freestanding_library",
+    _zephyr_module = "zephyr_module",
+    _zephyr_soc_library = "zephyr_soc_library",
+)
 load("//bazel:defs.bzl", "gen_kobject_placeholders", "userspace_gperf_hash_files")
 load("//bazel:linker_fragment.bzl", "generate_app_smem_aligned_linker")
 load("//bazel:rename_kobject_hash_sections.bzl", "rename_kobject_sections")
@@ -16,266 +29,16 @@ load("//bazel:elf_to_bin.bzl", "elf_to_bin")
 load("//bazel:runfiles.bzl", "resolve_runfiles_path")
 load("//bazel:runner.bzl", "zephyr_runners_yaml")
 load("//bazel/private:zephyr_transition.bzl", "zephyr_transition")
-load("@zephyr_index//:index.bzl", "LOCAL_MODULES")
-load("//bazel:compatibility.bzl", "zephyr")
 
-def if_compiler_is_clang(then, *, otherwise = []):
-    return select({
-        Label("//:compiler_is_clang"): then,
-        "//conditions:default": otherwise,
-    })
-
-def if_compiler_is_gcc(then, *, otherwise = []):
-    return select({
-        Label("//:compiler_is_gcc"): then,
-        "//conditions:default": otherwise,
-    })
-
-def if_linker_is_clang(then, *, otherwise = []):
-    return select({
-        Label("//:linker_is_clang"): then,
-        "//conditions:default": otherwise,
-    })
-
-def if_linker_is_gcc(then, *, otherwise = []):
-    return select({
-        Label("//:linker_is_gcc"): then,
-        "//conditions:default": otherwise,
-    })
-
-def _manual_tags(tags):
-    if not tags:
-        return ["manual"]
-    if "manual" in tags:
-        return list(tags)
-    return list(tags) + ["manual"]
-
-def _with_zephyr_compatible(caller_compatible_with):
-    if type(caller_compatible_with) == "select":
-        return zephyr() + caller_compatible_with
-    if caller_compatible_with:
-        res = list(zephyr())
-        for c in caller_compatible_with:
-            if c not in res:
-                res.append(c)
-        return res
-    return zephyr()
-
-def _if_zephyr_platform(val, otherwise = None):
-    return select({
-        Label("//constraints:zephyr_autoconf_force_included"): val,
-        "//conditions:default": otherwise,
-    })
-
-def _if_zephyr_list(val):
-    if not val:
-        return []
-    if type(val) == "select":
-        return val
-    return _if_zephyr_platform(list(val), otherwise = [])
-
-def _zephyr_library_deps(user_deps, mandatory_deps):
-    if not user_deps:
-        return _if_zephyr_platform(mandatory_deps, otherwise = [])
-    if type(user_deps) == "select":
-        return user_deps + _if_zephyr_platform(mandatory_deps, otherwise = [])
-    return _if_zephyr_platform(list(user_deps) + mandatory_deps, otherwise = [])
-
+if_compiler_is_clang = _if_compiler_is_clang
+if_compiler_is_gcc = _if_compiler_is_gcc
+if_linker_is_clang = _if_linker_is_clang
+if_linker_is_gcc = _if_linker_is_gcc
 with_zephyr_compatible = _with_zephyr_compatible
-
-def zephyr_soc_library(*, name, **kwargs):
-    """
-    A macro that builds a SOC with Zephyr-specific dependencies and options.
-
-    Args:
-        name: The name of the library
-        **kwargs: Keyword arguments to pass to the cc_library rule.
-    """
-    srcs = _zephyr_library_deps(
-        kwargs.pop("srcs", []),
-        [Label("//:hal_soc_extra_srcs")],
-    )
-    user_deps = kwargs.pop("deps", [])
-    mandatory_soc_deps = [
-        Label("//:internal_zephyr_soc_mandatory_deps"),
-        Label("//:arch_headers_library"),
-        Label("//:hal_soc_headers_library"),
-        Label("//:arch_specific_deps"),
-        ":" + name + "_hdrs",
-        Label("//:offsets_header_lib"),
-    ]
-    features = kwargs.pop("features", []) + ["zephyr_warning_suppressions"]
-    target_compatible_with = _with_zephyr_compatible(
-        kwargs.pop("target_compatible_with", None),
-    )
-
-    implementation_deps = _if_zephyr_list(kwargs.pop("implementation_deps", []))
-    copts = kwargs.pop("copts", [])
-    cxxopts = kwargs.pop("cxxopts", [])
-    defines = kwargs.pop("defines", [])
-    additional_compiler_inputs = _if_zephyr_list(
-        kwargs.pop("additional_compiler_inputs", []),
-    )
-    hdrs = kwargs.get("hdrs", [])
-    includes = kwargs.get("includes", [])
-    visibility = kwargs.get("visibility", None)
-
-    cc_library(
-        name = name + "_hdrs",
-        hdrs = hdrs,
-        includes = includes,
-        defines = defines,
-        deps = _if_zephyr_list(user_deps),
-        target_compatible_with = target_compatible_with,
-        visibility = visibility,
-    )
-
-    cc_library(
-        name = name,
-        srcs = srcs,
-        deps = _zephyr_library_deps(user_deps, mandatory_soc_deps),
-        implementation_deps = implementation_deps,
-        copts = copts,
-        cxxopts = cxxopts,
-        defines = defines,
-        additional_compiler_inputs = additional_compiler_inputs,
-        features = features,
-        target_compatible_with = target_compatible_with,
-        **kwargs
-    )
-
-def zephyr_freestanding_library(*, name, **kwargs):
-    """
-    Macro for building libc itself or low-level HALs.
-    """
-    deps = _zephyr_library_deps(
-        kwargs.pop("deps", []),
-        [Label("//:zephyr")],
-    )
-    features = kwargs.pop("features", []) + [
-        "freestanding",
-        "zephyr_warning_suppressions",
-    ]
-    target_compatible_with = _with_zephyr_compatible(
-        kwargs.pop("target_compatible_with", None),
-    )
-
-    implementation_deps = _if_zephyr_list(kwargs.pop("implementation_deps", []))
-    copts = kwargs.pop("copts", [])
-    cxxopts = kwargs.pop("cxxopts", [])
-    defines = kwargs.pop("defines", [])
-    additional_compiler_inputs = _if_zephyr_list(
-        kwargs.pop("additional_compiler_inputs", []),
-    )
-    cc_library(
-        name = name,
-        deps = deps,
-        implementation_deps = implementation_deps,
-        copts = copts,
-        cxxopts = cxxopts,
-        defines = defines,
-        additional_compiler_inputs = additional_compiler_inputs,
-        features = features,
-        target_compatible_with = target_compatible_with,
-        **kwargs
-    )
-
-_LOCAL_MODULES_MAP = {Label(l).package + ":" + Label(l).name: True for l in LOCAL_MODULES}
-
-def zephyr_cc_library(*, name, **kwargs):
-    """
-    User-facing macro to declare a cc_library with zephyr dependencies.
-    """
-    _is_zephyr_module_call = kwargs.pop("_is_zephyr_module_call", False)
-
-    # Verify that targets registered as modules are defined using the 'zephyr_module' macro.
-    # This prevents users from accidentally using 'zephyr_cc_library' for modules, which
-    # would bypass Kconfig gating.
-    _skip_zephyr_compatible = kwargs.pop("_skip_zephyr_compatible", False)
-    if not _is_zephyr_module_call:
-        pkg = native.package_name()
-        if (pkg + ":" + name) in _LOCAL_MODULES_MAP:
-            fail(("\nERROR: Target //%s:%s is registered as a Zephyr module.\n" +
-                  "You must define it using the 'zephyr_module' macro instead of 'zephyr_cc_library' " +
-                  "to ensure correct Kconfig gating.") % (pkg, name))
-
-    deps = _zephyr_library_deps(
-        kwargs.pop("deps", []),
-        [Label("//:zephyr")],
-    )
-    features = kwargs.pop("features", []) + ["zephyr_warning_suppressions"]
-    caller_compatible_with = kwargs.pop("target_compatible_with", None)
-    target_compatible_with = (
-        caller_compatible_with
-        if _skip_zephyr_compatible
-        else _with_zephyr_compatible(caller_compatible_with)
-    )
-
-    implementation_deps = _if_zephyr_list(kwargs.pop("implementation_deps", []))
-    copts = kwargs.pop("copts", [])
-    cxxopts = kwargs.pop("cxxopts", [])
-    defines = kwargs.pop("defines", [])
-    additional_compiler_inputs = _if_zephyr_list(
-        kwargs.pop("additional_compiler_inputs", []),
-    )
-    cc_library(
-        name = name,
-        deps = deps,
-        implementation_deps = implementation_deps,
-        copts = copts,
-        cxxopts = cxxopts,
-        defines = defines,
-        additional_compiler_inputs = additional_compiler_inputs,
-        features = features,
-        target_compatible_with = target_compatible_with,
-        **kwargs
-    )
-
-def zephyr_module(*, name, config, srcs = [], deps = [], **kwargs):
-    """Defines a Zephyr module with Kconfig gating and a marker target.
-
-    Args:
-        name: The target name.
-        config: The Kconfig symbol that gates this module (e.g., CONFIG_FOO).
-        srcs: Source files, compiled only if config is enabled.
-        deps: Dependencies, linked only if config is enabled.
-        **kwargs: Other arguments passed to zephyr_cc_library.
-    """
-    gated_args = {}
-    gated_attrs = [
-        "defines",
-        "linkopts",
-        "includes",
-        "hdrs",
-        "copts",
-        "local_defines",
-    ]
-
-    remaining_kwargs = {}
-    for k, v in kwargs.items():
-        if k in gated_attrs:
-            gated_args[k] = select({
-                "@zephyr_kconfig//:" + config + "=true": v,
-                "//conditions:default": [],
-            })
-        else:
-            remaining_kwargs[k] = v
-
-    remaining_kwargs.setdefault("visibility", ["//visibility:public"])
-
-    zephyr_cc_library(
-        name = name,
-        srcs = select({
-            "@zephyr_kconfig//:" + config + "=true": srcs,
-            "//conditions:default": [],
-        }),
-        deps = select({
-            "@zephyr_kconfig//:" + config + "=true": deps,
-            "//conditions:default": [],
-        }),
-        _is_zephyr_module_call = True,
-        **dict(remaining_kwargs, **gated_args)
-    )
+zephyr_cc_library = _zephyr_cc_library
+zephyr_freestanding_library = _zephyr_freestanding_library
+zephyr_module = _zephyr_module
+zephyr_soc_library = _zephyr_soc_library
 
 _RUST_TOOLCHAIN_TYPE = "@rules_rust//rust:toolchain_type"
 
@@ -609,7 +372,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         Label("//lib"),
         Label("//:board_deps"),
         ":" + name + "_srcs_lib",
-    ] + LOCAL_MODULES + select({
+        Label("@zephyr_index//:local_modules"),
+    ] + select({
         "//conditions:default": [],
         # gen_device_deps.py reads _DEVICE_STRUCT_HANDLES_OFFSET and
         # _DEVICE_STRUCT_PM_OFFSET from the pass-1 ELF.

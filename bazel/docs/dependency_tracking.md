@@ -4,7 +4,7 @@ The Zephyr configuration is computed while Bazel loads the build, not by build a
 
 | Where | What it computes | What it reads |
 |---|---|---|
-| `zephyr_setup` module extension ([setup.bzl](../setup.bzl)) | Modules, boards, applications and sysbuild metadata; declares `@zephyr_state`, `@zephyr_index`, `@zephyr_kconfig` | `module.yml`/BUILD files, `board.yml`, `prj.conf`, `sample.yaml`/`testcase.yaml`, `sysbuild.*`, app `boards/` dirs |
+| `zephyr_setup` module extension ([setup.bzl](../setup.bzl)) | Modules, boards, applications and sysbuild metadata; declares `@zephyr_state`, `@zephyr_index` (`index.bzl` and `:local_modules` in [zephyr_state.bzl](../private/zephyr_state.bzl)), `@zephyr_kconfig` | `module.yml`/BUILD files, `board.yml`, `prj.conf`, `sample.yaml`/`testcase.yaml`, `sysbuild.*`, app `boards/` dirs |
 | `zephyr_setup_apps` module extension | One `zc_*` repository per application and board | `@zephyr_state//:state.json` |
 | `@zephyr_kconfig` ([zephyr_kconfig_gen_symbols.bzl](../private/zephyr_kconfig_gen_symbols.bzl)) | The Kconfig schema of all boards (`BUILD.bazel` and `symbols.txt`, filtered to `CONFIG_*` symbols referenced in `BUILD`/`.bzl` files) | Every Kconfig file, board/SoC metadata, `dts/bindings/*.yaml` files, and the module/app `BUILD`/`.bzl` files (`app_build_files`) scanned for referenced `CONFIG_*` symbols |
 | `zc_*` ([zephyr_kconfig_gen_values.bzl](../private/zephyr_kconfig_gen_values.bzl)) | `.config`, devicetree and headers of one application and board | `@zephyr_kconfig//:symbols.txt`, Kconfig files, config fragments, DTS files and their includes, bindings, generator scripts |

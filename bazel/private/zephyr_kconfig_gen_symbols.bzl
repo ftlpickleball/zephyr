@@ -79,8 +79,6 @@ def _zephyr_kconfig_schema_impl(rctx):
     rctx.delete("deps.txt")
     rctx.delete("dep_dirs.txt")
 
-    bzl_content = "LOCAL_MODULES = %r\n" % rctx.attr.local_modules
-    rctx.file("local_modules.bzl", bzl_content)
     return rctx.repo_metadata(reproducible = True)
 
 zephyr_kconfig_schema = repository_rule(
@@ -95,9 +93,6 @@ zephyr_kconfig_schema = repository_rule(
         "context": attr.string(
             mandatory = True,
             doc = "JSON with the module roots, OOT DTS roots and pin files (the zc repos' context.json).",
-        ),
-        "local_modules": attr.string_list(
-            doc = "Labels of the auto-linked zephyr_module targets, written to local_modules.bzl.",
         ),
         "_kconfig_gen_symbols_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_symbols.py"),
         "_pip_deps": attr.label_list(

@@ -630,7 +630,7 @@ def generate_bazel_build(args, kconf, output_dir, kconfiglib):
 
     with open(os.path.join(output_dir, "BUILD.bazel"), "w") as f:
         f.write('load("@rules_cc//cc:defs.bzl", "cc_library")\n')
-        f.write('load("@zephyr//bazel:cc.bzl", "zephyr_cc_library")\n')
+        f.write('load("@zephyr//bazel:cc_library.bzl", "zephyr_cc_library")\n')
         f.write('load("@bazel_skylib//rules/directory:directory.bzl", "directory")\n')
         f.write('package(default_visibility = ["//visibility:public"])\n\n')
         f.write('exports_files(["zephyr/autoconf.h", "zephyr/devicetree_generated.h", ".config", "edt.pickle"])\n\n')

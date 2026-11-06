@@ -426,6 +426,48 @@ class TestScanModulesDeps(unittest.TestCase):
             self.assertIn(self.real("missing") + "\n", f.read())
         self.assertEqual(os.listdir(self.out_dir), ["deps.txt"])
 
+    def test_check_zephyr_module_target_rejects_cc_library(self):
+        build_file = os.path.join(self.test_dir, "BUILD.bazel")
+        self.write(
+            "BUILD.bazel",
+            'load("@zephyr//bazel:cc.bzl", "zephyr_cc_library", "zephyr_module")\n'
+            'zephyr_module(name = "other_mod", config = "CONFIG_OTHER")\n'
+            'zephyr_cc_library(name = "my_mod", srcs = ["a.c"])\n',
+        )
+        self.assertFalse(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "my_mod"
+            )
+        )
+        self.assertTrue(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "other_mod"
+            )
+        )
+
+    def test_check_zephyr_module_target_with_helper_call_before_name(self):
+        build_file = os.path.join(self.test_dir, "BUILD.bazel")
+        self.write(
+            "BUILD.bazel",
+            'load("@zephyr//bazel:cc.bzl", "if_compiler_is_clang", "zephyr_module")\n'
+            '# zephyr_module(name = "commented_out", config = "CONFIG_MY_MOD")\n'
+            "zephyr_module(\n"
+            '    copts = if_compiler_is_clang(["-Wno-foo"]),\n'
+            '    name = "my_mod",\n'
+            '    config = "CONFIG_MY_MOD",\n'
+            ")\n",
+        )
+        self.assertTrue(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "my_mod"
+            )
+        )
+        self.assertFalse(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "commented_out"
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

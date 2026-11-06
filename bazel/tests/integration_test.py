@@ -375,15 +375,21 @@ class DownstreamIntegrationTest(unittest.TestCase):
         self.assertIn(ZC_MAIN_CUSTOM_SIM, index_bzl)
         self.assertIn(ZC_MAIN_NATIVE_SIM, index_bzl)
         self.assertIn(ZC_MAIN_QEMU_CM3, index_bzl)
+        index_build = (index_dir / "BUILD.bazel").read_text(encoding="utf-8")
+        self.assertIn('name = "local_modules"', index_build)
+        self.assertIn("hal_nordic//:hal_nordic", index_build)
 
         # Verify @zephyr_kconfig is pruned to referenced symbols and exports symbols.txt
         kconfig_dir = self._find_repo_dir(self.ob_a, "zephyr_kconfig")
         symbols_txt = (kconfig_dir / "symbols.txt").read_text(encoding="utf-8").splitlines()
         self.assertIn("CONFIG_SAMPLE_MOD_ENABLED", symbols_txt)
         self.assertLess(len(symbols_txt), 6000)
-        kconfig_build_lines = (
-            (kconfig_dir / "BUILD.bazel").read_text(encoding="utf-8").splitlines()
+        kconfig_build = (kconfig_dir / "BUILD.bazel").read_text(encoding="utf-8")
+        self.assertIn(
+            'load("@zephyr//bazel:cc_library.bzl", "zephyr_cc_library")',
+            kconfig_build,
         )
+        kconfig_build_lines = kconfig_build.splitlines()
         self.assertLess(len(kconfig_build_lines), 20000)
 
         # Verify CMake parity in generated headers of @zc_<main_app>_custom_sim_native

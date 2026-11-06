@@ -644,6 +644,10 @@ board:
             kconfig_gen_symbols.main()
 
         content = output_file.read_text()
+        self.assertIn(
+            'load("@zephyr//bazel:cc_library.bzl", "zephyr_cc_library")',
+            content,
+        )
         self.assertIn('bool_flag(name = "CONFIG_USED_BOOL"', content)
         self.assertIn('bool_flag(name = "CONFIG_MODULE_BOOL"', content)
         self.assertIn('int_flag(name = "CONFIG_USED_INT"', content)
@@ -725,6 +729,55 @@ board:
         self.assertEqual(symbols.get("CONFIG_OOT_CUSTOM_STR"), "string")
         self.assertIn("CONFIG_OOT_CUSTOM_INT", referenced)
         self.assertIn("CONFIG_OOT_CUSTOM_STR", referenced)
+
+    @patch("kconfig_utils.generate_kconfig_dts")
+    def test_scaffolding_generated_once_across_multiple_archs(
+        self, mock_gen_dts
+    ):
+        for arch in ("arm", "riscv", "x86"):
+            arch_dir = self.zephyr_base / "arch" / arch
+            arch_dir.mkdir(parents=True, exist_ok=True)
+            (arch_dir / "Kconfig").write_text(f"# {arch} Kconfig\n")
+        out_dir = Path(self.test_dir) / "out_multi_arch"
+        out_dir.mkdir()
+        output_file = out_dir / "BUILD.bazel"
+        self.mock_kconf.syms = {}
+
+        observed_arch_kconfigs = {}
+
+        def record_arch_kconfig(*args, **kwargs):
+            arch_name = os.environ.get("ARCH")
+            board_dir = os.environ.get("BOARD_DIR")
+            if arch_name and board_dir and "archs" in board_dir:
+                arch_kc = Path(board_dir) / "arch" / "Kconfig"
+                observed_arch_kconfigs[arch_name] = (
+                    arch_kc.stat().st_ino,
+                    arch_kc.read_text(),
+                )
+            return self.mock_kconf
+
+        self.kconfig_mock.Kconfig.side_effect = record_arch_kconfig
+
+        with patch(
+            "sys.argv",
+            [
+                "kconfig_gen_symbols.py",
+                "--zephyr-base",
+                str(self.zephyr_base),
+                "--output",
+                str(output_file),
+                "--jobs",
+                "1",
+            ],
+        ):
+            kconfig_gen_symbols.main()
+
+        self.assertEqual(mock_gen_dts.call_count, 1)
+        self.assertEqual(set(observed_arch_kconfigs.keys()), {"arm", "riscv", "x86"})
+        inodes = {ino for ino, _ in observed_arch_kconfigs.values()}
+        self.assertEqual(len(inodes), 3)
+        for arch, (_, content) in observed_arch_kconfigs.items():
+            self.assertIn(f"arch/{arch}/Kconfig", content)
 
 
 if __name__ == "__main__":

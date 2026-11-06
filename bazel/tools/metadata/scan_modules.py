@@ -4,6 +4,7 @@
 """Scans directories for Zephyr modules."""
 
 import argparse
+import ast
 import json
 import os
 import re
@@ -136,10 +137,27 @@ def check_zephyr_module_target_in_build(build_file, target_name):
     """
     try:
         with open(build_file, "r", encoding="utf-8") as f:
-            content = f.read()
-        pattern = r"\bname\s*=\s*[\"']" + re.escape(target_name) + r"[\"']"
-        if re.search(pattern, content) and "zephyr_module" in content:
-            return True
+            tree = ast.parse(f.read(), filename=build_file)
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            func_name = (
+                func.id
+                if isinstance(func, ast.Name)
+                else func.attr
+                if isinstance(func, ast.Attribute)
+                else None
+            )
+            if func_name != "zephyr_module":
+                continue
+            for kw in node.keywords:
+                if (
+                    kw.arg == "name"
+                    and isinstance(kw.value, ast.Constant)
+                    and kw.value.value == target_name
+                ):
+                    return True
     except Exception as e:
         print(f"Warning: failed to read {build_file}: {e}", file=sys.stderr)
     return False
