@@ -7,7 +7,6 @@ module(
 )
 
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
-bazel_dep(name = "gperf", version = "3.1.bcr.2")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.22")
 bazel_dep(name = "rules_python", version = "1.8.5")
@@ -49,6 +48,22 @@ register_toolchains(
 )
 
 cipd = use_extension("@pigweed//pw_env_setup/bazel/cipd:defs.bzl", "cipd")
+
+cipd.require(
+    name = "gperf",
+    build_file = "@zephyr//bazel/tools/gperf:gperf.BUILD",
+    packages = {
+        "infra/3pp/tools/gperf/${os=linux}-${arch}": "version:3@3.2.chromium.1",
+    },
+)
+
+cipd.require(
+    name = "gperf_src",
+    build_file = "@zephyr//bazel/tools/gperf:gperf_src.BUILD",
+    packages = {
+        "fuchsia/third_party/source/gperf": "version:3.1",
+    },
+)
 
 cipd.require(
     name = "zephyr_sdk_arc",
@@ -132,6 +147,8 @@ cipd.require(
 
 use_repo(
     cipd,
+    "gperf",
+    "gperf_src",
     "zephyr_sdk_arc",
     "zephyr_sdk_arm",
     "zephyr_sdk_arm64",
