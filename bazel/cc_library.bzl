@@ -249,3 +249,13 @@ def zephyr_module(*, name, config, srcs = [], deps = [], **kwargs):
         _is_zephyr_module_call = True,
         **dict(remaining_kwargs, **gated_args)
     )
+
+    alias_kwargs = {
+        "name": name + "._zephyr_module",
+        "actual": ":" + name,
+        "tags": ["manual"],
+        "visibility": ["//visibility:public"],
+    }
+    if "testonly" in remaining_kwargs:
+        alias_kwargs["testonly"] = remaining_kwargs["testonly"]
+    native.alias(**alias_kwargs)

@@ -129,11 +129,74 @@ def get_module_info(path, deps):
     return sanitize_name(name), kconfig
 
 
-def check_zephyr_module_target_in_build(build_file, target_name):
-    """Checks if a BUILD.bazel file defines a zephyr_module target matching target_name.
+# Known non-module rules and macros. Modules whose BUILD.bazel only defines
+# `<module_name>` using one of these rules are scan-only (Kconfig/DTS only,
+# linked via explicit `deps`), whereas `zephyr_module` and custom wrapper
+# macros that delegate to `zephyr_module` emit `<name>._zephyr_module` and are
+# autolinked via `@zephyr_index//:local_modules`.
+_NON_MODULE_RULES = frozenset(
+    {
+        "alias",
+        "cc_binary",
+        "cc_import",
+        "cc_library",
+        "cc_shared_library",
+        "cc_test",
+        "config_setting",
+        "config_setting_group",
+        "exports_files",
+        "filegroup",
+        "genrule",
+        "label_flag",
+        "label_setting",
+        "package",
+        "py_binary",
+        "py_library",
+        "py_test",
+        "rust_binary",
+        "rust_library",
+        "rust_proc_macro",
+        "rust_shared_library",
+        "rust_static_library",
+        "rust_test",
+        "sh_binary",
+        "sh_library",
+        "sh_test",
+        "zephyr_app",
+        "zephyr_cc_binary",
+        "zephyr_cc_library",
+        "zephyr_constants_library",
+        "zephyr_freestanding_library",
+        "zephyr_linker_fragment",
+        "zephyr_llext_inc_target",
+        "zephyr_soc_library",
+        "zephyr_sysbuild",
+        "zephyr_unit_test",
+        "ztest",
+    }
+)
 
-    Modules with a BUILD.bazel containing a zephyr_module with a matching
-    module name are autolinked, and all others are scan-only.
+
+def _has_scan_only_tag(call_node):
+    """Returns True if `call_node` passes `tags = [..., "zephyr_scan_only", ...]`."""
+    for kw in call_node.keywords:
+        if kw.arg == "tags" and isinstance(kw.value, (ast.List, ast.Tuple)):
+            for elt in kw.value.elts:
+                if (
+                    isinstance(elt, ast.Constant)
+                    and elt.value == "zephyr_scan_only"
+                ):
+                    return True
+    return False
+
+
+def check_zephyr_module_target_in_build(build_file, target_name):
+    """Checks if a BUILD.bazel file defines a module target matching target_name.
+
+    Modules with a BUILD.bazel containing `zephyr_module` (or a custom wrapper
+    macro delegating to `zephyr_module`, verified at analysis time via the
+    `:<name>._zephyr_module` marker alias) with a matching module name are
+    autolinked, and all others are scan-only.
     """
     try:
         with open(build_file, "r", encoding="utf-8") as f:
@@ -149,7 +212,9 @@ def check_zephyr_module_target_in_build(build_file, target_name):
                 if isinstance(func, ast.Attribute)
                 else None
             )
-            if func_name != "zephyr_module":
+            if not func_name or func_name in _NON_MODULE_RULES:
+                continue
+            if _has_scan_only_tag(node):
                 continue
             for kw in node.keywords:
                 if (

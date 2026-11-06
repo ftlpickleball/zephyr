@@ -421,7 +421,8 @@ class DownstreamIntegrationTest(unittest.TestCase):
         self.assertNotIn("LOCAL_MODULES", index_bzl)
         index_build = (index_dir / "BUILD.bazel").read_text(encoding="utf-8")
         self.assertIn('name = "local_modules"', index_build)
-        self.assertIn("hal_nordic//:hal_nordic", index_build)
+        self.assertIn("hal_nordic//:hal_nordic._zephyr_module", index_build)
+        self.assertIn("//modules/sample_mod:sample_mod._zephyr_module", index_build)
 
         # Verify @zephyr_kconfig is pruned to referenced symbols and exports symbols.txt
         kconfig_dir = self._find_repo_dir(self.ob_a, "zephyr_kconfig")

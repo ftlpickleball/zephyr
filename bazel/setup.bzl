@@ -425,15 +425,11 @@ def _zephyr_setup_core_impl(mctx):
     modules_dirs_map = {}
     for l in modules_labels:
         p = label_path(tracker, l)
+        pkg_dir = label_path(tracker, l.same_package_label("BUILD.bazel")).dirname
         if p.basename == "module.yml" and p.dirname.basename == "zephyr":
             mod_root = p.dirname.dirname
         else:
-            mod_root = p.dirname
-
-        if l.package:
-            pkg_dir = mod_root.get_child(l.package)
-        else:
-            pkg_dir = mod_root
+            mod_root = pkg_dir
 
         modules_dirs_map[str(l)] = {
             "root": str(mod_root),
@@ -936,7 +932,7 @@ def _zephyr_setup_core_impl(mctx):
     index_content += "SYSBUILD_CUSTOM_REPOS = %r\n" % sysbuild_custom_repos
 
     local_modules = [
-        discovered_modules_labels[name]["target"]
+        discovered_modules_labels[name]["target"] + "._zephyr_module"
         for name in sorted(discovered_modules_labels.keys())
     ]
 
