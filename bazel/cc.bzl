@@ -966,6 +966,7 @@ _zephyr_app_rule = rule(
     attrs = {
         "app_label": attr.string(mandatory = True),
         "binary": attr.label(),
+        "target": attr.label(),
         "runners_yaml": attr.label(allow_single_file = True),
         "config_file": attr.label(allow_single_file = True),
         "bootstrapper_template": attr.label(
@@ -1128,6 +1129,7 @@ def zephyr_app(*, name, app_label = None, **kwargs):
         name = name,
         app_label = app_label,
         binary = _if_zephyr_platform(":" + binary_name),
+        target = _if_zephyr_platform(":" + binary_name),
         runners_yaml = _if_zephyr_platform(":" + runners_yaml_name),
         config_file = _if_zephyr_platform(":" + name + "_copy_config"),
         bootstrapper_template = _if_zephyr_platform(
