@@ -6,6 +6,8 @@
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:cc_test.bzl", "ztest")
 load("//bazel:linker_fragment.bzl", "LinkerFragmentInfo", "zephyr_linker_fragment")
 
 def _linker_fragment_test_impl(ctx):
@@ -89,6 +91,19 @@ def _setup_test_targets():
         name = "test_aggregator_fragment",
         deps = [":test_parent_fragment"],
         tags = ["manual"],
+    )
+
+    zephyr_cc_library(
+        name = "test_zephyr_cc_lib_none_deps",
+        srcs = None,
+        deps = None,
+        tags = ["manual"],
+    )
+
+    ztest(
+        name = "test_ztest_incompatible",
+        deps = [":test_zephyr_cc_lib_none_deps"],
+        target_compatible_with = ["@platforms//:incompatible"],
     )
 
 def linker_fragment_test_suite(name = "linker_fragment_test_suite"):

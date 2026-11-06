@@ -10,6 +10,13 @@ string_flag(
     build_setting_default = "",
 )
 
+config_setting(
+    name = "no_sysbuild_board",
+    flag_values = {
+        ":sysbuild_board": "",
+    },
+)
+
 string_flag(
     name = "sysbuild_context",
     build_setting_default = "",

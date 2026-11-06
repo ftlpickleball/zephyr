@@ -330,6 +330,29 @@ class DownstreamIntegrationTest(unittest.TestCase):
 
     def test_01_external_zephyr_build_pairs_cmake_parity_and_audit(self):
         """Builds downstream app & sysbuild against external @zephyr and audits recorded inputs."""
+        # Verify that a host wildcard build across apps and modules cleanly
+        # skips incompatible Zephyr targets without leaking internal targets or
+        # evaluating per-(app, board) @zc_* repository rules.
+        had_zc_before = (self.ob_a / "external").is_dir() and any(
+            "zc_" in p.name for p in (self.ob_a / "external").iterdir()
+        )
+        self._run_bazel(
+            self.checkout_a,
+            self.ob_a,
+            ["build", "//apps/...", "//modules/..."],
+        )
+        if not had_zc_before:
+            zc_after_host = [
+                p.name
+                for p in (self.ob_a / "external").iterdir()
+                if "zc_" in p.name
+            ]
+            self.assertEqual(
+                zc_after_host,
+                [],
+                f"Host wildcard build unexpectedly fetched @zc_* repos: {zc_after_host}",
+            )
+
         self._ensure_baseline_built()
 
         # Verify explicit board/app pair scoping in @zephyr_state//:state.json and @zephyr_index//:index.bzl

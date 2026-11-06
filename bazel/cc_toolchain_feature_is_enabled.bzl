@@ -8,7 +8,12 @@ load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_c
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 
 def _cc_toolchain_feature_is_enabled_impl(ctx):
-    toolchain = find_cpp_toolchain(ctx)
+    toolchain = find_cpp_toolchain(ctx, mandatory = False)
+    if not toolchain:
+        return [
+            config_common.FeatureFlagInfo(value = "False"),
+            BuildSettingInfo(value = False),
+        ]
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = toolchain,
@@ -58,7 +63,7 @@ cc_library(
 )
 ```
 """,
-    toolchains = use_cpp_toolchain(),
+    toolchains = use_cpp_toolchain(mandatory = False),
     fragments = ["cpp"],
 )
 
