@@ -36,13 +36,14 @@ def _requirement_to_py_repo_dir(ctx, dep):
     pkg_dir = str(ctx.path(dep).dirname)
     build_bazel_path = ctx.path(pkg_dir + "/BUILD.bazel")
     repo_name = None
+    py_version = "".join(DEFAULT_PYTHON_VERSION.split(".")[:2])
 
     # rules_python >= 0.40.0 uses dynamically generated repository hashes for wheel targets.
     # Read the hub-level BUILD file to get the actual resolved repository name.
     if build_bazel_path.exists:
         build_content = ctx.read(build_bazel_path)
         for line in build_content.splitlines():
-            if '"' + _PIP_HUB_NAME + "_" in line and line.strip().endswith('",'):
+            if '"' + _PIP_HUB_NAME + "_" + py_version + "_" in line and line.strip().endswith('",'):
                 parts = line.split('"')
                 if len(parts) >= 3:
                     actual_repo = parts[-2]
@@ -53,7 +54,6 @@ def _requirement_to_py_repo_dir(ctx, dep):
 
     if not repo_name:
         # Fallback to older rules_python handling if BUILD parsing fails
-        py_version = DEFAULT_PYTHON_VERSION.replace(".", "")
         repo_name = "{}_{}_{}".format(
             dep.repo_name,
             py_version,
@@ -133,6 +133,7 @@ def get_python(ctx, extra_import_paths = [], pip_deps = None):
         # listings can be watched: don't write __pycache__ next to them.
         "PYTHONDONTWRITEBYTECODE": "1",
         "PYTHONNOUSERSITE": "1",
+        "PYTHONSAFEPATH": "",
         "PYTHONHASHSEED": "0",
         "PYTHONUTF8": "1",
     }
