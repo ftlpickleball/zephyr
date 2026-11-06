@@ -107,6 +107,7 @@ net_app_CONFIG_SOME_OPTION=value
             f.write("""
 SB_CONFIG_BOOTLOADER_MCUBOOT=y
 SB_CONFIG_MCUBOOT_MODE_UPGRADE_ONLY=y
+SB_CONFIG_BOOT_SIGNATURE_TYPE_ECDSA_P256=y
 """)
 
         apps = {"//apps/my_app": app_path}
@@ -115,11 +116,115 @@ SB_CONFIG_MCUBOOT_MODE_UPGRADE_ONLY=y
         translated = output["translated_confs"]
         self.assertIn("//apps/my_app", translated)
         self.assertIn("mcuboot", translated["//apps/my_app"])
-        self.assertIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_UPGRADE_ONLY=y", translated["//apps/my_app"]["mcuboot"])
-        self.assertIn("CONFIG_BOOTLOADER_MCUBOOT=y", translated["//apps/my_app"]["mcuboot"])
+        self.assertIn("CONFIG_BOOT_UPGRADE_ONLY=y", translated["//apps/my_app"]["mcuboot"])
+        self.assertIn("# CONFIG_BOOT_RAM_LOAD_REVERT is not set", translated["//apps/my_app"]["mcuboot"])
+        self.assertIn("CONFIG_BOOT_SIGNATURE_TYPE_ECDSA_P256=y", translated["//apps/my_app"]["mcuboot"])
+        self.assertNotIn("CONFIG_BOOTLOADER_MCUBOOT=y", translated["//apps/my_app"]["mcuboot"])
+        self.assertNotIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_", translated["//apps/my_app"]["mcuboot"])
         self.assertIn("main", translated["//apps/my_app"])
         self.assertIn("CONFIG_BOOTLOADER_MCUBOOT=y", translated["//apps/my_app"]["main"])
-        self.assertIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_UPGRADE_ONLY=y", translated["//apps/my_app"]["main"])
+        self.assertIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_OVERWRITE_ONLY=y", translated["//apps/my_app"]["main"])
+        self.assertNotIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_UPGRADE_ONLY=y", translated["//apps/my_app"]["main"])
+        self.assertNotIn("CONFIG_BOOT_UPGRADE_ONLY=y", translated["//apps/my_app"]["main"])
+
+    def test_translate_sb_config_modes(self):
+        app_path = os.path.join(self.test_dir, "my_app")
+        os.makedirs(app_path)
+
+        conf_file = os.path.join(app_path, "sysbuild.conf")
+        with open(conf_file, "w", encoding="utf-8") as f:
+            f.write("""
+SB_CONFIG_BOOTLOADER_MCUBOOT=y
+SB_CONFIG_MCUBOOT_MODE_RAM_LOAD_WITH_REVERT=y
+SB_CONFIG_MCUBOOT_MODE_SINGLE_APP_RAM_LOAD=y
+SB_CONFIG_MCUBOOT_MODE_SWAP_WITHOUT_SCRATCH=y
+SB_CONFIG_MCUBOOT_SWAP_USING_OFFSET=y
+SB_CONFIG_MCUBOOT_MODE_SWAP_USING_OFFSET=y
+SB_CONFIG_MCUBOOT_MODE_SWAP_USING_MOVE=y
+SB_CONFIG_MCUBOOT_MODE_FIRMWARE_UPDATER=y
+SB_CONFIG_MCUBOOT_MODE_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE=y
+""")
+
+        apps = {"//apps/my_app": app_path}
+        output = self.run_parser(apps)
+        translated = output["translated_confs"]["//apps/my_app"]
+        self.assertIn("CONFIG_BOOTLOADER_MCUBOOT=y", translated["main"])
+        self.assertIn(
+            "CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT=y",
+            translated["main"],
+        )
+        self.assertIn(
+            "CONFIG_MCUBOOT_BOOTLOADER_MODE_SINGLE_APP_RAM_LOAD=y",
+            translated["main"],
+        )
+        self.assertIn(
+            "CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET=y",
+            translated["main"],
+        )
+        self.assertIn(
+            "CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_MOVE=y",
+            translated["main"],
+        )
+        self.assertIn(
+            "CONFIG_MCUBOOT_BOOTLOADER_MODE_FIRMWARE_UPDATER=y",
+            translated["main"],
+        )
+        self.assertNotIn(
+            "CONFIG_MCUBOOT_BOOTLOADER_MODE_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE=y",
+            translated["main"],
+        )
+        self.assertIn("CONFIG_XIP=n", translated["main"])
+        self.assertIn("CONFIG_FLASH_SIZE=0", translated["main"])
+        self.assertIn("CONFIG_RETAINED_MEM=y", translated["main"])
+        self.assertIn("CONFIG_RETENTION=y", translated["main"])
+        self.assertIn("CONFIG_RETENTION_BOOT_MODE=y", translated["main"])
+        self.assertIn("CONFIG_REBOOT=y", translated["main"])
+        self.assertIn("CONFIG_BOOT_RAM_LOAD=y", translated["mcuboot"])
+        self.assertIn("CONFIG_BOOT_RAM_LOAD_REVERT=y", translated["mcuboot"])
+        self.assertIn(
+            "CONFIG_SINGLE_APPLICATION_SLOT_RAM_LOAD=y",
+            translated["mcuboot"],
+        )
+        self.assertIn("CONFIG_BOOT_SWAP_USING_OFFSET=y", translated["mcuboot"])
+        self.assertIn("CONFIG_BOOT_SWAP_USING_MOVE=y", translated["mcuboot"])
+        self.assertIn("CONFIG_BOOT_FIRMWARE_LOADER=y", translated["mcuboot"])
+        self.assertIn(
+            "CONFIG_BOOT_FIRMWARE_LOADER_BOOT_MODE=y",
+            translated["mcuboot"],
+        )
+        self.assertNotIn("CONFIG_BOOT_SERIAL_BOOT_MODE=y", translated["mcuboot"])
+
+    def test_mcuboot_mode_deselected_variant_does_not_clobber_shared_boot_symbol(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            conf = os.path.join(tmpdir, "sysbuild.conf")
+            with open(conf, "w", encoding="utf-8") as f:
+                f.write(
+                    "SB_CONFIG_BOOTLOADER_MCUBOOT=y\n"
+                    "SB_CONFIG_MCUBOOT_MODE_DIRECT_XIP=y\n"
+                    "SB_CONFIG_MCUBOOT_MODE_DIRECT_XIP_WITH_REVERT=n\n"
+                )
+            res = parse_sysbuild_metadata.process_sysbuild_conf(conf)
+            mcuboot_lines = res["mcuboot"].strip().splitlines()
+            self.assertIn("CONFIG_BOOT_DIRECT_XIP=y", mcuboot_lines)
+            self.assertNotIn("CONFIG_BOOT_DIRECT_XIP=n", mcuboot_lines)
+
+    def test_translate_sb_config_ram_load(self):
+        app_path = os.path.join(self.test_dir, "my_app")
+        os.makedirs(app_path)
+
+        conf_file = os.path.join(app_path, "sysbuild.conf")
+        with open(conf_file, 'w', encoding="utf-8") as f:
+            f.write("""
+SB_CONFIG_BOOTLOADER_MCUBOOT=y
+SB_CONFIG_MCUBOOT_MODE_RAM_LOAD=y
+""")
+
+        apps = {"//apps/my_app": app_path}
+        output = self.run_parser(apps)
+        translated = output["translated_confs"]["//apps/my_app"]
+        self.assertIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD=y", translated["main"])
+        self.assertIn("CONFIG_BOOT_RAM_LOAD=y", translated["mcuboot"])
+        self.assertIn("# CONFIG_BOOT_RAM_LOAD_REVERT is not set", translated["mcuboot"])
 
     def test_parse_overlays_and_board_helpers(self):
         app_path = os.path.join(self.test_dir, "my_app")
@@ -317,6 +422,7 @@ helpers:
                 self.path("app", "sysbuild.yml"),
                 self.path("app", "boards", "b1.sysbuild.yml"),
                 self.path("app", "sysbuild.conf"),
+                self.path("app", "Kconfig.sysbuild"),
                 # Missing fragments/overlays: creating them would declare repos.
                 # The external helper is never probed.
                 *expected_missing,
@@ -382,6 +488,7 @@ helpers:
                 self.path("real_app", "sysbuild.yml"),
                 self.path("real_app", "boards"),
                 self.path("real_app", "sysbuild.conf"),
+                self.path("real_app", "Kconfig.sysbuild"),
                 *expected_missing,
             ]),
         )
@@ -393,7 +500,54 @@ helpers:
             sorted([self.path("real_app", "sysbuild"), self.path("shared")]),
         )
 
+    def test_kconfig_sysbuild_declares_custom_repo(self):
+        self.write("app/sysbuild.yml", """
+helpers:
+  mcuboot:
+    target: "@mcuboot//boot/zephyr:zephyr_project"
+""")
+        self.write(
+            "app/Kconfig.sysbuild",
+            'source "share/sysbuild/Kconfig"\nconfig BOOT_SIGNATURE_KEY_FILE\n\tdefault "app_key.pem"\n',
+        )
+
+        out, deps, _ = self.run_main({"//app": self.path("app")})
+        repos = json.loads(out)["custom_repos"]
+        self.assertEqual(len(repos), 1)
+        self.assertEqual(repos[0]["helper_name"], "mcuboot")
+        self.assertEqual(repos[0]["parent_app"], "//app")
+        self.assertIn(self.path("app", "Kconfig.sysbuild"), deps)
+
+    def test_sysbuild_conf_declares_custom_repo_and_splits_multi_key(self):
+        self.write("app/sysbuild.yml", """
+helpers:
+  mcuboot:
+    target: "@mcuboot//boot/zephyr:zephyr_project"
+""")
+        self.write(
+            "app/sysbuild.conf",
+            'SB_CONFIG_BOOT_ENCRYPTION=y\nSB_CONFIG_BOOT_ENCRYPTION_KEY_FILE="enc.pem"\n',
+        )
+
+        out, _, _ = self.run_main({"//app": self.path("app")})
+        repos = json.loads(out)["custom_repos"]
+        self.assertEqual(len(repos), 1)
+        self.assertEqual(repos[0]["helper_name"], "mcuboot")
+        self.assertEqual(repos[0]["parent_app"], "//app")
+
+        self.write(
+            "app/sysbuild.conf",
+            'SB_CONFIG_BOOT_SIGNATURE_KEY_FILE="key1.pem,key2.pem"\n',
+        )
+        res = parse_sysbuild_metadata.process_sysbuild_conf(
+            self.path("app", "sysbuild.conf")
+        )
+        self.assertIn('CONFIG_MCUBOOT_SIGNATURE_KEY_FILE="key1.pem"', res["main"])
+        self.assertIn(
+            'CONFIG_BOOT_SIGNATURE_KEY_FILE="key1.pem,key2.pem"',
+            res["mcuboot"],
+        )
+
 
 if __name__ == '__main__':
     unittest.main()
-

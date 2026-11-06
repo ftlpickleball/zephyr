@@ -25,6 +25,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--zephyr-base", required=True)
     parser.add_argument("--app-dir", required=True)
+    parser.add_argument("--sysbuild-app-dir", default=None)
     parser.add_argument("--board", required=True)
     parser.add_argument("--board-dir", required=True)
     parser.add_argument("--parent-platform", required=True)
@@ -36,6 +37,7 @@ def parse_args():
     parser.add_argument("--app-name", default="zephyr_app")
     parser.add_argument("--toolchain-variant", default=None)
     parser.add_argument("--conf-fragments", nargs="+", default=[])
+    parser.add_argument("--forced-conf-fragments", nargs="+", default=[])
     parser.add_argument("--dtc-overlays", nargs="+", default=[])
     return parser.parse_args()
 
@@ -129,6 +131,9 @@ def generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir, *, t
 
     kconfig_modules = os.path.join(output_dir, "Kconfig.modules")
     kconfig_utils.generate_kconfig_modules(zephyr_base, args.modules, kconfig_modules, tracker=tracker)
+
+    kconfig_sysbuild_modules = os.path.join(output_dir, "Kconfig.sysbuild.modules")
+    kconfig_utils.generate_kconfig_sysbuild_modules(zephyr_base, args.modules, kconfig_sysbuild_modules, tracker=tracker)
 
 def discover_overlays(app_dir, board_name, board_qualifiers, board_revision="", board_dir="", app_name="", *, tracker):
     overlays = []
@@ -729,6 +734,304 @@ def get_conf_files(args, board_dir, *, tracker):
 
     return conf_files
 
+
+def translate_sysbuild_kconfig_to_domain(sb_kconf, image_type):
+    """Translates resolved SB_CONFIG_* symbols to domain CONFIG_* lines.
+
+    Mirrors Zephyr's share/sysbuild/image_configurations/*_image_default.cmake.
+    """
+    lines = []
+
+    def sb_bool(name):
+        sym = sb_kconf.syms.get(name)
+        return sym is not None and sym.str_value == "y"
+
+    def sb_str(name):
+        sym = sb_kconf.syms.get(name)
+        return sym.str_value if sym is not None else ""
+
+    def sb_has_user_value(name):
+        sym = sb_kconf.syms.get(name)
+        return sym is not None and sym.user_value is not None
+
+    def set_bool(config_name, val):
+        if val:
+            lines.append(f"CONFIG_{config_name}=y")
+        else:
+            lines.append(f"# CONFIG_{config_name} is not set")
+
+    def set_str(config_name, val):
+        lines.append(f'CONFIG_{config_name}="{val}"')
+
+    def set_int(config_name, val):
+        lines.append(f"CONFIG_{config_name}={val}")
+
+    # 1. ALL_image_default.cmake
+    if sb_bool("COMPILER_WARNINGS_AS_ERRORS"):
+        set_bool("COMPILER_WARNINGS_AS_ERRORS", True)
+
+    # 2. MAIN_image_default.cmake
+    if image_type == "MAIN":
+        if sb_bool("BOOTLOADER_MCUBOOT"):
+            set_bool("BOOTLOADER_MCUBOOT", True)
+            sig_key = sb_str("BOOT_SIGNATURE_KEY_FILE")
+            if sig_key:
+                set_str("MCUBOOT_SIGNATURE_KEY_FILE", sig_key.split(",")[0])
+            enc_key = sb_str("BOOT_ENCRYPTION_KEY_FILE")
+            if enc_key:
+                set_str("MCUBOOT_ENCRYPTION_KEY_FILE", enc_key)
+
+            if sb_str("SIGNATURE_TYPE") == "NONE" or sb_bool("BOOT_SIGNATURE_TYPE_NONE"):
+                set_bool("MCUBOOT_GENERATE_UNSIGNED_IMAGE", True)
+            else:
+                set_bool("MCUBOOT_GENERATE_UNSIGNED_IMAGE", False)
+
+            if sb_bool("MCUBOOT_MODE_SINGLE_APP"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_SINGLE_APP", True)
+            elif sb_bool("MCUBOOT_MODE_SWAP_USING_OFFSET"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET", True)
+            elif sb_bool("MCUBOOT_MODE_SWAP_USING_MOVE") or sb_bool("MCUBOOT_MODE_SWAP_WITHOUT_SCRATCH"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_SWAP_USING_MOVE", True)
+            elif sb_bool("MCUBOOT_MODE_SWAP_SCRATCH"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_SWAP_SCRATCH", True)
+            elif sb_bool("MCUBOOT_MODE_OVERWRITE_ONLY"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_OVERWRITE_ONLY", True)
+            elif sb_bool("MCUBOOT_MODE_DIRECT_XIP"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_DIRECT_XIP", True)
+            elif sb_bool("MCUBOOT_MODE_DIRECT_XIP_WITH_REVERT"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_DIRECT_XIP_WITH_REVERT", True)
+            elif sb_bool("MCUBOOT_MODE_RAM_LOAD"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_RAM_LOAD", True)
+                if "MCUBOOT_RAMLOAD_ALLOW_XIP" in sb_kconf.syms and not sb_bool("MCUBOOT_RAMLOAD_ALLOW_XIP"):
+                    set_bool("XIP", False)
+                    set_int("FLASH_SIZE", 0)
+            elif sb_bool("MCUBOOT_MODE_RAM_LOAD_WITH_REVERT"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT", True)
+                if "MCUBOOT_RAMLOAD_ALLOW_XIP" in sb_kconf.syms and not sb_bool("MCUBOOT_RAMLOAD_ALLOW_XIP"):
+                    set_bool("XIP", False)
+                    set_int("FLASH_SIZE", 0)
+            elif sb_bool("MCUBOOT_MODE_SINGLE_APP_RAM_LOAD"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_SINGLE_APP_RAM_LOAD", True)
+            elif sb_bool("MCUBOOT_MODE_FIRMWARE_UPDATER"):
+                set_bool("MCUBOOT_BOOTLOADER_MODE_FIRMWARE_UPDATER", True)
+                if sb_bool("MCUBOOT_MODE_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE"):
+                    set_bool("REBOOT", True)
+                    set_bool("RETAINED_MEM", True)
+                    set_bool("RETENTION", True)
+                    set_bool("RETENTION_BOOT_MODE", True)
+
+            if sb_bool("BOOT_ENCRYPTION"):
+                if sb_bool("BOOT_ENCRYPTION_ALG_AES_128"):
+                    set_bool("MCUBOOT_ENCRYPTION_ALG_AES_128", True)
+                elif sb_bool("BOOT_ENCRYPTION_ALG_AES_256"):
+                    set_bool("MCUBOOT_ENCRYPTION_ALG_AES_256", True)
+        elif sb_has_user_value("BOOTLOADER_MCUBOOT") or sb_has_user_value("BOOTLOADER_NONE"):
+            set_bool("BOOTLOADER_MCUBOOT", False)
+
+    # 3. BOOTLOADER_image_default.cmake
+    elif image_type == "BOOTLOADER":
+        set_bool("SINGLE_APPLICATION_SLOT", sb_bool("MCUBOOT_MODE_SINGLE_APP"))
+        set_bool("BOOT_SWAP_USING_OFFSET", sb_bool("MCUBOOT_MODE_SWAP_USING_OFFSET"))
+        set_bool("BOOT_SWAP_USING_SCRATCH", sb_bool("MCUBOOT_MODE_SWAP_SCRATCH"))
+        set_bool("BOOT_UPGRADE_ONLY", sb_bool("MCUBOOT_MODE_OVERWRITE_ONLY"))
+        set_bool(
+            "BOOT_SWAP_USING_MOVE",
+            sb_bool("MCUBOOT_MODE_SWAP_USING_MOVE") or sb_bool("MCUBOOT_MODE_SWAP_WITHOUT_SCRATCH"),
+        )
+        set_bool(
+            "BOOT_DIRECT_XIP",
+            sb_bool("MCUBOOT_MODE_DIRECT_XIP") or sb_bool("MCUBOOT_MODE_DIRECT_XIP_WITH_REVERT"),
+        )
+        set_bool(
+            "BOOT_RAM_LOAD",
+            sb_bool("MCUBOOT_MODE_RAM_LOAD") or sb_bool("MCUBOOT_MODE_RAM_LOAD_WITH_REVERT"),
+        )
+        set_bool("BOOT_FIRMWARE_LOADER", sb_bool("MCUBOOT_MODE_FIRMWARE_UPDATER"))
+        set_bool("SINGLE_APPLICATION_SLOT_RAM_LOAD", sb_bool("MCUBOOT_MODE_SINGLE_APP_RAM_LOAD"))
+
+        if sb_bool("MCUBOOT_MODE_FIRMWARE_UPDATER") and sb_bool("MCUBOOT_MODE_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE"):
+            set_bool("RETAINED_MEM", True)
+            set_bool("RETENTION", True)
+            set_bool("RETENTION_BOOT_MODE", True)
+            set_bool("BOOT_FIRMWARE_LOADER_BOOT_MODE", True)
+
+        set_bool("BOOT_DIRECT_XIP_REVERT", sb_bool("MCUBOOT_MODE_DIRECT_XIP_WITH_REVERT"))
+        set_bool("BOOT_RAM_LOAD_REVERT", sb_bool("MCUBOOT_MODE_RAM_LOAD_WITH_REVERT"))
+
+        sig_key = sb_str("BOOT_SIGNATURE_KEY_FILE")
+        if sig_key or sb_has_user_value("BOOT_SIGNATURE_KEY_FILE"):
+            if sb_bool("BOOT_SIGNATURE_TYPE_NONE"):
+                set_str("BOOT_SIGNATURE_KEY_FILE", "")
+            else:
+                set_str("BOOT_SIGNATURE_KEY_FILE", sig_key)
+
+        set_bool("BOOT_SIGNATURE_TYPE_NONE", sb_bool("BOOT_SIGNATURE_TYPE_NONE"))
+        set_bool("BOOT_SIGNATURE_TYPE_RSA", sb_bool("BOOT_SIGNATURE_TYPE_RSA"))
+        set_bool("BOOT_SIGNATURE_TYPE_ECDSA_P256", sb_bool("BOOT_SIGNATURE_TYPE_ECDSA_P256"))
+        set_bool("BOOT_SIGNATURE_TYPE_ED25519", sb_bool("BOOT_SIGNATURE_TYPE_ED25519"))
+
+        if sb_bool("BOOT_ENCRYPTION"):
+            set_bool("BOOT_ENCRYPT_IMAGE", True)
+            enc_key = sb_str("BOOT_ENCRYPTION_KEY_FILE")
+            if enc_key or sb_has_user_value("BOOT_ENCRYPTION_KEY_FILE"):
+                set_str("BOOT_ENCRYPTION_KEY_FILE", enc_key)
+            if sb_bool("BOOT_ENCRYPTION_ALG_AES_128"):
+                set_bool("BOOT_ENCRYPT_ALG_AES_128", True)
+            elif sb_bool("BOOT_ENCRYPTION_ALG_AES_256"):
+                set_bool("BOOT_ENCRYPT_ALG_AES_256", True)
+
+    # 4. FIRMWARE_LOADER_image_default.cmake
+    elif image_type == "FIRMWARE_LOADER":
+        set_bool("BOOTLOADER_MCUBOOT", sb_bool("BOOTLOADER_MCUBOOT"))
+        sig_key = sb_str("BOOT_SIGNATURE_KEY_FILE")
+        if sig_key:
+            set_str("MCUBOOT_SIGNATURE_KEY_FILE", sig_key.split(",")[0])
+        enc_key = sb_str("BOOT_ENCRYPTION_KEY_FILE")
+        if enc_key:
+            set_str("MCUBOOT_ENCRYPTION_KEY_FILE", enc_key)
+        if sb_str("SIGNATURE_TYPE") == "NONE" or sb_bool("BOOT_SIGNATURE_TYPE_NONE"):
+            set_bool("MCUBOOT_GENERATE_UNSIGNED_IMAGE", True)
+        else:
+            set_bool("MCUBOOT_GENERATE_UNSIGNED_IMAGE", False)
+        set_bool("MCUBOOT_BOOTLOADER_MODE_FIRMWARE_UPDATER", True)
+
+    return lines
+
+
+def generate_sysbuild_forced_config(zephyr_base, args, output_dir, board_dir, *, tracker):
+    """Evaluates share/sysbuild/Kconfig and writes .config.sysbuild if applicable."""
+    sysbuild_kconfig = os.path.join(zephyr_base, "share", "sysbuild", "Kconfig")
+    tracker.add(sysbuild_kconfig)
+    if not os.path.exists(sysbuild_kconfig):
+        return None
+
+    raw_app_name = getattr(args, "app_name", "")
+    app_name = raw_app_name if isinstance(raw_app_name, str) else ""
+    abs_app_dir = os.path.abspath(args.app_dir).replace("\\", "/")
+    abs_zephyr_base = os.path.abspath(zephyr_base).replace("\\", "/").rstrip("/")
+    is_in_tree_test_or_sample = abs_app_dir.startswith(
+        (abs_zephyr_base + "/tests/", abs_zephyr_base + "/samples/")
+    )
+    if not is_in_tree_test_or_sample and (
+        app_name == "mcuboot"
+        or os.path.basename(abs_app_dir) == "mcuboot"
+        or abs_app_dir.endswith("/mcuboot/boot/zephyr")
+    ):
+        image_type = "BOOTLOADER"
+    elif not is_in_tree_test_or_sample and app_name == "firmware_loader":
+        image_type = "FIRMWARE_LOADER"
+    else:
+        image_type = "MAIN"
+
+    raw_sb_app_dir = getattr(args, "sysbuild_app_dir", None)
+    sb_app_dir = (
+        raw_sb_app_dir
+        if isinstance(raw_sb_app_dir, str) and raw_sb_app_dir
+        else args.app_dir
+    )
+    app_kconfig_sysbuild = os.path.join(sb_app_dir, "Kconfig.sysbuild")
+    app_sysbuild_conf = os.path.join(sb_app_dir, "sysbuild.conf")
+    board_kconfig_sysbuild = os.path.join(board_dir, "Kconfig.sysbuild")
+    tracker.add(app_kconfig_sysbuild, app_sysbuild_conf, board_kconfig_sysbuild)
+
+    board_name = os.environ.get("BOARD", "")
+    board_qualifiers = os.environ.get("BOARD_QUALIFIERS", "").lstrip("/")
+    board_revision = os.environ.get("BOARD_REVISION", "")
+    sysbuild_yml_candidates = [os.path.join(sb_app_dir, "sysbuild.yml")]
+    if board_name:
+        for cand in discovery_utils.get_app_board_override_candidates(
+            board_name, board_qualifiers, board_revision, "sysbuild.yml"
+        ):
+            sysbuild_yml_candidates.append(os.path.join(sb_app_dir, "boards", cand))
+    for yml_cand in sysbuild_yml_candidates:
+        tracker.add(yml_cand)
+
+    has_sysbuild_yml = False
+    uses_mcuboot = image_type == "BOOTLOADER"
+    for yml_cand in sysbuild_yml_candidates:
+        if os.path.exists(yml_cand):
+            has_sysbuild_yml = True
+            try:
+                import yaml
+                with open(yml_cand, "r", encoding="utf-8") as yf:
+                    ydata = yaml.safe_load(yf)
+                if isinstance(ydata, dict) and isinstance(ydata.get("helpers"), dict):
+                    for h_name, h_cfg in ydata["helpers"].items():
+                        h_target = h_cfg.get("target", "") if isinstance(h_cfg, dict) else ""
+                        if "mcuboot" in str(h_name).lower() or "mcuboot" in str(h_target).lower():
+                            uses_mcuboot = True
+            except Exception:
+                pass
+
+    raw_forced_fragments = getattr(args, "forced_conf_fragments", None)
+    has_forced_fragments = (
+        bool(raw_forced_fragments)
+        if isinstance(raw_forced_fragments, (list, tuple))
+        else False
+    )
+
+    if image_type in ("BOOTLOADER", "FIRMWARE_LOADER"):
+        sysbuild_active = (
+            os.path.exists(board_kconfig_sysbuild)
+            or has_sysbuild_yml
+            or os.path.exists(app_kconfig_sysbuild)
+            or os.path.exists(app_sysbuild_conf)
+            or has_forced_fragments
+        )
+    else:
+        sysbuild_active = (
+            has_sysbuild_yml
+            or os.path.exists(app_kconfig_sysbuild)
+            or os.path.exists(app_sysbuild_conf)
+            or has_forced_fragments
+        )
+
+    if not sysbuild_active:
+        return None
+
+    import kconfiglib
+
+    sb_root = app_kconfig_sysbuild if os.path.exists(app_kconfig_sysbuild) else sysbuild_kconfig
+    prev_config_prefix = os.environ.get("CONFIG_")
+    prev_app_src_dir = os.environ.get("APPLICATION_SOURCE_DIR")
+    os.environ["CONFIG_"] = "SB_CONFIG_"
+    os.environ["APPLICATION_SOURCE_DIR"] = os.path.abspath(sb_app_dir)
+    try:
+        with kconfig_utils.record_kconfig_sources(kconfiglib, tracker):
+            sb_kconf = kconfiglib.Kconfig(sb_root, warn_to_stderr=False)
+        sb_srctree = getattr(sb_kconf, "srctree", None)
+        base_srctree = (
+            sb_srctree
+            if isinstance(sb_srctree, str) and sb_srctree
+            else zephyr_base
+        )
+        for kfile in getattr(sb_kconf, "kconfig_filenames", []):
+            tracker.add(
+                os.path.realpath(os.path.join(base_srctree, kfile))
+            )
+        if uses_mcuboot and "BOOTLOADER_MCUBOOT" in sb_kconf.syms:
+            sb_kconf.syms["BOOTLOADER_MCUBOOT"].set_value("y")
+        if os.path.exists(app_sysbuild_conf):
+            sb_kconf.load_config(app_sysbuild_conf, replace=False)
+    finally:
+        if prev_config_prefix is None:
+            os.environ.pop("CONFIG_", None)
+        else:
+            os.environ["CONFIG_"] = prev_config_prefix
+        if prev_app_src_dir is None:
+            os.environ.pop("APPLICATION_SOURCE_DIR", None)
+        else:
+            os.environ["APPLICATION_SOURCE_DIR"] = prev_app_src_dir
+
+    lines = translate_sysbuild_kconfig_to_domain(sb_kconf, image_type)
+    if not lines:
+        return None
+
+    forced_conf_path = os.path.join(output_dir, ".config.sysbuild")
+    with open(forced_conf_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+    return forced_conf_path
+
 def generate_config_c(kconf, output_dir, args):
     os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
     with open(os.path.join(output_dir, "zephyr", "config.c"), "w") as f:
@@ -998,6 +1301,7 @@ def run_kconfig_in_process(
     *,
     tracker,
     edt=None,
+    forced_input_configs=False,
 ):
     """Evaluates Kconfig in-process in a single pass with validation checks."""
     kconfig_dir = os.path.abspath(os.path.join(zephyr_base, "scripts", "kconfig"))
@@ -1060,10 +1364,16 @@ def run_kconfig_in_process(
         kconfig.check_not_secure(kconf)
         kconf.write_config(os.devnull)
 
+        warn_only = r"warning:.*set more than once."
+
         if kconf.warnings:
+            error_out = not forced_input_configs
             for warning in kconf.warnings:
                 print("\n" + warning, file=sys.stderr)
-            kconfig.err("Aborting due to Kconfig warnings")
+                if not error_out and not re.search(warn_only, warning):
+                    error_out = True
+            if error_out:
+                kconfig.err("Aborting due to Kconfig warnings")
 
         os.makedirs(os.path.dirname(os.path.abspath(config_out)), exist_ok=True)
         os.makedirs(
@@ -1154,6 +1464,23 @@ def main():
 
         os.makedirs(os.path.join(output_dir, "zephyr"), exist_ok=True)
 
+        raw_forced_fragments = getattr(args, "forced_conf_fragments", None)
+        forced_fragments = (
+            list(raw_forced_fragments)
+            if isinstance(raw_forced_fragments, (list, tuple))
+            else []
+        )
+        forced_conf_files = []
+        for frag in forced_fragments:
+            tracker.add(frag)
+            if os.path.exists(frag) and frag not in forced_conf_files:
+                forced_conf_files.append(frag)
+        sysbuild_forced_conf = generate_sysbuild_forced_config(
+            zephyr_base, args, tmp_dir, board_dir, tracker=tracker
+        )
+        if sysbuild_forced_conf:
+            forced_conf_files.append(sysbuild_forced_conf)
+
         kconfig_root = os.path.join(zephyr_base, "Kconfig")
         app_kconfig = os.path.join(args.app_dir, "Kconfig")
         if os.path.exists(app_kconfig):
@@ -1167,11 +1494,12 @@ def main():
             kconf, kconfiglib = run_kconfig_in_process(
                 zephyr_base,
                 kconfig_root,
-                conf_files,
+                conf_files + forced_conf_files,
                 config_out,
                 autoconf_out,
                 tracker=tracker,
                 edt=edt,
+                forced_input_configs=bool(forced_conf_files),
             )
         else:
             env = os.environ.copy()
@@ -1184,11 +1512,15 @@ def main():
                 "-s",
                 kconfig_py,
                 "--handwritten-input-configs",
+            ]
+            if forced_conf_files:
+                cmd.append("--forced-input-configs")
+            cmd.extend([
                 kconfig_root,
                 tmp_config_path,
                 autoconf_out,
                 kconfig_list_path,
-            ] + conf_files
+            ] + conf_files + forced_conf_files)
 
             res = subprocess.run(cmd, env=env, capture_output=True, text=True)
 

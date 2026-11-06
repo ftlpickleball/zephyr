@@ -7,7 +7,7 @@ The Zephyr configuration is computed while Bazel loads the build, not by build a
 | `zephyr_setup` module extension ([setup.bzl](../setup.bzl)) | Modules, boards, applications and sysbuild metadata; declares `@zephyr_state`, `@zephyr_index` (`index.bzl` and `:local_modules` in [zephyr_state.bzl](../private/zephyr_state.bzl)), `@zephyr_kconfig` | `module.yml`/BUILD files, `board.yml`, `prj.conf`, `sample.yaml`/`testcase.yaml`, `sysbuild.*`, app `boards/` dirs |
 | `zephyr_setup_apps` module extension | One `zc_*` repository per application and board | `@zephyr_state//:state.json` |
 | `@zephyr_kconfig` ([zephyr_kconfig_gen_symbols.bzl](../private/zephyr_kconfig_gen_symbols.bzl)) | The Kconfig schema of all boards (`BUILD.bazel`, `symbols.txt`, and `Kconfig.dts`, with flags filtered to `CONFIG_*` symbols referenced in `BUILD`/`.bzl` files) | Every Kconfig file, board/SoC metadata, `dts/bindings/*.yaml` files, and the module/app `BUILD`/`.bzl` files (`app_build_files`) scanned for referenced `CONFIG_*` symbols |
-| `zc_*` ([zephyr_kconfig_gen_values.bzl](../private/zephyr_kconfig_gen_values.bzl)) | `.config`, devicetree and headers of one application and board | `@zephyr_kconfig//:symbols.txt` and `Kconfig.dts`, Kconfig files, config fragments, DTS files and their includes, bindings, generator scripts |
+| `zc_*` ([zephyr_kconfig_gen_values.bzl](../private/zephyr_kconfig_gen_values.bzl)) | `.config`, devicetree and headers of one application and board | `@zephyr_kconfig//:symbols.txt` and `Kconfig.dts`, Kconfig files, config fragments, `Kconfig.sysbuild`, `sysbuild.conf`, `sysbuild.yml`, and module `sysbuild-kconfig` files (`generate_sysbuild_forced_config`, `generate_kconfig_sysbuild_modules`), DTS files and their includes, bindings, generator scripts |
 
 Bazel caches their results and re-runs them only when a *recorded input* changes. Every input
 must be recorded for the results to be correct. How the inputs are recorded matters for speed,
@@ -74,7 +74,10 @@ the same lists when passed `--deps-out FILE --dirs-out FILE`. Both lists hold ab
 sorted and unique, one per line:
 
 * `deps.txt`: every file read, and every candidate path that was probed but does not exist when
-  creating it would change the result (for example `boards/<board>.overlay` in an application).
+  creating it would change the result (for example `boards/<board>.overlay`, `Kconfig.sysbuild`,
+  `sysbuild.conf`, `sysbuild.yml`, and module `sysbuild-kconfig` files probed by `get_conf_files`,
+  `discover_overlays`, `generate_sysbuild_forced_config`, and `generate_kconfig_sysbuild_modules` in
+  `kconfig_gen_values.py` via `tracker.add(...)`).
 * `dep_dirs.txt`: every directory whose listing affects the result (walked trees, globbed
   directories, bindings directories).
 

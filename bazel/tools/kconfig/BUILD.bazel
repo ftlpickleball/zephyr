@@ -26,7 +26,10 @@ py_test(
 py_library(
     name = "kconfig_utils",
     srcs = ["kconfig_utils.py"],
-    deps = ["//bazel/tools/deps:input_recorder_lib"],
+    deps = [
+        "//bazel/tools/deps:input_recorder_lib",
+        "@zephyr_pip_deps//pyyaml",
+    ],
 )
 
 py_test(

@@ -1142,6 +1142,21 @@ class TestKconfigGenValues(unittest.TestCase):
         self.assertTrue(os.path.isfile(autoconf_out))
         self.assertIn(os.path.realpath(kconfig_root), tracker.files)
 
+        # Verify forced_input_configs ignores "set more than once" warnings
+        self.kconfig_wrapper_mock.err.reset_mock()
+        mock_kconf.warnings = ['warning: FOO (defined at Kconfig:1) was set more than once.']
+        kconfig_gen_values.run_kconfig_in_process(
+            str(self.zephyr_base),
+            kconfig_root,
+            [conf_a, conf_b],
+            config_out,
+            autoconf_out,
+            tracker=tracker,
+            edt=dummy_edt,
+            forced_input_configs=True,
+        )
+        self.kconfig_wrapper_mock.err.assert_not_called()
+
     def test_generate_dts_headers_in_process_does_not_mutate_stdlib_pickle(self):
         import pickle as stdlib_pickle
         import types
@@ -1189,6 +1204,212 @@ class TestKconfigGenValues(unittest.TestCase):
         self.assertTrue(
             os.path.isfile(os.path.join(out_dir, "zephyr", "devicetree_generated.h"))
         )
+
+    def _make_sb_kconf(self, values, user_values=None):
+        user_values = user_values or {}
+        syms = {}
+        for name, val in values.items():
+            sym = MagicMock()
+            sym.str_value = val
+            sym.user_value = user_values.get(name)
+            syms[name] = sym
+        sb_kconf = MagicMock()
+        sb_kconf.syms = syms
+        return sb_kconf
+
+    def test_translate_sysbuild_kconfig_to_domain_bootloader_ram_load(self):
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT": "n",
+            "BOOT_SIGNATURE_TYPE_RSA": "y",
+        })
+        lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(sb_kconf, "BOOTLOADER")
+        self.assertIn("CONFIG_BOOT_RAM_LOAD=y", lines)
+        self.assertIn("# CONFIG_BOOT_RAM_LOAD_REVERT is not set", lines)
+        self.assertIn("# CONFIG_BOOT_SWAP_USING_MOVE is not set", lines)
+        self.assertIn("CONFIG_BOOT_SIGNATURE_TYPE_RSA=y", lines)
+        self.assertNotIn("CONFIG_BOOTLOADER_MCUBOOT=y", lines)
+
+    def test_translate_sysbuild_kconfig_to_domain_main_ram_load(self):
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT": "n",
+            "MCUBOOT_RAMLOAD_ALLOW_XIP": "y",
+        })
+        lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(sb_kconf, "MAIN")
+        self.assertIn("CONFIG_BOOTLOADER_MCUBOOT=y", lines)
+        self.assertIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD=y", lines)
+        self.assertNotIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT=y", lines)
+        self.assertNotIn("# CONFIG_XIP is not set", lines)
+
+        # When MCUBOOT_RAMLOAD_ALLOW_XIP is n, XIP is disabled
+        sb_kconf_no_xip = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_RAMLOAD_ALLOW_XIP": "n",
+        })
+        lines_no_xip = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(sb_kconf_no_xip, "MAIN")
+        self.assertIn("# CONFIG_XIP is not set", lines_no_xip)
+        self.assertIn("CONFIG_FLASH_SIZE=0", lines_no_xip)
+
+    def test_boot_signature_key_file_kconfig_default_and_multi_key(self):
+        # Default value from Kconfig.sysbuild (user_value is None) with comma-separated keys
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "BOOT_SIGNATURE_KEY_FILE": "key1.pem,key2.pem",
+            "BOOT_ENCRYPTION": "y",
+            "BOOT_ENCRYPTION_KEY_FILE": "enc.pem",
+        })
+        main_lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(
+            sb_kconf, "MAIN"
+        )
+        self.assertIn('CONFIG_MCUBOOT_SIGNATURE_KEY_FILE="key1.pem"', main_lines)
+        self.assertIn('CONFIG_MCUBOOT_ENCRYPTION_KEY_FILE="enc.pem"', main_lines)
+
+        boot_lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(
+            sb_kconf, "BOOTLOADER"
+        )
+        self.assertIn(
+            'CONFIG_BOOT_SIGNATURE_KEY_FILE="key1.pem,key2.pem"', boot_lines
+        )
+        self.assertIn('CONFIG_BOOT_ENCRYPTION_KEY_FILE="enc.pem"', boot_lines)
+
+    def test_generate_sysbuild_forced_config_bootloader_board_kconfig_sysbuild(self):
+        sysbuild_dir = self.zephyr_base / "share" / "sysbuild"
+        sysbuild_dir.mkdir(parents=True)
+        (sysbuild_dir / "Kconfig").write_text("# dummy sysbuild Kconfig\n")
+
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        (board_dir / "Kconfig.sysbuild").write_text("choice MCUBOOT_MODE\n\tdefault MCUBOOT_MODE_RAM_LOAD\nendchoice\n")
+
+        app_dir = os.path.join(self.test_dir, "mcuboot")
+        os.makedirs(app_dir)
+        output_dir = os.path.join(self.test_dir, "out")
+        os.makedirs(output_dir)
+
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT": "n",
+            "BOOT_SIGNATURE_TYPE_RSA": "y",
+        })
+        sb_kconf.kconfig_filenames = [str(sysbuild_dir / "Kconfig"), str(board_dir / "Kconfig.sysbuild")]
+        self.kconfig_mock.Kconfig.return_value = sb_kconf
+
+        args = MagicMock()
+        args.app_dir = app_dir
+        args.sysbuild_app_dir = None
+        args.app_name = "mcuboot"
+        args.forced_conf_fragments = []
+        tracker = kconfig_utils.InputRecorder()
+
+        with patch.dict(os.environ, {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""}):
+            forced_path = kconfig_gen_values.generate_sysbuild_forced_config(
+                str(self.zephyr_base), args, output_dir, str(board_dir), tracker=tracker
+            )
+
+        self.assertEqual(forced_path, os.path.join(output_dir, ".config.sysbuild"))
+        self.assertTrue(os.path.exists(forced_path))
+        content = Path(forced_path).read_text()
+        self.assertIn("CONFIG_BOOT_RAM_LOAD=y", content)
+        self.assertIn("# CONFIG_BOOT_RAM_LOAD_REVERT is not set", content)
+        sb_kconf.syms["BOOTLOADER_MCUBOOT"].set_value.assert_called_once_with("y")
+
+    def test_generate_sysbuild_forced_config_bootloader_uses_parent_sysbuild_app_dir(self):
+        sysbuild_dir = self.zephyr_base / "share" / "sysbuild"
+        sysbuild_dir.mkdir(parents=True)
+        (sysbuild_dir / "Kconfig").write_text("# dummy sysbuild Kconfig\n")
+
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        mcuboot_dir = os.path.join(self.test_dir, "mcuboot_repo")
+        parent_app_dir = os.path.join(self.test_dir, "parent_app")
+        os.makedirs(mcuboot_dir)
+        os.makedirs(parent_app_dir)
+        parent_kconfig_sb = os.path.join(parent_app_dir, "Kconfig.sysbuild")
+        Path(parent_kconfig_sb).write_text(
+            'source "share/sysbuild/Kconfig"\nconfig BOOT_SIGNATURE_KEY_FILE\n\tdefault "parent_key.pem"\n'
+        )
+        output_dir = os.path.join(self.test_dir, "out_parent_sb")
+        os.makedirs(output_dir)
+
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "BOOT_SIGNATURE_KEY_FILE": "parent_key.pem",
+        })
+        sb_kconf.srctree = str(self.zephyr_base)
+        sb_kconf.kconfig_filenames = [parent_kconfig_sb]
+        self.kconfig_mock.Kconfig.return_value = sb_kconf
+
+        args = MagicMock()
+        args.app_dir = mcuboot_dir
+        args.sysbuild_app_dir = parent_app_dir
+        args.app_name = "mcuboot"
+        args.forced_conf_fragments = []
+        tracker = kconfig_utils.InputRecorder()
+
+        with patch.dict(
+            os.environ,
+            {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""},
+        ):
+            forced_path = kconfig_gen_values.generate_sysbuild_forced_config(
+                str(self.zephyr_base),
+                args,
+                output_dir,
+                str(board_dir),
+                tracker=tracker,
+            )
+
+        self.kconfig_mock.Kconfig.assert_called_with(
+            parent_kconfig_sb, warn_to_stderr=False
+        )
+        content = Path(forced_path).read_text()
+        self.assertIn('CONFIG_BOOT_SIGNATURE_KEY_FILE="parent_key.pem"', content)
+
+    def test_generate_sysbuild_forced_config_in_tree_mcuboot_test_not_bootloader(self):
+        sysbuild_dir = self.zephyr_base / "share" / "sysbuild"
+        sysbuild_dir.mkdir(parents=True)
+        (sysbuild_dir / "Kconfig").write_text("# dummy sysbuild Kconfig\n")
+
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        (board_dir / "Kconfig.sysbuild").write_text(
+            "choice MCUBOOT_MODE\n\tdefault MCUBOOT_MODE_RAM_LOAD\nendchoice\n"
+        )
+
+        # An in-tree test under <zephyr_base>/tests/subsys/dfu/mcuboot has
+        # app_name="mcuboot" and basename="mcuboot" but is a normal test app
+        # (MAIN), not the MCUboot bootloader image.
+        test_app_dir = self.zephyr_base / "tests" / "subsys" / "dfu" / "mcuboot"
+        test_app_dir.mkdir(parents=True)
+        output_dir = os.path.join(self.test_dir, "out_dfu_test")
+        os.makedirs(output_dir)
+        soc_out_dir = os.path.join(output_dir, "soc")
+        os.makedirs(soc_out_dir)
+        Path(os.path.join(soc_out_dir, "Kconfig.sysbuild")).write_text(
+            'osource "/some/soc/Kconfig.sysbuild"\n'
+        )
+
+        args = MagicMock()
+        args.app_dir = str(test_app_dir)
+        args.sysbuild_app_dir = None
+        args.app_name = "mcuboot"
+        args.forced_conf_fragments = []
+        tracker = kconfig_utils.InputRecorder()
+
+        with patch.dict(
+            os.environ,
+            {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""},
+        ):
+            forced_path = kconfig_gen_values.generate_sysbuild_forced_config(
+                str(self.zephyr_base),
+                args,
+                output_dir,
+                str(board_dir),
+                tracker=tracker,
+            )
+
+        self.assertIsNone(forced_path)
 
 
 if __name__ == '__main__':

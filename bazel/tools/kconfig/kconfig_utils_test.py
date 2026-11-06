@@ -242,6 +242,31 @@ class TestKconfigUtils(unittest.TestCase):
             self.assertIn('bool', content)
             self.assertIn('default y', content)
 
+    def test_generate_kconfig_sysbuild_modules(self):
+        zephyr_base = os.path.join(self.test_dir, "zephyr")
+        os.makedirs(os.path.join(zephyr_base, "modules", "mod_in_tree"))
+
+        extra_with_sb = os.path.join(self.test_dir, "extra_sb")
+        os.makedirs(os.path.join(extra_with_sb, "zephyr"))
+        with open(os.path.join(extra_with_sb, "zephyr", "module.yml"), "w") as f:
+            f.write("build:\n  kconfig: zephyr/Kconfig\n  sysbuild-kconfig: zephyr/Kconfig.sysbuild\n")
+        with open(os.path.join(extra_with_sb, "zephyr", "Kconfig"), "w") as f:
+            f.write("config REGULAR_ONLY\n")
+        with open(os.path.join(extra_with_sb, "zephyr", "Kconfig.sysbuild"), "w") as f:
+            f.write("config SYSBUILD_MOD\n")
+
+        output_file = os.path.join(self.test_dir, "Kconfig.sysbuild.modules")
+        tracker = kconfig_utils.InputRecorder()
+        kconfig_utils.generate_kconfig_sysbuild_modules(
+            zephyr_base, [extra_with_sb], output_file, tracker=tracker
+        )
+
+        content = Path(output_file).read_text()
+        self.assertIn("config ZEPHYR_MOD_IN_TREE_MODULE", content)
+        self.assertIn("config ZEPHYR_EXTRA_SB_MODULE", content)
+        self.assertIn("extra_sb/zephyr/Kconfig.sysbuild", content)
+        self.assertNotIn("extra_sb/zephyr/Kconfig\"", content)
+
     @patch('subprocess.run')
     def test_generate_kconfig_dts(self, mock_run):
         """"Verifies that generate_kconfig_dts calls Zephyr's script with correct arguments."""

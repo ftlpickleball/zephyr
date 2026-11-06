@@ -1055,6 +1055,7 @@ def _zephyr_setup_apps_impl(mctx):
             name = repo["name"],
             app_label = repo["app_label"],
             app_dir = discovered_apps.get(normalize_app_label(Label(repo["app_label"])), ""),
+            sysbuild_app_dir = discovered_apps.get(repo.get("parent_app", ""), ""),
             board_id = board_id,
             board_dir = board_index.get(board_id, ""),
             parent_platform = parent_platform,
