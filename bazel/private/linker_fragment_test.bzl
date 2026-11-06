@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:unittest.bzl", "analysistest", "asserts")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
-load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:cc_library.bzl", "zephyr_cc_library")
 load("//bazel:cc_test.bzl", "ztest")
 load("//bazel:linker_fragment.bzl", "LinkerFragmentInfo", "zephyr_linker_fragment")
 

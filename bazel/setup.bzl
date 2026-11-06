@@ -514,7 +514,7 @@ def _zephyr_setup_core_impl(mctx):
     package_to_boards = {}
     path_str_dict = {}
 
-    for line in res.stdout.splitlines():
+    for line in sorted(res.stdout.splitlines()):
         if not line:
             continue
         parts = line.split(":")
@@ -932,7 +932,6 @@ def _zephyr_setup_core_impl(mctx):
         discovered_modules_labels[name]["target"]
         for name in sorted(discovered_modules_labels.keys())
     ]
-    index_content += "LOCAL_MODULES = %r\n" % local_modules
 
     zephyr_index_repo(
         name = "zephyr_index",

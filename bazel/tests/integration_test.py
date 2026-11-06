@@ -357,6 +357,10 @@ class DownstreamIntegrationTest(unittest.TestCase):
 
         # Verify explicit board/app pair scoping in @zephyr_state//:state.json and @zephyr_index//:index.bzl
         state_dir = self._find_repo_dir(self.ob_a, "zephyr_state")
+        self.assertFalse(
+            state_dir.is_symlink(),
+            f"Expected @zephyr_state ({state_dir}) to be materialized on disk, not symlinked",
+        )
         state = json.loads((state_dir / "state.json").read_text(encoding="utf-8"))
         surviving = state["surviving_combinations"]
         main_boards = surviving.get("apps/main_app", [])
@@ -371,10 +375,15 @@ class DownstreamIntegrationTest(unittest.TestCase):
         self.assertLess(len(helper_boards), 50)
 
         index_dir = self._find_repo_dir(self.ob_a, "zephyr_index")
+        self.assertFalse(
+            index_dir.is_symlink(),
+            f"Expected @zephyr_index ({index_dir}) to be materialized on disk, not symlinked",
+        )
         index_bzl = (index_dir / "index.bzl").read_text(encoding="utf-8")
         self.assertIn(ZC_MAIN_CUSTOM_SIM, index_bzl)
         self.assertIn(ZC_MAIN_NATIVE_SIM, index_bzl)
         self.assertIn(ZC_MAIN_QEMU_CM3, index_bzl)
+        self.assertNotIn("LOCAL_MODULES", index_bzl)
         index_build = (index_dir / "BUILD.bazel").read_text(encoding="utf-8")
         self.assertIn('name = "local_modules"', index_build)
         self.assertIn("hal_nordic//:hal_nordic", index_build)
