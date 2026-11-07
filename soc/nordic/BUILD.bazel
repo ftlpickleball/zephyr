@@ -7,6 +7,8 @@ load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
 
 package(default_visibility = ["//:__subpackages__"])
 
+exports_files(["validate_rram_partitions.c"])
+
 filegroup(
     name = "nordic",
     srcs = [

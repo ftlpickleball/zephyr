@@ -3,6 +3,7 @@
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@zephyr//bazel:cc.bzl", "zephyr_module")
+load("@zephyr//modules/hal_nordic:nrfx_cmake.bzl", "nrfx_compile_definitions", "nrfx_driver_filegroups")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -21,103 +22,11 @@ _NORDIC_INCLUDES = [
     "nrfx/bsp/stable/templates",
 ]
 
-# Mirrors MDK compile definitions from modules/hal_nordic/nrfx/CMakeLists.txt (lines 39-115).
-_CHIP_DEFINES = select({
-    "@zephyr_kconfig//:CONFIG_SOC_SERIES_NRF51=true": ["NRF51"],
-    "//conditions:default": [],
-}) + select({
-    # nrfx/CMakeLists.txt maps CONFIG_SOC_NRF51822_QF* to NRF51422_XX* (lines 40-42).
-    "@zephyr_kconfig//:CONFIG_SOC_NRF51822_QFAA=true": ["NRF51422_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF51822_QFAB=true": ["NRF51422_XXAB"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF51822_QFAC=true": ["NRF51422_XXAC"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF52805=true": ["NRF52805_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF52810=true": ["NRF52810_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF52811=true": ["NRF52811_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF52820=true": ["NRF52820_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF52832=true": ["NRF52832_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    # nrfx/CMakeLists.txt uses CONFIG_SOC_COMPATIBLE_* for MDK defines (line 48)
-    # while gating system_nrf52833.c on CONFIG_SOC_NRF52833 (line 124).
-    "@zephyr_kconfig//:CONFIG_SOC_COMPATIBLE_NRF52833=true": ["NRF52833_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF52840=true": ["NRF52840_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    # nrfx/CMakeLists.txt lines 50-51 & 109-110 (compatible targets share MDK defines).
-    "@zephyr_kconfig//:CONFIG_SOC_COMPATIBLE_NRF5340_CPUAPP=true": [
-        "NRF5340_XXAA_APPLICATION",
-        "NRF_SKIP_FICR_NS_COPY_TO_RAM",
-    ],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_COMPATIBLE_NRF5340_CPUNET=true": [
-        "NRF5340_XXAA_NETWORK",
-    ],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF54H20_CPUAPP=true": [
-        "NRF54H20_XXAA",
-        "NRF_APPLICATION",
-    ],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF54H20_CPURAD=true": [
-        "NRF54H20_XXAA",
-        "NRF_RADIOCORE",
-    ],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF54H20_CPUPPR=true": [
-        "NRF54H20_XXAA",
-        "NRF_PPR",
-    ],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF54H20_CPUFLPR=true": [
-        "NRF54H20_XXAA",
-        "NRF_FLPR",
-    ],
-    "//conditions:default": [],
-}) + select({
-    # nrfx/CMakeLists.txt lines 68-70 (SOC_COMPATIBLE_NRF54L15_CPUFLPR does not exist in Kconfig).
-    "@zephyr_kconfig//:CONFIG_SOC_COMPATIBLE_NRF54L15=true": ["NRF54L15_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_COMPATIBLE_NRF54L15_CPUAPP=true": ["NRF_APPLICATION"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF54L15_CPUFLPR=true": ["NRF_FLPR"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF7120_ENGA=true": ["NRF7120_ENGA_XXAA"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF7120_ENGA_CPUAPP=true": ["NRF_APPLICATION"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF7120_ENGA_CPUFLPR=true": ["NRF_FLPR"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_SOC_NRF9160=true": ["NRF9160_XXAA", "NRF_SKIP_FICR_NS_COPY_TO_RAM"],
-    "//conditions:default": [],
-}) + select({
-    "@zephyr_kconfig//:CONFIG_ARM_NONSECURE_FIRMWARE=true": ["NRF_TRUSTZONE_NONSECURE"],
+# MDK compile definitions: generated from nrfx/CMakeLists.txt, plus the one
+# CMake derives from devicetree (nrfx/CMakeLists.txt:233-240: /clocks/hfpll is
+# 128 MHz on every nRF54L dtsi).
+_CHIP_DEFINES = nrfx_compile_definitions() + select({
+    "@zephyr_kconfig//:CONFIG_SOC_NRF54L_CPUAPP_COMMON=true": ["NRF_CONFIG_CPU_FREQ_MHZ=128"],
     "//conditions:default": [],
 })
 
@@ -186,6 +95,24 @@ selects.config_setting_group(
     ],
 )
 
+# nrfx/CMakeLists.txt: GPPI && !GPPI_V1 && (SOC_COMPATIBLE_NRF54LX || SOC_SERIES_NRF71).
+selects.config_setting_group(
+    name = "d2ppi_soc",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_SOC_COMPATIBLE_NRF54LX=true",
+        "@zephyr_kconfig//:CONFIG_SOC_SERIES_NRF71=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "gppi_d2ppi_enabled",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_NRFX_GPPI=true",
+        ":not_config_nrfx_gppi_v1",
+        ":d2ppi_soc",
+    ],
+)
+
 filegroup(
     name = "nrfx_helper_srcs",
     srcs = [
@@ -197,6 +124,9 @@ filegroup(
         ":gppi_dppi_enabled": ["nrfx/helpers/nrfx_gppi_dppi.c"],
         "//conditions:default": [],
     }) + select({
+        ":gppi_d2ppi_enabled": ["nrfx/bsp/soc/interconnect/nrfx_gppi_d2ppi.c"],
+        "//conditions:default": [],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_HAS_NORDIC_RAM_CTRL=true": ["nrfx/helpers/nrfx_ram_ctrl.c"],
         "//conditions:default": [],
     }),
@@ -204,63 +134,8 @@ filegroup(
 
 filegroup(
     name = "nrfx_driver_srcs",
-    srcs = select({
-        "@zephyr_kconfig//:CONFIG_NRFX_CLOCK=true": [
-            "nrfx/drivers/src/nrfx_clock.c",
-            "nrfx/drivers/src/nrfx_clock_hfclk.c",
-            "nrfx/drivers/src/nrfx_clock_hfclkaudio.c",
-            "nrfx/drivers/src/nrfx_clock_hfclk192m.c",
-            "nrfx/drivers/src/nrfx_clock_lfclk.c",
-            "nrfx/drivers/src/nrfx_clock_xo.c",
-            "nrfx/drivers/src/nrfx_clock_xo24m.c",
-        ],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_GPIOTE=true": ["nrfx/drivers/src/nrfx_gpiote.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_IPC=true": ["nrfx/drivers/src/nrfx_ipc.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_POWER=true": ["nrfx/drivers/src/nrfx_power.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_PPI=true": ["nrfx/drivers/src/nrfx_ppi.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_DPPI=true": ["nrfx/drivers/src/nrfx_dppi.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_TIMER=true": ["nrfx/drivers/src/nrfx_timer.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_RTC=true": ["nrfx/drivers/src/nrfx_rtc.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_RNG=true": ["nrfx/drivers/src/nrfx_rng.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_WDT=true": ["nrfx/drivers/src/nrfx_wdt.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_UART=true": ["nrfx/drivers/src/nrfx_uart.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_UARTE=true": ["nrfx/drivers/src/nrfx_uarte.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_NVMC=true": ["nrfx/drivers/src/nrfx_nvmc.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_PDM=true": ["nrfx/drivers/src/nrfx_pdm.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_TWI=true": ["nrfx/drivers/src/nrfx_twi.c"],
-        "//conditions:default": [],
-    }) + select({
-        "@zephyr_kconfig//:CONFIG_NRFX_TWIM=true": ["nrfx/drivers/src/nrfx_twim.c"],
-        "//conditions:default": [],
-    }) + select({
+    # One filegroup per CONFIG_NRFX_* source line in nrfx/CMakeLists.txt (generated).
+    srcs = nrfx_driver_filegroups("nrfx_driver_srcs") + select({
         ":twi_or_twim_enabled": ["nrfx/drivers/src/nrfx_twi_twim.c"],
         "//conditions:default": [],
     }),

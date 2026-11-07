@@ -1,0 +1,61 @@
+Point the Bazel module scanner at the FTLP slice Kconfig (SDC + MPSL glue).
+
+diff --git a/zephyr/module.yml b/zephyr/module.yml
+--- a/zephyr/module.yml
++++ b/zephyr/module.yml
+@@ -1,22 +1,3 @@
++name: nrf
+ build:
+-  cmake: .
+-  kconfig: Kconfig.nrf
+-  kconfig-ext: true
+-  sysbuild-cmake: sysbuild
+-  sysbuild-kconfig: sysbuild/Kconfig.sysbuild
+-  sysbuild-kconfig-ext: true
+-  settings:
+-    soc_root: .
+-    board_root: .
+-    dts_root: .
+-    module_ext_root: .
+-    snippet_root: .
+-samples:
+-  - applications
+-  - samples
+-tests:
+-  - tests
+-runners:
+-  # Additional runners, Zephyr will import these when discovering
+-  # subclasses of the `ZephyrBinaryRunner` class.
+-  - file: scripts/runners/nrfutil_next.py
++  kconfig: Kconfig.ftlp
+diff --git a/Kconfig.ftlp b/Kconfig.ftlp
+new file mode 100644
+--- /dev/null
++++ b/Kconfig.ftlp
+@@ -0,0 +1,26 @@
++# FTLP slice of sdk-nrf: SoftDevice Controller HCI glue + MPSL integration.
++# Paths mirror where Kconfig.nrf sources them.
++
++menu "Nordic SoftDevice Controller (FTLP slice)"
++
++if BT
++
++config BT_LL_SOFTDEVICE_HEADERS_INCLUDE
++	bool
++	depends on SOC_FAMILY_NORDIC_NRF
++	default y if !HAS_BT_CTLR
++
++config BT_LL_SOFTDEVICE_HEADERS_INCLUDE_PATH_OVERRIDE
++	bool
++
++rsource "subsys/bluetooth/controller/Kconfig"
++
++endif # BT
++
++rsource "subsys/mpsl/Kconfig"
++if !MPSL_FEM_ONLY
++rsource "drivers/mpsl/Kconfig"
++endif
++rsource "lib/multithreading_lock/Kconfig"
++
++endmenu

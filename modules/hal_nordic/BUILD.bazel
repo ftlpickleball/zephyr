@@ -2,4 +2,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["external.BUILD"])
+exports_files([
+    "external.BUILD",
+    "nrfx_cmake.bzl",
+])

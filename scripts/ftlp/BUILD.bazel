@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+# FTLP fork tooling: vendor SDK pins and CMake-derived BUILD tables.
+
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
+
+package(default_visibility = ["//visibility:public"])
+
+py_library(
+    name = "vendor_sync_lib",
+    srcs = ["vendor_sync.py"],
+    imports = ["."],
+    deps = ["@zephyr_pip_deps//pyyaml"],
+)
+
+py_binary(
+    name = "vendor_sync",
+    srcs = ["vendor_sync.py"],
+    imports = ["."],
+    deps = [":vendor_sync_lib"],
+)
+
+py_test(
+    name = "vendor_sync_test",
+    srcs = ["vendor_sync_test.py"],
+    data = [
+        "//:MODULE.bazel",
+        "//modules/nordic_sdk:sdk_nrf.BUILD",
+    ],
+    imports = ["."],
+    deps = [":vendor_sync_lib"],
+)
+
+py_library(
+    name = "cmake_tables_lib",
+    srcs = ["cmake_tables.py"],
+    imports = ["."],
+)
+
+py_binary(
+    name = "cmake_tables",
+    srcs = ["cmake_tables.py"],
+    imports = ["."],
+    deps = [":cmake_tables_lib"],
+)
+
+py_test(
+    name = "cmake_tables_test",
+    srcs = ["cmake_tables_test.py"],
+    data = [
+        "//modules/hal_nordic:nrfx_cmake.bzl",
+        "//modules/hal_nordic/nrfx:CMakeLists.txt",
+    ],
+    imports = ["."],
+    deps = [":cmake_tables_lib"],
+)

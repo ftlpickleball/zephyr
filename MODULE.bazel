@@ -235,6 +235,39 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/zcbor.git",
 )
 
+# BEGIN vendor_sdk (managed by scripts/ftlp/vendor_sync.py; do not hand-edit)
+# NCS v3.4.2: sdk-zephyr VERSION 4.4.2 matches this tree.
+http_archive(
+    name = "nrfxlib",
+    build_file = "//modules/nordic_sdk:nrfxlib.BUILD",
+    patch_args = ["-p1"],
+    patches = ["//modules/nordic_sdk:nrfxlib.patch"],
+    sha256 = "6c0e66fcf818c6223eb4692291f448e4f94784e0921111582da7f8470ae05213",
+    strip_prefix = "sdk-nrfxlib-3.4.2",
+    urls = ["https://github.com/nrfconnect/sdk-nrfxlib/archive/refs/tags/v3.4.2.tar.gz"],
+)
+
+http_archive(
+    name = "sdk_nrf",
+    build_file = "//modules/nordic_sdk:sdk_nrf.BUILD",
+    patch_args = ["-p1"],
+    # setup.bzl scans every module root as a soc/board root; keep NCS's out.
+    patch_cmds = ["rm -rf boards soc"],
+    patches = ["//modules/nordic_sdk:sdk_nrf.patch"],
+    sha256 = "641694af023f6a7b57062e5e4ae9ee8aa7069d22a8cd7bf4808f5fb1662af1cd",
+    strip_prefix = "sdk-nrf-3.4.2",
+    urls = ["https://github.com/nrfconnect/sdk-nrf/archive/refs/tags/v3.4.2.tar.gz"],
+)
+
+http_archive(
+    name = "lsm6dsk320x_pid",
+    build_file = "//modules/st_pid:lsm6dsk320x_pid.BUILD",
+    sha256 = "45384b5d9d6cb4fefdfae523b386f4583db026c951d0f573c69719552a67f7c6",
+    strip_prefix = "lsm6dsk320x-pid-4bd4ed32e7d5f2873e73f96f695ec836afcd27a9",
+    urls = ["https://github.com/STMicroelectronics/lsm6dsk320x-pid/archive/4bd4ed32e7d5f2873e73f96f695ec836afcd27a9.tar.gz"],
+)
+# END vendor_sdk
+
 zephyr_setup = use_extension("//bazel:setup.bzl", "zephyr_setup")
 zephyr_setup.env(
     apps_dirs = [
@@ -258,6 +291,8 @@ zephyr_setup.env(
         "nrf52840dk/nrf52840",
         "nrf5340dk/nrf5340/cpuapp",
         "nrf5340dk/nrf5340/cpunet",
+        "nrf54l15dk/nrf54l15/cpuapp",
+        "nrf54lm20dk/nrf54lm20b/cpuapp",
         "qemu_cortex_m3",
         "qemu_malta",
     ],
@@ -265,6 +300,8 @@ zephyr_setup.env(
         "@hal_adi//:zephyr/module.yml",
         "@hal_nordic//:zephyr/module.yml",
         "@mcuboot//:zephyr/module.yml",
+        "@nrfxlib//:zephyr/module.yml",
+        "@sdk_nrf//:zephyr/module.yml",
     ],
 )
 use_repo(

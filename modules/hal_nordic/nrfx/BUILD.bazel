@@ -5,6 +5,9 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
+# Source of //modules/hal_nordic:nrfx_cmake.bzl (scripts/ftlp/cmake_tables.py).
+exports_files(["CMakeLists.txt"])
+
 # TODO(yichengli): This modules/hal_nordic/ directory inside Zephyr duplicates
 # logic in the out-of-tree Nordic HAL. We should aim to use cmake directives here
 # as much as possible.
