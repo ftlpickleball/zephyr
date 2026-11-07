@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@bazel_skylib//lib:selects.bzl", "selects")
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+cc_library(
+    name = "headers",
+    hdrs = ["uvc.h"],
+    includes = ["."],
+)
+
+zephyr_cc_library(
+    name = "common",
+    srcs = selects.with_or({
+        (
+            "@zephyr_kconfig//:CONFIG_USBD_VIDEO_CLASS=true",
+            "@zephyr_kconfig//:CONFIG_USBH_VIDEO_CLASS=true",
+        ): [
+            "uvc.c",
+        ],
+        "//conditions:default": [],
+    }),
+    hdrs = ["uvc.h"],
+    includes = ["."],
+)

@@ -17,6 +17,7 @@ zephyr_cc_library(
         allow_empty = True,
     ),
     deps = [
+        "//subsys/usb/common",
     ] + select({
         "@zephyr_kconfig//:CONFIG_USB_DEVICE_STACK=true": [
             "//" + package_name() + "/device",

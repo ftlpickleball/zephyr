@@ -10,8 +10,31 @@ load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
 
 package(default_visibility = ["//:__subpackages__"])
 
+exports_files(glob(
+    [
+        "**/*.c",
+        "**/*.h",
+    ],
+    allow_empty = True,
+))
+
+cc_library(
+    name = "headers",
+    hdrs = glob(
+        ["**/*.h"],
+        allow_empty = True,
+    ),
+    includes = [
+        ".",
+        "class",
+    ],
+)
+
 zephyr_cc_library(
     name = "device_next",
+    copts = [
+        "-Wno-gnu-variable-sized-type-not-at-end",
+    ],
     srcs = [
         "usbd_ch9.c",
         "usbd_class.c",
@@ -92,10 +115,17 @@ zephyr_cc_library(
         ],
     }),
     hdrs = glob(
-        ["*.h"],
+        ["**/*.h"],
         allow_empty = True,
     ),
-    strip_include_prefix = ".",
+    includes = [
+        ".",
+        "class",
+    ],
+    deps = [
+        "//drivers/video:headers",
+        "//subsys/usb/common:headers",
+    ],
 )
 
 zephyr_linker_fragment(
