@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+# Only the lsm6dsk320x variant is wired: @hal_st exports no STdC target for
+# lsm6dsv320x, lsm6dsv80x or ism6hg256x yet.
+zephyr_cc_library(
+    name = "lsm6dsvxxx",
+    srcs = [
+        "lsm6dsvxxx.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SENSOR_ASYNC_API=true": [
+            "lsm6dsvxxx_decoder.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LSM6DSVXXX_STREAM=true": [
+            "lsm6dsvxxx_stream.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LSM6DSVXXX_TRIGGER=true": [
+            "lsm6dsvxxx_trigger.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_LSM6DSK320X_ENABLED=true": [
+            "lsm6dsk320x.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//drivers/sensor/st/stmemsc",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_LSM6DSK320X_ENABLED=true": [
+            "@lsm6dsk320x_pid//:lsm6dsk320x_pid",
+        ],
+    }),
+)

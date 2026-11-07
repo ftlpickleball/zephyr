@@ -23,6 +23,10 @@
 #include "lsm6dsv320x.h"
 #endif
 
+#if DT_HAS_COMPAT_STATUS_OKAY(st_lsm6dsk320x)
+#include "lsm6dsk320x.h"
+#endif
+
 #if DT_HAS_COMPAT_STATUS_OKAY(st_lsm6dsv80x)
 #include "lsm6dsv80x.h"
 #endif
@@ -525,6 +529,10 @@ static int lsm6dsvxxx_pm_action(const struct device *dev, enum pm_device_action 
 /* clang-format on */
 
 #define DT_DRV_COMPAT st_lsm6dsv320x
+DT_INST_FOREACH_STATUS_OKAY_VARGS(LSM6DSVXXX_DEFINE, DT_DRV_COMPAT)
+#undef DT_DRV_COMPAT
+
+#define DT_DRV_COMPAT st_lsm6dsk320x
 DT_INST_FOREACH_STATUS_OKAY_VARGS(LSM6DSVXXX_DEFINE, DT_DRV_COMPAT)
 #undef DT_DRV_COMPAT
 

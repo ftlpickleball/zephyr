@@ -11,6 +11,9 @@ import sys
 
 import input_recorder
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "kconfig"))
+from discovery_utils import module_hw_roots
+
 try:
     import yaml
 except ImportError:
@@ -180,6 +183,7 @@ def main(argv=None):
                     "abs_path": path,
                     "has_zephyr_module_target_in_build": has_zephyr_module_target_in_build,
                     "kconfig": kconfig,
+                    "hw_roots": module_hw_roots(path),
                 }
             )
             continue
@@ -205,6 +209,7 @@ def main(argv=None):
                                 "abs_path": entry.path,
                                 "has_zephyr_module_target_in_build": has_zephyr_module_target_in_build,
                                 "kconfig": kconfig,
+                                "hw_roots": module_hw_roots(entry.path),
                             }
                         )
                 elif entry.is_symlink() and not entry.name.startswith("."):

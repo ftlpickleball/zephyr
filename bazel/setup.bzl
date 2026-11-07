@@ -434,6 +434,9 @@ def _zephyr_setup_core_impl(mctx):
         }
 
     scanner_script = label_path(tracker, Label("//bazel/tools/metadata:scan_modules.py"))
+
+    # scan_modules.py imports module_hw_roots from here; track it so edits re-run discovery.
+    label_path(tracker, Label("//bazel/tools/kconfig:discovery_utils.py"))
     scanner_res = _run_with_deps(mctx, python, "scan_modules", scanner_script, [
         "--modules-dirs-json",
         json.encode(modules_dirs_map),
@@ -443,6 +446,7 @@ def _zephyr_setup_core_impl(mctx):
     discovered = json.decode(scanner_res.stdout)
 
     discovered_modules = {}  # name -> root
+    module_hw_roots = {"arch_root": [], "board_root": [], "soc_root": []}  # declared in module.yml
     discovered_modules_labels = {}
     discovered_config_only_modules_labels = {}
 
@@ -455,6 +459,8 @@ def _zephyr_setup_core_impl(mctx):
 
         derived_label = derive_module_label(dir_label_str, relpath, name)
         discovered_modules[name] = abs_path_str
+        for key, root in item.get("hw_roots", {}).items():
+            module_hw_roots[key].append(root)
         module_info = {
             "target": derived_label,
             "original": dir_label_str,
@@ -479,13 +485,16 @@ def _zephyr_setup_core_impl(mctx):
     for l in boards_dir_labels:
         b_dir = get_dir_from_label(mctx, l, tracker)
         board_roots.append(str(b_dir))
+    board_roots.extend(module_hw_roots["board_root"])
 
-    hw_roots = [str(zephyr_root)] + list(discovered_modules.values())
-    cmd = [str(list_boards_py), "--arch-root", str(zephyr_root)]
-    cmd.extend(["--soc-root", str(zephyr_root)])
-    for m_root in discovered_modules.values():
-        cmd.extend(["--soc-root", m_root])
-        cmd.extend(["--arch-root", m_root])
+    # Modules add SoCs/arches only via module.yml build.settings, as zephyr_module.py does.
+    soc_roots = [str(zephyr_root)] + module_hw_roots["soc_root"]
+    arch_roots = [str(zephyr_root)] + module_hw_roots["arch_root"]
+    cmd = [str(list_boards_py)]
+    for r in arch_roots:
+        cmd.extend(["--arch-root", r])
+    for r in soc_roots:
+        cmd.extend(["--soc-root", r])
 
     for r in board_roots:
         cmd.extend(["--board-root", r])
@@ -501,8 +510,10 @@ def _zephyr_setup_core_impl(mctx):
     hw_args = ["--scripts-dir", str(zephyr_root.get_child("scripts"))]
     for r in board_roots:
         hw_args.extend(["--board-root", r])
-    for r in hw_roots:
-        hw_args.extend(["--soc-root", r, "--arch-root", r])
+    for r in soc_roots:
+        hw_args.extend(["--soc-root", r])
+    for r in arch_roots:
+        hw_args.extend(["--arch-root", r])
     hw_res = _run_with_deps(mctx, python, "hardware", hw_deps_script, hw_args, deps_files, deps_dirs)
     if hw_res.return_code != 0:
         fail("hardware_deps.py failed: %s" % hw_res.stderr)

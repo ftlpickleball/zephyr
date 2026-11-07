@@ -616,15 +616,24 @@ class TestKconfigGenValues(unittest.TestCase):
         # Create soc.yml in Zephyr to ensure it is discovered
         (self.zephyr_base / "soc" / "nordic" / "nrf52" / "soc.yml").touch()
 
-        # Create an OOT module with soc.yml
+        # Create an OOT module with soc.yml that declares soc_root, as CMake requires.
         module_dir = os.path.join(self.test_dir, "my_module")
         (Path(module_dir) / "soc" / "my_soc").mkdir(parents=True)
         (Path(module_dir) / "soc" / "my_soc" / "soc.yml").touch()
         (Path(module_dir) / "soc" / "my_soc" / "Kconfig.defconfig").write_text("config SOC_MY_SOC\n")
         (Path(module_dir) / "soc" / "my_soc" / "Kconfig").write_text("config SOC_MY_SOC\n")
+        (Path(module_dir) / "zephyr").mkdir()
+        (Path(module_dir) / "zephyr" / "module.yml").write_text("build:\n  settings:\n    soc_root: .\n")
+
+        # A module with a soc/ dir but no soc_root setting must not contribute SoCs.
+        silent_dir = os.path.join(self.test_dir, "silent_module")
+        (Path(silent_dir) / "soc" / "other").mkdir(parents=True)
+        (Path(silent_dir) / "soc" / "other" / "soc.yml").touch()
+        (Path(silent_dir) / "zephyr").mkdir()
+        (Path(silent_dir) / "zephyr" / "module.yml").write_text("build:\n  kconfig: Kconfig\n")
 
         args = MagicMock()
-        args.modules = [module_dir]
+        args.modules = [module_dir, silent_dir]
 
         tracker = kconfig_utils.InputRecorder()
         os.environ["BOARD"] = "nrf52840dk"
@@ -970,7 +979,8 @@ class TestKconfigGenValues(unittest.TestCase):
             real(os.path.join(board_dir, "Kconfig")),  # Probed, missing.
             real(os.path.join(board_dir, "Kconfig.nrf52840dk")),
             real(self.zephyr_base / "modules"),  # Missing: no Kconfig.modules entries.
-            real(os.path.join(missing_module, "soc")),
+            # Missing: creating it could declare a soc_root.
+            real(os.path.join(missing_module, "zephyr", "module.yml")),
         }, tracker.files)
         self.assertLessEqual({
             real(self.zephyr_base / "soc"),

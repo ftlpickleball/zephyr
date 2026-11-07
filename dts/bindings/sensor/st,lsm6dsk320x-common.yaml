@@ -1,0 +1,23 @@
+# Copyright (c) 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+    LSM6DSK320X shares the LSM6DSV320X register map (only WHO_AM_I differs), so
+    properties and values match st,lsm6dsv320x. When setting the accel-range,
+    accel-odr, gyro-range, gyro-odr properties in a .dts or .dtsi file you may
+    include lsm6dsv320x.h and use the macros defined there.
+
+include: st,lsm6dsv320x-common.yaml
+
+examples:
+  - |
+    #include <zephyr/dt-bindings/sensor/lsm6dsv320x.h>
+
+    lsm6dsk320x: lsm6dsk320x@0 {
+      /* ... */
+
+      accel-range = <LSM6DSV320X_DT_FS_8G>;
+      accel-odr = <LSM6DSVXXX_DT_ODR_AT_60Hz>;
+      gyro-range = <LSM6DSV320X_DT_FS_4000DPS>;
+      gyro-odr = <LSM6DSVXXX_DT_ODR_AT_60Hz>;
+    };

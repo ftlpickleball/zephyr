@@ -1,0 +1,4 @@
+/* The NPU node ships disabled in nrf54lm20b.dtsi. */
+&axon {
+	status = "okay";
+};

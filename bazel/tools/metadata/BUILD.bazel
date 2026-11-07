@@ -113,6 +113,7 @@ py_library(
     imports = ["."],
     deps = [
         "//bazel/tools/deps:input_recorder_lib",
+        "//bazel/tools/kconfig:discovery_utils",
         "@zephyr_pip_deps//pyyaml",
     ],
 )

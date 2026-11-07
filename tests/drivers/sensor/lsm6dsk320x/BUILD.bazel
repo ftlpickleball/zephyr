@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = ["src/main.c"],
+    visibility = ["//visibility:private"],
+)
+
+# Build-only: the st,lsm6dsk320x node turns on CONFIG_LSM6DSVXXX, which pulls the
+# driver and the ST PID in through //drivers/sensor.
+zephyr_app(
+    name = "lsm6dsk320x",
+    testonly = True,
+    deps = [":main"],
+)

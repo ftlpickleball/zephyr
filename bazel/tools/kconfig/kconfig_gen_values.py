@@ -85,7 +85,14 @@ def generate_kconfig_aggregations(zephyr_base, args, output_dir, board_dir, *, t
     """Generates the soc/, arch/ and boards/ aggregation Kconfigs and Kconfig.modules."""
     # Generate aggregation Kconfig files
     soc_dirs = []
-    soc_roots = [Path(zephyr_base)] + ([Path(m) for m in args.modules] if args.modules else [])
+    # Only modules whose module.yml declares a soc_root contribute SoCs (as in CMake).
+    for m in args.modules or []:
+        tracker.add(os.path.join(m, "zephyr", "module.yml"))
+    soc_roots = [Path(zephyr_base)] + [
+        Path(r["soc_root"])
+        for r in (discovery_utils.module_hw_roots(m) for m in (args.modules or []))
+        if "soc_root" in r
+    ]
     for sroot in soc_roots:
         soc_path = sroot / "soc"
         if not soc_path.is_dir():

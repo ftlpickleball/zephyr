@@ -1,0 +1,85 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("//bazel:defs.bzl", "dts_cc_library", "dts_library")
+load("//bazel:flags.bzl", "flags_from_dict")
+load("//bazel:runner.bzl", "zephyr_runner_config")
+
+package(default_visibility = ["//visibility:public"])
+
+dts_library(
+    name = "devicetree_lib_nrf54l15_cpuapp",
+    includes = [
+        "//dts:dts_includes",
+        "//include:include_includes",
+    ],
+    overlay = "nrf54l15tag_nrf54l15_cpuapp.dts",
+    references = [
+        "nrf54l15tag_common.dtsi",
+        "nrf54l15tag_cpuapp_common.dtsi",
+        "//dts/arm/nordic",
+        "//dts/common",
+        "//dts/vendor",
+        "//include:dt_bindings",
+    ],
+)
+
+dts_cc_library(
+    name = "devicetree_generated_nrf54l15_cpuapp",
+    # sdk_nrf adds nordic,bt-hci-sdc so an app overlay can select the SoftDevice Controller.
+    bindings = [
+        "//dts:bindings",
+        "@sdk_nrf//:dts_bindings",
+    ],
+    dts_lib = ":devicetree_lib_nrf54l15_cpuapp",
+    target_compatible_with = [":nordic_nrf54l15tag"],
+)
+
+constraint_value(
+    name = "nordic_nrf54l15tag",
+    constraint_setting = "//boards:board_name",
+)
+
+cc_library(
+    name = "hal_soc_headers_library",
+    # MPSL clock override first: it must shadow nrfx's nrfx_power_clock.h.
+    deps = select({
+        "@zephyr_kconfig//:CONFIG_CLOCK_CONTROL_MPSL=true": ["@sdk_nrf//:mpsl_clock_override"],
+        "//conditions:default": [],
+    }) + [
+        "//modules/hal_nordic/nrfx:nrfx_hdrs",
+        "//soc/nordic/nrf54l:nrf54l_hdrs",
+        "@hal_nordic//:dt_interface",
+    ],
+)
+
+zephyr_runner_config(
+    name = "nrf54l15_cpuapp_runner",
+    args = [
+        "--device=nRF54L15_M33",
+        "--speed=4000",
+    ],
+    runner = "jlink",
+)
+
+platform(
+    name = "nrf54l15_cpuapp",
+    constraint_values = [
+        ":nordic_nrf54l15tag",
+        "@platforms//cpu:armv8-m",
+        "//constraints/arm:cortex-m33",
+        "//boards:hw",
+    ],
+    flags = flags_from_dict({
+        "@zephyr//:board_runner_config": "@zephyr//boards/nordic/nrf54l15tag:nrf54l15_cpuapp_runner",
+        "@zephyr//:dts_cc_library": "@zephyr//boards/nordic/nrf54l15tag:devicetree_generated_nrf54l15_cpuapp",
+        "@zephyr//:hal_soc_headers_library": "@zephyr//boards/nordic/nrf54l15tag:hal_soc_headers_library",
+        "@zephyr//:soc": "@zephyr//soc/nordic/nrf54l",
+    }),
+    parents = ["//platforms:cortex_m"],
+)
+
+alias(
+    name = "nrf54l15tag",
+    actual = ":nrf54l15_cpuapp",
+)

@@ -150,6 +150,36 @@ def check_filesystem_overrides(app_path, board_id):
     return False
 
 
+HW_ROOT_KEYS = ("arch_root", "board_root", "soc_root")
+
+
+def module_hw_roots(module_root: str) -> dict[str, str]:
+    """Absolute arch/board/soc roots a module declares in zephyr/module.yml build.settings.
+
+    Mirrors CMake's zephyr_module.py: a module adds hardware only when it declares a root.
+    """
+    module_yml = os.path.join(module_root, "zephyr", "module.yml")
+    if not os.path.exists(module_yml):
+        return {}
+    import yaml
+
+    try:
+        with open(module_yml, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except yaml.YAMLError:
+        # Malformed module.yml declares nothing; scan_modules warns about it separately.
+        return {}
+    build = data.get("build") if isinstance(data, dict) else None
+    settings = build.get("settings") if isinstance(build, dict) else None
+    if not isinstance(settings, dict):
+        return {}
+    return {
+        key: os.path.normpath(os.path.join(module_root, settings[key]))
+        for key in HW_ROOT_KEYS
+        if isinstance(settings.get(key), str)
+    }
+
+
 def extract_board_revisions(board_dict: dict) -> list[str]:
     """Extracts a list of revision raw names from board dictionary in board.yml.
 

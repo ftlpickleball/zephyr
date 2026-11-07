@@ -80,10 +80,7 @@ class ArchiveTest(unittest.TestCase):
 
 class BlockTest(unittest.TestCase):
     def _archives(self):
-        return [
-            dataclass_with_sha(a)
-            for a in vs.wanted_archives("v3.4.2", "v3.4.2", _SHA)
-        ]
+        return [dataclass_with_sha(a) for a in vs.wanted_archives("v3.4.2", "v3.4.2", "v3.0.0", _SHA)]
 
     def test_render_parse_round_trip_keeps_pins(self):
         text = "head\n" + vs.render_block(self._archives(), "c") + "\ntail\n"
@@ -100,9 +97,20 @@ class BlockTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             vs.replace_block("no markers", "x")
 
-    def test_sdk_nrf_drops_ncs_boards_and_soc(self):
-        sdk_nrf = next(a for a in self._archives() if a.name == "sdk_nrf")
-        self.assertIn("patch_cmds = [\"rm -rf boards soc\"]", vs.render_block([sdk_nrf], "c"))
+    def test_every_nordic_archive_is_patched_to_a_slim_module(self):
+        for a in self._archives():
+            if a.repo.startswith(vs.NCS_ORG):
+                self.assertTrue(a.patch, a.name)
+
+
+class EdgeAiTagTest(unittest.TestCase):
+    def test_picks_newest_release_on_same_ncs_minor(self):
+        revs = {"v3.0.0": "v3.4.1", "v2.3.0": "v3.3.0", "v3.1.0": "v3.5.0", "v3.0.1-rc1": "v3.4.2"}
+        self.assertEqual(vs.matching_release(revs, "v3.4.2"), "v3.0.0")
+
+    def test_refuses_when_no_release_matches(self):
+        with self.assertRaises(SystemExit):
+            vs.matching_release({"v3.1.0": "v3.5.0-preview4"}, "v3.4.2")
 
 
 class CheckedInTest(unittest.TestCase):
@@ -113,10 +121,11 @@ class CheckedInTest(unittest.TestCase):
         pinned = vs.parse_block(text)
         ncs_tag = next(a.rev for a in pinned if a.name == "sdk_nrf")
         nrfxlib = next(a.rev for a in pinned if a.name == "nrfxlib")
+        edge_ai = next(a.rev for a in pinned if a.name == "sdk_edge_ai")
         st = next(a.rev for a in pinned if a.name == "lsm6dsk320x_pid")
         wanted = [
             vs.dataclasses.replace(a, sha256=next(p.sha256 for p in pinned if p.name == a.name))
-            for a in vs.wanted_archives(ncs_tag, nrfxlib, st)
+            for a in vs.wanted_archives(ncs_tag, nrfxlib, edge_ai, st)
         ]
         start = text.find(vs.BEGIN)
         comment_end = text.find("\n", text.find("\n", start) + 1)

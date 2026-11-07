@@ -1,0 +1,19 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/sensor/lsm6dsv320x.h>
+
+&spi22 {
+	status = "okay";
+
+	lsm6dsk320x: lsm6dsk320x@0 {
+		compatible = "st,lsm6dsk320x";
+		reg = <0>;
+		spi-max-frequency = <DT_FREQ_M(8)>;
+		accel-range = <LSM6DSV320X_DT_FS_16G>;
+		accel-odr = <LSM6DSVXXX_DT_ODR_AT_960Hz>;
+		gyro-range = <LSM6DSV320X_DT_FS_2000DPS>;
+		gyro-odr = <LSM6DSVXXX_DT_ODR_AT_960Hz>;
+	};
+};
