@@ -186,7 +186,7 @@ static uint8_t lsm6dsk320x_freq_to_odr_val(const struct device *dev, int32_t fre
 	size_t i;
 
 	if (lsm6dsk320x_xl_data_rate_get(ctx, &odr) < 0) {
-		return -EINVAL;
+		return 0xFF;
 	}
 
 	mode = (odr >> 4) & 0xf;
@@ -505,8 +505,8 @@ static int lsm6dsk320x_init_chip(const struct device *dev)
 		 * Need to grab the pointer to the I3C device descriptor
 		 * before we can talk to the sensor.
 		 */
-		lsm6dsvxxx->i3c_dev = i3c_device_find(cfg->i3c.bus, &cfg->i3c.dev_id);
-		if (lsm6dsvxxx->i3c_dev == NULL) {
+		data->i3c_dev = i3c_device_find(cfg->i3c.bus, &cfg->i3c.dev_id);
+		if (data->i3c_dev == NULL) {
 			LOG_ERR("Cannot find I3C device descriptor");
 			return -ENODEV;
 		}
@@ -595,9 +595,9 @@ static int lsm6dsk320x_init_chip(const struct device *dev)
 		 */
 		struct i3c_ccc_mrl setmrl = {
 			.len = 0x0700,
-			.ibi_len = lsm6dsvxxx->i3c_dev->data_length.max_ibi,
+			.ibi_len = data->i3c_dev->data_length.max_ibi,
 		};
-		if (i3c_ccc_do_setmrl(lsm6dsvxxx->i3c_dev, &setmrl) < 0) {
+		if (i3c_ccc_do_setmrl(data->i3c_dev, &setmrl) < 0) {
 			LOG_ERR("failed to set mrl");
 			return -EIO;
 		}
@@ -854,7 +854,7 @@ const int32_t st_lsm6dsk320x_accel_scaler[] = {
 	SENSOR_SCALE_UG_TO_UMS2(488),   /* FS_16G */
 	SENSOR_SCALE_UG_TO_UMS2(976),   /* FS_32G */
 	SENSOR_SCALE_UG_TO_UMS2(1952),  /* FS_64G */
-	SENSOR_SCALE_UG_TO_UMS2(2904),  /* FS_128G */
+	SENSOR_SCALE_UG_TO_UMS2(3904),  /* FS_128G */
 	SENSOR_SCALE_UG_TO_UMS2(7808),  /* FS_256G */
 	SENSOR_SCALE_UG_TO_UMS2(10417), /* FS_320G */
 };
