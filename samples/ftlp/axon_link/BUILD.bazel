@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Link canary for the sdk-edge-ai Axon NPU driver (nrf54lm20dk/nrf54lm20b/cpuapp).
+
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = ["src/main.c"],
+    visibility = ["//visibility:private"],
+    # Module headers are not global as in CMake; depend on the module to include them.
+    deps = ["@sdk_edge_ai//:edge_ai"],
+)
+
+zephyr_app(
+    name = "axon_link",
+    deps = [":main"],
+)

@@ -124,7 +124,8 @@ filegroup(
         ":gppi_dppi_enabled": ["nrfx/helpers/nrfx_gppi_dppi.c"],
         "//conditions:default": [],
     }) + select({
-        ":gppi_d2ppi_enabled": ["nrfx/bsp/soc/interconnect/nrfx_gppi_d2ppi.c"],
+        # BSP_DIR = nrfx/bsp/${CONFIG_SOC_NORDIC_BSP_NAME}; "stable" is the only BSP built here.
+        ":gppi_d2ppi_enabled": ["nrfx/bsp/stable/soc/interconnect/nrfx_gppi_d2ppi.c"],
         "//conditions:default": [],
     }) + select({
         "@zephyr_kconfig//:CONFIG_HAS_NORDIC_RAM_CTRL=true": ["nrfx/helpers/nrfx_ram_ctrl.c"],

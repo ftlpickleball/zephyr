@@ -21,6 +21,37 @@ class TestDiscoveryUtils(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
+    def _module(self, yml):
+        root = os.path.join(self.test_dir, "mod")
+        os.makedirs(os.path.join(root, "zephyr"))
+        if yml is not None:
+            with open(os.path.join(root, "zephyr", "module.yml"), "w") as f:
+                f.write(yml)
+        return root
+
+    def test_module_hw_roots_declared_roots_resolve_absolute(self):
+        root = self._module("build:\n  settings:\n    soc_root: .\n    board_root: hw\n")
+        self.assertEqual(
+            discovery_utils.module_hw_roots(root),
+            {"soc_root": root, "board_root": os.path.join(root, "hw")},
+        )
+
+    def test_module_hw_roots_without_settings_adds_no_hardware(self):
+        # hal_nordic / slim sdk-nrf shape: kconfig only, so its soc/ must not be scanned.
+        root = self._module("name: nrf\nbuild:\n  kconfig: Kconfig.ftlp\n")
+        os.makedirs(os.path.join(root, "soc", "nordic"))
+        self.assertEqual(discovery_utils.module_hw_roots(root), {})
+
+    def test_module_hw_roots_missing_module_yml(self):
+        self.assertEqual(discovery_utils.module_hw_roots(self._module(None)), {})
+
+    def test_module_hw_roots_malformed_yaml_declares_nothing(self):
+        self.assertEqual(discovery_utils.module_hw_roots(self._module("build: [unclosed\n")), {})
+
+    def test_module_hw_roots_ignores_non_hw_settings(self):
+        root = self._module("build:\n  settings:\n    dts_root: .\n    snippet_root: .\n")
+        self.assertEqual(discovery_utils.module_hw_roots(root), {})
+
     def test_check_filesystem_overrides_no_boards_dir(self):
         self.assertFalse(discovery_utils.check_filesystem_overrides(self.app_path, "board1"))
 

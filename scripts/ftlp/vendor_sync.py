@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Pin vendor SDKs in MODULE.bazel: Nordic nrfxlib + sdk-nrf, ST lsm6dsk320x PID.
+"""Pin vendor SDKs in MODULE.bazel: Nordic nrfxlib, sdk-nrf, sdk-edge-ai (Axon); ST lsm6dsk320x PID.
 
 From the fork root:
   bazel run //scripts/ftlp:vendor_sync -- sync --ncs-tag v3.4.2
@@ -7,7 +7,8 @@ From the fork root:
   bazel run //scripts/ftlp:vendor_sync -- check
 
 `sync` refuses an NCS tag whose sdk-zephyr VERSION major.minor differs from
-this tree: the SoftDevice Controller is only tested against that Zephyr.
+this tree: the SoftDevice Controller is only tested against that Zephyr. sdk-edge-ai
+must be a release built on the same NCS major.minor.
 Both commands fail when a file a vendor BUILD names is gone upstream.
 """
 
@@ -52,7 +53,6 @@ class Archive:
     build_file: str
     sha256: str = ""
     patch: str = ""
-    patch_cmds: tuple[str, ...] = ()
 
     @property
     def url(self) -> str:
@@ -117,15 +117,7 @@ def render_block(archives: list[Archive], comment: str) -> str:
     for a in archives:
         lines += ["http_archive(", f'    name = "{a.name}",', f'    build_file = "{a.build_file}",']
         if a.patch:
-            lines.append('    patch_args = ["-p1"],')
-        if a.patch_cmds:
-            cmds = ", ".join(f'"{c}"' for c in a.patch_cmds)
-            lines += [
-                "    # setup.bzl scans every module root as a soc/board root; keep NCS's out.",
-                f"    patch_cmds = [{cmds}],",
-            ]
-        if a.patch:
-            lines.append(f'    patches = ["{a.patch}"],')
+            lines += ['    patch_args = ["-p1"],', f'    patches = ["{a.patch}"],']
         lines += [
             f'    sha256 = "{a.sha256}",',
             f'    strip_prefix = "{a.strip_prefix}",',
@@ -204,7 +196,7 @@ def _report_missing(root: pathlib.Path, a: Archive, names: list[str]) -> int:
     return len(missing)
 
 
-def wanted_archives(ncs_tag: str, nrfxlib_rev: str, st_rev: str) -> list[Archive]:
+def wanted_archives(ncs_tag: str, nrfxlib_rev: str, edge_ai_tag: str, st_rev: str) -> list[Archive]:
     return [
         Archive(
             "nrfxlib",
@@ -219,10 +211,38 @@ def wanted_archives(ncs_tag: str, nrfxlib_rev: str, st_rev: str) -> list[Archive
             ncs_tag,
             "//modules/nordic_sdk:sdk_nrf.BUILD",
             patch="//modules/nordic_sdk:sdk_nrf.patch",
-            patch_cmds=("rm -rf boards soc",),
+        ),
+        Archive(
+            "sdk_edge_ai",
+            f"{NCS_ORG}/sdk-edge-ai",
+            edge_ai_tag,
+            "//modules/nordic_sdk:sdk_edge_ai.BUILD",
+            patch="//modules/nordic_sdk:sdk_edge_ai.patch",
         ),
         Archive("lsm6dsk320x_pid", ST_PID_REPO, st_rev, "//modules/st_pid:lsm6dsk320x_pid.BUILD"),
     ]
+
+
+def matching_release(nrf_rev_by_tag: dict[str, str], ncs_tag: str) -> str:
+    """Highest release tag whose pinned sdk-nrf shares ncs_tag's major.minor."""
+    want = _RELEASE_TAG.match(ncs_tag)
+    if not want:
+        raise ValueError(f"not a release tag: {ncs_tag}")
+    hits = []
+    for tag, nrf_rev in nrf_rev_by_tag.items():
+        m, t = _RELEASE_TAG.match(nrf_rev), _RELEASE_TAG.match(tag)
+        if m and t and m.groups()[:2] == want.groups()[:2]:
+            hits.append(tag)
+    if not hits:
+        raise SystemExit(f"refusing: no sdk-edge-ai release targets NCS v{'.'.join(want.groups()[:2])}.x")
+    return latest_release_tag(hits)
+
+
+def _edge_ai_tag(ncs_tag: str) -> str:
+    repo = f"{NCS_ORG}/sdk-edge-ai"
+    tags = [t for t in parse_ls_remote_tags(_git("ls-remote", "--tags", f"{GITHUB}/{repo}.git")) if _RELEASE_TAG.match(t)]
+    nrf_revs = {t: parse_west(_fetch(f"{RAW}/{repo}/{t}/west.yml").decode()).get("nrf", "") for t in tags}
+    return matching_release(nrf_revs, ncs_tag)
 
 
 def cmd_sync(args: argparse.Namespace) -> int:
@@ -234,9 +254,10 @@ def cmd_sync(args: argparse.Namespace) -> int:
     ncs_zephyr = parse_version(_fetch(f"{RAW}/{NCS_ORG}/sdk-zephyr/{west['zephyr']}/VERSION").decode())
     check_lockstep(ncs_zephyr, parse_version((root / "VERSION").read_text()))
     st_rev = args.st_rev or _git("ls-remote", f"{GITHUB}/{ST_PID_REPO}.git", "HEAD").split()[0]
+    edge_ai_tag = args.edge_ai_tag or _edge_ai_tag(ncs_tag)
 
     archives, missing = [], 0
-    for a in wanted_archives(ncs_tag, west["nrfxlib"], st_rev):
+    for a in wanted_archives(ncs_tag, west["nrfxlib"], edge_ai_tag, st_rev):
         sha256, names = _download(a)
         missing += _report_missing(root, a, names)
         archives.append(dataclasses.replace(a, sha256=sha256))
@@ -247,7 +268,10 @@ def cmd_sync(args: argparse.Namespace) -> int:
     new = replace_block(old, render_block(archives, comment))
     if new != old:
         module.write_text(new)
-    print(f"{'pinned' if new != old else 'up to date'}: NCS {ncs_tag}, {ST_PID_REPO}@{st_rev[:12]}")
+    print(
+        f"{'pinned' if new != old else 'up to date'}: NCS {ncs_tag}, sdk-edge-ai {edge_ai_tag}, "
+        f"{ST_PID_REPO}@{st_rev[:12]}"
+    )
     return 1 if missing else 0
 
 
@@ -266,10 +290,11 @@ def cmd_check(_: argparse.Namespace) -> int:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
-    sync = sub.add_parser("sync", help="re-pin nrfxlib, sdk-nrf and the ST PID")
+    sync = sub.add_parser("sync", help="re-pin nrfxlib, sdk-nrf, sdk-edge-ai and the ST PID")
     which = sync.add_mutually_exclusive_group(required=True)
     which.add_argument("--ncs-tag", help="sdk-nrf release tag, e.g. v3.4.2")
     which.add_argument("--latest", action="store_true", help="highest sdk-nrf vX.Y.Z tag")
+    sync.add_argument("--edge-ai-tag", help="sdk-edge-ai tag (default: newest built on the same NCS minor)")
     sync.add_argument("--st-rev", help="lsm6dsk320x-pid commit (default: HEAD)")
     sync.set_defaults(func=cmd_sync)
     sub.add_parser("check", help="verify pins: sha256 and BUILD-named files").set_defaults(func=cmd_check)

@@ -3,6 +3,7 @@
 # BUILD for the nrfconnect/sdk-nrf SoftDevice Controller + MPSL glue slice
 # (sources LicenseRef-Nordic-5-Clause). Mirrors the slice's CMakeLists.txt files.
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("@zephyr//bazel:cc.bzl", "zephyr_module")
 
 package(default_visibility = ["//visibility:public"])
