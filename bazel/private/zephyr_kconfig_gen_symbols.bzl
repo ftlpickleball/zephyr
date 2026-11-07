@@ -17,6 +17,7 @@ def _zephyr_kconfig_schema_impl(rctx):
 
     kconfig_gen_symbols_py = label_path(tracker, rctx.attr._kconfig_gen_symbols_py)
     kconfig_utils_py = label_path(tracker, Label("//bazel/tools/kconfig:kconfig_utils.py"))
+    discovery_utils_py = label_path(tracker, Label("//bazel/tools/kconfig:discovery_utils.py"))
 
     python = get_python(rctx, extra_import_paths = [
         zephyr_root_path + "/scripts/kconfig",
@@ -59,7 +60,7 @@ def _zephyr_kconfig_schema_impl(rctx):
     # mutable locations get watched; fetched content is covered by the pin files and probes.
     deps = (read_path_list(rctx, rctx.path("deps.txt")) or []) + [
         realpath_of(p)
-        for p in [kconfig_gen_symbols_py, kconfig_utils_py]
+        for p in [kconfig_gen_symbols_py, kconfig_utils_py, discovery_utils_py]
     ]
     dep_dirs = read_path_list(rctx, rctx.path("dep_dirs.txt")) or []
 

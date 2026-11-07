@@ -37,7 +37,14 @@ def parse_args():
 
 
 def find_soc_source_directories(zephyr_base, modules=None, *, tracker):
-    soc_roots = [Path(zephyr_base)] + ([Path(m) for m in modules] if modules else [])
+    # Only modules whose module.yml declares a soc_root contribute SoCs (as in CMake).
+    for m in modules or []:
+        tracker.add(os.path.join(m, "zephyr", "module.yml"))
+    soc_roots = [Path(zephyr_base)] + [
+        Path(r["soc_root"])
+        for r in (discovery_utils.module_hw_roots(m) for m in (modules or []))
+        if "soc_root" in r
+    ]
     result = []
     for root in soc_roots:
         soc_path = root / "soc"

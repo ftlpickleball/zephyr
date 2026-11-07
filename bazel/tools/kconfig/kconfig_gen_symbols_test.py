@@ -96,16 +96,22 @@ class TestKconfigGenSymbols(unittest.TestCase):
         dirs = kconfig_gen_symbols.find_soc_source_directories(str(self.zephyr_base), tracker=tracker)
         self.assertTrue(any("nordic/nrf52" in d for d in dirs))
 
-        # Test with OOT modules
+        # A module contributes SoCs only through a declared soc_root.
         module_dir = os.path.join(self.test_dir, "my_module")
         (Path(module_dir) / "soc" / "my_soc").mkdir(parents=True)
         (Path(module_dir) / "soc" / "my_soc" / "soc.yml").touch()
+        (Path(module_dir) / "zephyr").mkdir()
+        (Path(module_dir) / "zephyr" / "module.yml").write_text("build:\n  settings:\n    soc_root: .\n")
+        silent_dir = os.path.join(self.test_dir, "silent_module")
+        (Path(silent_dir) / "soc" / "other_soc").mkdir(parents=True)
+        (Path(silent_dir) / "soc" / "other_soc" / "soc.yml").touch()
 
         dirs_with_mods = kconfig_gen_symbols.find_soc_source_directories(
-            str(self.zephyr_base), tracker=tracker, modules=[module_dir]
+            str(self.zephyr_base), tracker=tracker, modules=[module_dir, silent_dir]
         )
         self.assertTrue(any("nordic/nrf52" in d for d in dirs_with_mods))
         self.assertTrue(any("my_module/soc/my_soc" in d for d in dirs_with_mods))
+        self.assertFalse(any("silent_module" in d for d in dirs_with_mods))
 
     def test_find_board_source_directories(self):
         tracker = kconfig_utils.InputRecorder()
@@ -544,7 +550,9 @@ board:
         kconfig_gen_symbols.find_soc_source_directories(str(self.zephyr_base), [module_dir], tracker=tracker)
 
         real = lambda p: os.path.realpath(str(p))
-        self.assertEqual(tracker.files, {real(missing_root), real(os.path.join(module_dir, "soc"))})
+        self.assertEqual(
+            tracker.files, {real(missing_root), real(os.path.join(module_dir, "zephyr", "module.yml"))}
+        )
         self.assertEqual(tracker.dirs, {
             real(self.zephyr_base / "boards"),
             real(self.zephyr_base / "boards" / "arm"),
