@@ -10,7 +10,10 @@ load("//bazel:linker_fragment.bzl", "generate_app_smem_unaligned_linker", "gener
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["misc/empty_file.c"])
+exports_files([
+    "MODULE.bazel",
+    "misc/empty_file.c",
+])
 
 cc_toolchain_feature_is_enabled(
     name = "compiler_is_gcc",
