@@ -26,6 +26,87 @@ def _materialize_repo_dir(ctx, repo_name):
     """
     return ctx.path(Label("@@" + repo_name + "//:BUILD.bazel")).dirname
 
+def host_whl_platform_tag(os_name, arch, py_version):
+    """Returns the rules_python whl_config_setting tag for the host OS and CPU.
+
+    Args:
+        os_name: Host OS name (e.g. from ctx.os.name).
+        arch: Host CPU architecture (e.g. from ctx.os.arch).
+        py_version: Compact Python major+minor version string (e.g. "311").
+
+    Returns:
+        A whl_config_setting platform string such as "cp311_linux_x86_64".
+    """
+    os_lower = os_name.lower()
+    if "mac" in os_lower or "darwin" in os_lower:
+        host_os = "osx"
+    elif "win" in os_lower:
+        host_os = "windows"
+    else:
+        host_os = "linux"
+
+    arch_lower = arch.lower()
+    if arch_lower in ("aarch64", "arm64"):
+        host_arch = "aarch64"
+    elif arch_lower in ("x86_64", "amd64", "x64"):
+        host_arch = "x86_64"
+    else:
+        host_arch = arch_lower
+
+    return "cp{}_{}_{}".format(py_version, host_os, host_arch)
+
+def select_whl_repo_name(build_content, py_version, host_platform, pip_hub_name = _PIP_HUB_NAME):
+    """Selects the host-compatible backing wheel repository from a hub BUILD file.
+
+    Parses rules_python's generated pkg_aliases() BUILD.bazel content, handling
+    both version-only keys ("//_config:is_cp311") and multi-line
+    whl_config_setting(...) keys with target_platforms tuples.
+
+    Args:
+        build_content: Text contents of the hub package BUILD.bazel file.
+        py_version: Compact Python major+minor version string (e.g. "311").
+        host_platform: Host whl_config_setting tag (e.g. "cp311_linux_x86_64").
+        pip_hub_name: Pip hub repository prefix.
+
+    Returns:
+        The resolved repository name (e.g. "zephyr_pip_deps_311_pyyaml_..."),
+        or None if no matching entry is found.
+    """
+    repo_prefix = '"{}_{}_'.format(pip_hub_name, py_version)
+    platform_token = '"{}"'.format(host_platform)
+
+    in_whl_config = False
+    paren_depth = 0
+    has_target_platforms = False
+    matched_platform = False
+
+    for line in build_content.splitlines():
+        if not in_whl_config and "whl_config_setting(" in line:
+            in_whl_config = True
+
+        if in_whl_config:
+            if "target_platforms" in line:
+                has_target_platforms = True
+            if platform_token in line:
+                matched_platform = True
+            paren_depth += line.count("(") - line.count(")")
+
+        stripped = line.strip()
+        if not in_whl_config or paren_depth <= 0:
+            if repo_prefix in line and stripped.endswith('",'):
+                if (not in_whl_config) or (not has_target_platforms) or matched_platform:
+                    parts = line.split('"')
+                    if len(parts) >= 3:
+                        return parts[-2]
+            if in_whl_config and stripped.endswith(","):
+                # Finish non-matching entries (e.g. another Python version) before the next block.
+                in_whl_config = False
+                paren_depth = 0
+                has_target_platforms = False
+                matched_platform = False
+
+    return None
+
 def _requirement_to_py_repo_dir(ctx, dep):
     """Resolves the site-packages directory of a pip dependency.
 
@@ -42,15 +123,12 @@ def _requirement_to_py_repo_dir(ctx, dep):
     # Read the hub-level BUILD file to get the actual resolved repository name.
     if build_bazel_path.exists:
         build_content = ctx.read(build_bazel_path)
-        for line in build_content.splitlines():
-            if '"' + _PIP_HUB_NAME + "_" + py_version + "_" in line and line.strip().endswith('",'):
-                parts = line.split('"')
-                if len(parts) >= 3:
-                    actual_repo = parts[-2]
-                    hub_repo_canonical = dep.workspace_name
-                    if _PIP_HUB_NAME in hub_repo_canonical:
-                        repo_name = hub_repo_canonical.replace(_PIP_HUB_NAME, actual_repo)
-                        break
+        host_platform = host_whl_platform_tag(ctx.os.name, ctx.os.arch, py_version)
+        actual_repo = select_whl_repo_name(build_content, py_version, host_platform)
+        if actual_repo:
+            hub_repo_canonical = dep.workspace_name
+            if _PIP_HUB_NAME in hub_repo_canonical:
+                repo_name = hub_repo_canonical.replace(_PIP_HUB_NAME, actual_repo)
 
     if not repo_name:
         # Fallback to older rules_python handling if BUILD parsing fails

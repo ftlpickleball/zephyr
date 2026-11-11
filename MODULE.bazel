@@ -9,7 +9,7 @@ module(
 bazel_dep(name = "bazel_skylib", version = "1.9.0")
 bazel_dep(name = "platforms", version = "1.1.0")
 bazel_dep(name = "rules_cc", version = "0.2.22")
-bazel_dep(name = "rules_python", version = "1.8.5")
+bazel_dep(name = "rules_python", version = "2.4.6")
 bazel_dep(name = "rules_rust", version = "0.70.0")
 bazel_dep(name = "pigweed")
 
@@ -179,21 +179,41 @@ use_repo(python, "pythons_hub")
 
 pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 pip.parse(
+    experimental_index_url = "https://pypi.org/simple",
+    extra_pip_args = [
+        "--no-index",
+        "--no-build-isolation",
+    ],
     hub_name = "zephyr_pip_deps",
     python_version = "3.11",
     requirements_lock = "//bazel/pip:requirements-lock.txt",
 )
 pip.parse(
+    experimental_index_url = "https://pypi.org/simple",
+    extra_pip_args = [
+        "--no-index",
+        "--no-build-isolation",
+    ],
     hub_name = "zephyr_pip_deps",
     python_version = "3.12",
     requirements_lock = "//bazel/pip:requirements-lock.txt",
 )
 pip.parse(
+    experimental_index_url = "https://pypi.org/simple",
+    extra_pip_args = [
+        "--no-index",
+        "--no-build-isolation",
+    ],
     hub_name = "zephyr_pip_deps",
     python_version = "3.13",
     requirements_lock = "//bazel/pip:requirements-lock.txt",
 )
 pip.parse(
+    experimental_index_url = "https://pypi.org/simple",
+    extra_pip_args = [
+        "--no-index",
+        "--no-build-isolation",
+    ],
     hub_name = "zephyr_pip_deps",
     python_version = "3.14",
     requirements_lock = "//bazel/pip:requirements-lock.txt",
