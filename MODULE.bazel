@@ -161,6 +161,16 @@ use_repo(
     "zephyr_sdk_xtensa_dc233c",
 )
 
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "sdl2",
+    build_file = "@zephyr//boards/native/common/sdl:sdl2.BUILD",
+    sha256 = "f5c2b52498785858f3de1e2996eba3c1b805d08fe168a47ea527c7fc339072d0",
+    strip_prefix = "SDL2-2.32.0",
+    urls = ["https://github.com/libsdl-org/SDL/releases/download/release-2.32.0/SDL2-2.32.0.tar.gz"],
+)
+
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")
 python.toolchain(
     is_default = True,

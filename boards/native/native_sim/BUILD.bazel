@@ -116,5 +116,10 @@ zephyr_cc_library(
         "//arch/posix:headers",
         "//kernel",
         "//scripts/native_simulator",
-    ],
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_HAS_SDL=true": [
+            "//boards/native/common/sdl",
+        ],
+        "//conditions:default": [],
+    }),
 )
