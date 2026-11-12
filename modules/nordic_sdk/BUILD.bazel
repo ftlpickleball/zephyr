@@ -6,3 +6,9 @@ exports_files(glob([
     "*.BUILD",
     "*.patch",
 ]))
+
+# Apps in other Bazel modules cannot see @sdk_edge_ai; they dep on this.
+alias(
+    name = "edge_ai",
+    actual = "@sdk_edge_ai//:edge_ai",
+)
