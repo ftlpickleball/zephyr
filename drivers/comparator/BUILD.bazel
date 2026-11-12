@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+# Nordic COMP/LPCOMP and the shell only; other vendors' drivers are not wired.
+zephyr_cc_library(
+    name = "comparator",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USERSPACE=true": [
+            "comparator_handlers.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMPARATOR_NRF_COMP=true": [
+            "comparator_nrf_comp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMPARATOR_NRF_LPCOMP=true": [
+            "comparator_nrf_lpcomp.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_COMPARATOR_SHELL=true": [
+            "comparator_shell.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+)

@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "lps2xdf",
+    srcs = [
+        "lps2xdf.c",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_ILPS22QS_ENABLED=true": [
+            "ilps22qs.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_LPS22DF_ENABLED=true": [
+            "lps22df.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_DT_HAS_ST_LPS28DFW_ENABLED=true": [
+            "lps28dfw.c",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LPS2XDF_TRIGGER=true": [
+            "lps2xdf_trigger.c",
+        ],
+    }),
+    hdrs = glob(
+        ["*.h"],
+        allow_empty = True,
+    ),
+    deps = [
+        "//drivers/sensor/st/stmemsc",
+    ] + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USE_STDC_ILPS22QS=true": [
+            "@hal_st//:ilps22qs_stdc",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USE_STDC_LPS22DF=true": [
+            "@hal_st//:lps22df_stdc",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USE_STDC_LPS28DFW=true": [
+            "@hal_st//:lps28dfw_stdc",
+        ],
+    }),
+)
