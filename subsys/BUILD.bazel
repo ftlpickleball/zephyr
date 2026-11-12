@@ -183,6 +183,11 @@ cc_library(
             "//modules/zcbor",
         ],
         "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USE_SEGGER_RTT=true": [
+            "//modules/segger",
+        ],
+        "//conditions:default": [],
     }),
 )
 
