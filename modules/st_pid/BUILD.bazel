@@ -3,3 +3,9 @@
 package(default_visibility = ["//visibility:public"])
 
 exports_files(["lsm6dsk320x_pid.BUILD"])
+
+# Apps in other Bazel modules cannot see @lsm6dsk320x_pid; they dep on this.
+alias(
+    name = "lsm6dsk320x_pid",
+    actual = "@lsm6dsk320x_pid//:lsm6dsk320x_pid",
+)
