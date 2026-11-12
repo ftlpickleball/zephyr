@@ -336,8 +336,11 @@ zephyr_setup.env(
         "qemu_malta",
     ],
     modules = [
+        "@cmsis_6//:zephyr/module.yml",
         "@hal_adi//:zephyr/module.yml",
         "@hal_nordic//:zephyr/module.yml",
+        "@hal_st//:zephyr/module.yml",
+        "@hal_tdk//:zephyr/module.yml",
         "@mcuboot//:zephyr/module.yml",
     ],
 )

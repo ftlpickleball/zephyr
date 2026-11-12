@@ -4,6 +4,8 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//visibility:public"])
 
+exports_files(["zephyr/module.yml"])
+
 cc_library(
     name = "core",
     hdrs = glob(["CMSIS/Core/Include/**/*.h"]),
