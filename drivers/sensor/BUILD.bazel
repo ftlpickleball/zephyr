@@ -259,6 +259,21 @@ zephyr_cc_library(
             "//" + package_name() + "/st/lsm6dsvxxx",
         ],
     }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LPS2XDF=true": [
+            "//" + package_name() + "/st/lps2xdf",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_LPS22HB=true": [
+            "//" + package_name() + "/st/lps22hb",
+        ],
+    }) + select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_NPM13XX_CHARGER=true": [
+            "//" + package_name() + "/nordic/npm13xx_charger",
+        ],
+    }) + select({
         "@zephyr_kconfig//:CONFIG_INA2XX=true": [
             "//drivers/sensor/ti/ina2xx",
         ],

@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+
+package(default_visibility = ["//:__subpackages__"])
+
+zephyr_cc_library(
+    name = "lps22hb",
+    srcs = ["lps22hb.c"],
+    hdrs = ["lps22hb.h"],
+)

@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+zephyr_cc_library(
+    name = "main",
+    srcs = ["src/main.c"],
+    visibility = ["//visibility:private"],
+    deps = ["//modules/st_pid:lsm6dsk320x_pid"],
+)
+
+# Build-only canary: RTT log backend, nRF COMP, nPM1304 charger, LPS22DF and
+# LPS22HB baros, and the ST PID alias all compile and link on nrf54l15dk.
+zephyr_app(
+    name = "nrf54_gaps",
+    testonly = True,
+    deps = [":main"],
+)
