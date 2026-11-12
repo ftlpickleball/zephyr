@@ -235,6 +235,13 @@ new_git_repository(
     remote = "https://github.com/zephyrproject-rtos/zcbor.git",
 )
 
+new_git_repository(
+    name = "segger",
+    build_file = "@zephyr//modules/segger:external.BUILD",
+    commit = "50892fdbcf2f570e67baa72b8894a66b16946f72",
+    remote = "https://github.com/zephyrproject-rtos/segger.git",
+)
+
 # BEGIN vendor_sdk (managed by scripts/ftlp/vendor_sync.py; do not hand-edit)
 # NCS v3.4.2: sdk-zephyr VERSION 4.4.2 matches this tree.
 http_archive(
@@ -313,6 +320,7 @@ zephyr_setup.env(
         "@nrfxlib//:zephyr/module.yml",
         "@sdk_edge_ai//:zephyr/module.yml",
         "@sdk_nrf//:zephyr/module.yml",
+        "@segger//:zephyr/module.yml",
     ],
 )
 use_repo(

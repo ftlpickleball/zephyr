@@ -280,6 +280,11 @@ zephyr_linker_fragment(
         "//subsys:linker_fragments",
     ] + select({
         "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_USE_SEGGER_RTT=true": [
+            "//modules/segger:linker_fragments",
+        ],
+    }) + select({
+        "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_ARM=true": [
             "//arch/arm/core:linker_fragments",
         ],
@@ -469,6 +474,11 @@ cc_library(
     }) + select({
         "@zephyr_kconfig//:CONFIG_ZCBOR=true": [
             "//modules/zcbor:headers",
+        ],
+        "//conditions:default": [],
+    }) + select({
+        "@zephyr_kconfig//:CONFIG_USE_SEGGER_RTT=true": [
+            "//modules/segger:headers",
         ],
         "//conditions:default": [],
     }),

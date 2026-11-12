@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Mirrors this directory's CMakeLists.txt, CONFIG_USE_SEGGER_RTT part.
+
+load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["external.BUILD"])
+
+alias(
+    name = "headers",
+    actual = "@segger//:headers",
+)
+
+zephyr_cc_library(
+    name = "segger",
+    srcs = [
+        "SEGGER_RTT_zephyr.c",
+        "@segger//:rtt_srcs",
+    ],
+    local_defines = ["SEGGER_RTT_ALIGNMENT=CONFIG_SEGGER_RTT_CB_ALIGNMENT"],
+    deps = [":headers"],
+)
+
+# SORT_KEY aaa as in CMake: RTT control block first in RAM.
+zephyr_linker_fragment(
+    name = "linker_fragments",
+    srcs = select({
+        "//conditions:default": [],
+        "@zephyr_kconfig//:CONFIG_SEGGER_RTT_SECTION_CUSTOM=true": [
+            "segger_rtt.ld",
+        ],
+    }),
+    location = "RAM_SECTIONS",
+    sort_key = "aaa",
+)
