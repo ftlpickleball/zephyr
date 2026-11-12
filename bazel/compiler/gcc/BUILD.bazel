@@ -44,6 +44,22 @@ selects.config_setting_group(
 )
 
 selects.config_setting_group(
+    name = "is_arm_gcc_fpu_fpv4_sp_d16",
+    match_all = [
+        ":is_arm_gcc",
+        "//toolchain/arm:is_fpu_fpv4_sp_d16",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_arm_gcc_fpu_fpv5_sp_d16",
+    match_all = [
+        ":is_arm_gcc",
+        "//toolchain/arm:is_fpu_fpv5_sp_d16",
+    ],
+)
+
+selects.config_setting_group(
     name = "is_arm_gcc_fp16_ieee",
     match_all = [
         ":is_arm_gcc",

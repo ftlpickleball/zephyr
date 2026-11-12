@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: Copyright 2026 The Pigweed Authors
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc/toolchains:args.bzl", "cc_args")
 load("@rules_cc//cc/toolchains:feature.bzl", "cc_feature")
 load("@rules_cc//cc/toolchains:toolchain.bzl", "cc_toolchain")
@@ -385,6 +386,52 @@ cc_args(
     args = ["-mfloat-abi=softfp"],
 )
 
+# -mfpu per cmake/gcc-m-fpu.cmake (single precision). M7 and other cores keep
+# the -mcpu default until a board needs them.
+cc_args(
+    name = "fpu_fpv4_sp_d16",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mfpu=fpv4-sp-d16"],
+)
+
+cc_args(
+    name = "fpu_fpv5_sp_d16",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:assembly_actions",
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = ["-mfpu=fpv5-sp-d16"],
+)
+
+selects.config_setting_group(
+    name = "is_fpu_fpv4_sp_d16",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_FPU=true",
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M4=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_m33_or_m55",
+    match_any = [
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M33=true",
+        "@zephyr_kconfig//:CONFIG_CPU_CORTEX_M55=true",
+    ],
+)
+
+selects.config_setting_group(
+    name = "is_fpu_fpv5_sp_d16",
+    match_all = [
+        "@zephyr_kconfig//:CONFIG_FPU=true",
+        ":is_m33_or_m55",
+    ],
+)
+
 cc_args(
     name = "fp16_format_ieee",
     actions = [
@@ -503,6 +550,10 @@ cc_toolchain(
     }) + select({
         "@zephyr_kconfig//:CONFIG_FP_HARDABI=true": [":float_abi_hard"],
         "@zephyr_kconfig//:CONFIG_FP_SOFTABI=true": [":float_abi_softfp"],
+        "//conditions:default": [],
+    }) + select({
+        ":is_fpu_fpv4_sp_d16": [":fpu_fpv4_sp_d16"],
+        ":is_fpu_fpv5_sp_d16": [":fpu_fpv5_sp_d16"],
         "//conditions:default": [],
     }) + select({
         "@zephyr_kconfig//:CONFIG_FP16_IEEE=true": [":fp16_format_ieee"],
