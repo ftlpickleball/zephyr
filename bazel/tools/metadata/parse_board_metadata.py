@@ -52,10 +52,14 @@ def discover_revisions_for_board(board_dir, deps):
                     with open(yml_path, "r", encoding="utf-8") as f:
                         data = yaml.safe_load(f)
                     if isinstance(data, dict):
-                        board_obj = data.get("board", data)
-                        rev_list = extract_board_revisions(data)
-                        if not rev_list and isinstance(board_obj, dict):
-                            rev_list = extract_board_revisions(board_obj)
+                        rev_list = list(extract_board_revisions(data))
+                        entries = data.get("boards")
+                        if not isinstance(entries, list):
+                            board_obj = data.get("board")
+                            entries = [board_obj] if isinstance(board_obj, dict) else []
+                        for entry in entries:
+                            if isinstance(entry, dict):
+                                rev_list.extend(extract_board_revisions(entry))
                         for r in rev_list:
                             if r and r not in revisions:
                                 revisions.append(r)

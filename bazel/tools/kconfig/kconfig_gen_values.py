@@ -41,7 +41,7 @@ def parse_args():
     parser.add_argument("--dtc-overlays", nargs="+", default=[])
     return parser.parse_args()
 
-def setup_environment(args, zephyr_base, output_dir, board_dir):
+def setup_environment(args, zephyr_base, output_dir, board_dir, *, tracker=None):
     kconfig_utils.sanitize_host_env()
     os.environ["srctree"] = zephyr_base
     os.environ["ZEPHYR_BASE"] = zephyr_base
@@ -54,6 +54,10 @@ def setup_environment(args, zephyr_base, output_dir, board_dir):
     os.environ["TOOLCHAIN_HAS_NEWLIB"] = "y"
 
     board_name, board_qualifiers, board_revision = discovery_utils.parse_board_id(args.board)
+    if not board_revision:
+        board_revision = discovery_utils.get_default_board_revision(
+            board_dir, board_name, tracker=tracker
+        )
     os.environ["BOARD"] = board_name
     os.environ["BOARD_QUALIFIERS"] = board_qualifiers
     os.environ["BOARD_REVISION"] = board_revision
@@ -1415,7 +1419,7 @@ def main():
             if found: break
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        setup_environment(args, zephyr_base, tmp_dir, board_dir)
+        setup_environment(args, zephyr_base, tmp_dir, board_dir, tracker=tracker)
 
         generate_kconfig_aggregations(zephyr_base, args, tmp_dir, board_dir, tracker=tracker)
 

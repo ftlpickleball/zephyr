@@ -15,6 +15,7 @@ exports_files([
 py_library(
     name = "discovery_utils",
     srcs = ["discovery_utils.py"],
+    deps = ["@zephyr_pip_deps//pyyaml"],
 )
 
 py_test(

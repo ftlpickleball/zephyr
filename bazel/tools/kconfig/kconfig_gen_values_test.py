@@ -138,6 +138,51 @@ class TestKconfigGenValues(unittest.TestCase):
                 os.path.join(str(self.zephyr_base), "cmake", "toolchain", "host"),
             )
 
+    def test_setup_environment_default_board_revision(self):
+        output_dir = os.path.join(self.test_dir, "out")
+        board_dir = os.path.join(self.test_dir, "boards", "vendor", "target_board")
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(board_dir, exist_ok=True)
+        board_yml = os.path.join(board_dir, "board.yml")
+        with open(board_yml, "w", encoding="utf-8") as f:
+            f.write(
+                "boards:\n"
+                "- name: target_board\n"
+                "  revision:\n"
+                "    format: custom\n"
+                "    default: revC\n"
+                "    revisions:\n"
+                "      - name: revA\n"
+                "      - name: revC\n"
+            )
+
+        args = MagicMock()
+        args.board = "target_board/test_soc/cpu0"
+        args.toolchain_variant = None
+        args.app_dir = os.path.join(self.test_dir, "app")
+        tracker = kconfig_utils.InputRecorder()
+
+        kconfig_gen_values.setup_environment(
+            args, str(self.zephyr_base), output_dir, board_dir, tracker=tracker
+        )
+
+        self.assertEqual(os.environ["BOARD"], "target_board")
+        self.assertEqual(os.environ["BOARD_QUALIFIERS"], "test_soc/cpu0")
+        self.assertEqual(os.environ["BOARD_REVISION"], "revC")
+        self.assertIn(os.path.realpath(board_yml), tracker.files)
+
+        explicit_tracker = kconfig_utils.InputRecorder()
+        args.board = "target_board@revA/test_soc/cpu0"
+        kconfig_gen_values.setup_environment(
+            args,
+            str(self.zephyr_base),
+            output_dir,
+            board_dir,
+            tracker=explicit_tracker,
+        )
+        self.assertEqual(os.environ["BOARD_REVISION"], "revA")
+        self.assertNotIn(os.path.realpath(board_yml), explicit_tracker.files)
+
     @patch('subprocess.run')
     def test_main_success(self, mock_run):
         output_dir = os.path.join(self.test_dir, "out")

@@ -176,4 +176,41 @@ def extract_board_revisions(board_dict: dict) -> list[str]:
     return result
 
 
-    return False
+def get_default_board_revision(board_dir: str, board_name: str = "", tracker=None) -> str:
+    """Returns the default revision declared in board.yml/board.yaml, or ''."""
+    if not board_dir:
+        return ""
+    try:
+        import yaml
+    except ImportError:
+        return ""
+
+    for yml_name in ("board.yml", "board.yaml"):
+        yml_path = os.path.join(board_dir, yml_name)
+        if tracker is not None:
+            tracker.add(yml_path)
+        if not os.path.isfile(yml_path):
+            continue
+        try:
+            with open(yml_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+        except Exception:
+            return ""
+        if not isinstance(data, dict):
+            return ""
+        entries = data.get("boards")
+        if not isinstance(entries, list):
+            board_obj = data.get("board", data)
+            entries = [board_obj] if isinstance(board_obj, dict) else []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            if board_name and entry.get("name") and entry.get("name") != board_name:
+                continue
+            rev_sec = entry.get("revision")
+            if isinstance(rev_sec, dict) and rev_sec.get("default"):
+                return str(rev_sec["default"])
+        if isinstance(data.get("revision"), dict) and data["revision"].get("default"):
+            return str(data["revision"]["default"])
+        break
+    return ""
