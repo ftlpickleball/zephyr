@@ -17,6 +17,10 @@ GCC_ARM_C_FLAGS = select({
     "//bazel/compiler/gcc:is_arm_gcc_fp_softabi": ["-mfloat-abi=softfp"],
 }) + select({
     "//conditions:default": [],
+    "//bazel/compiler/gcc:is_arm_gcc_fpu_fpv4_sp_d16": ["-mfpu=fpv4-sp-d16"],
+    "//bazel/compiler/gcc:is_arm_gcc_fpu_fpv5_sp_d16": ["-mfpu=fpv5-sp-d16"],
+}) + select({
+    "//conditions:default": [],
     "//bazel/compiler/gcc:is_arm_gcc_fp16_ieee": ["-mfp16-format=ieee"],
     "//bazel/compiler/gcc:is_arm_gcc_fp16_alt": ["-mfp16-format=alternative"],
 }) + select({
