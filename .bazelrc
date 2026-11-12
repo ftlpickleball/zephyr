@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Build & Toolchain configuration
+common --repo_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
+common --experimental_platform_in_output_dir=True
 build --incompatible_strict_action_env
 build --cxxopt=-std=c++17
 build --strip=never
@@ -37,3 +39,6 @@ common:remote_cache --remote_upload_local_results=false
 common:remote_cache --remote_download_outputs=toplevel
 
 common --remote_default_exec_properties=cache-silo-key=20240918
+
+# Local user overrides (https://bazel.build/configure/best-practices#bazelrc-file)
+try-import %workspace%/user.bazelrc
