@@ -40,6 +40,12 @@ _GATED_SRCS = {
     ],
     "BT_CTLR_CRYPTO": ["subsys/bluetooth/controller/crypto.c"],
     "BT_CTLR_SDC_CS_MULTIPLE_ANTENNA_SUPPORT": ["subsys/bluetooth/controller/cs_antenna_switch.c"],
+    "BT_RAS_RRSP": [
+        "subsys/bluetooth/services/ras/rrsp/ras_rd_buffer.c",
+        "subsys/bluetooth/services/ras/rrsp/ras_rrsp.c",
+    ],
+    "BT_RAS_RREQ": ["subsys/bluetooth/services/ras/rreq/ras_rreq.c"],
+    "BT_GATT_DM": ["subsys/bluetooth/gatt_dm.c"],
 }
 
 [
@@ -65,7 +71,12 @@ zephyr_module(
         "include/mpsl/*.h",
         "lib/multithreading_lock/*.h",
         "subsys/bluetooth/controller/*.h",
-    ]),
+    ]) + [
+        "include/bluetooth/gatt_dm.h",
+        "include/bluetooth/services/ras.h",
+        # RAS sources include it as "../ras_internal.h".
+        "subsys/bluetooth/services/ras/ras_internal.h",
+    ],
     config = "CONFIG_MPSL",
     includes = [
         "include",
