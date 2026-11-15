@@ -797,7 +797,7 @@
     "@@pigweed+//pw_toolchain/rust:extensions.bzl%pw_rust": {
       "general": {
         "bzlTransitiveDigest": "4mWQB45qoWs1qhdpmwVvtWp4hDSGVkNwmOveGvErbtc=",
-        "usagesDigest": "eukIZme+maJG0qtGODAeR/MfcNpdXhTx7Xa2wL5AY1E=",
+        "usagesDigest": "GBylkWPooKBz2z9nmbDlRU8i72n8mw0gODwAMB7tk7k=",
         "recordedInputs": [
           "REPO_MAPPING:pigweed+,bazel_tools bazel_tools"
         ],
@@ -823,7 +823,7 @@
             "attributes": {
               "build_file": "@@pigweed+//pw_toolchain/rust:rust_analyzer.BUILD",
               "path": "fuchsia/third_party/rust-analyzer/linux-arm64",
-              "tag": "git_revision:5f9a659c200b9c0ff9f205edf5157d636062256f"
+              "tag": "git_revision:114dcb8d6f50aca1ef14d67b831a7560362f8f69"
             }
           },
           "rust_bindgen_linux_aarch64": {
@@ -855,7 +855,7 @@
             "attributes": {
               "build_file": "@@pigweed+//pw_toolchain/rust:rust_analyzer.BUILD",
               "path": "fuchsia/third_party/rust-analyzer/linux-amd64",
-              "tag": "git_revision:5f9a659c200b9c0ff9f205edf5157d636062256f"
+              "tag": "git_revision:114dcb8d6f50aca1ef14d67b831a7560362f8f69"
             }
           },
           "rust_bindgen_linux_x86_64": {
@@ -887,7 +887,7 @@
             "attributes": {
               "build_file": "@@pigweed+//pw_toolchain/rust:rust_analyzer.BUILD",
               "path": "fuchsia/third_party/rust-analyzer/mac-arm64",
-              "tag": "git_revision:5f9a659c200b9c0ff9f205edf5157d636062256f"
+              "tag": "git_revision:114dcb8d6f50aca1ef14d67b831a7560362f8f69"
             }
           },
           "rust_bindgen_macos_aarch64": {
@@ -919,7 +919,7 @@
             "attributes": {
               "build_file": "@@pigweed+//pw_toolchain/rust:rust_analyzer.BUILD",
               "path": "fuchsia/third_party/rust-analyzer/mac-amd64",
-              "tag": "git_revision:5f9a659c200b9c0ff9f205edf5157d636062256f"
+              "tag": "git_revision:114dcb8d6f50aca1ef14d67b831a7560362f8f69"
             }
           },
           "rust_bindgen_macos_x86_64": {
