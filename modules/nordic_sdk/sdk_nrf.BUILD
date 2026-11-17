@@ -75,7 +75,7 @@ zephyr_module(
     ]) + [
         "include/bluetooth/gatt_dm.h",
         "include/bluetooth/services/ras.h",
-        # RAS sources include it as "../ras_internal.h".
+        # RAS sources include it as ../ras_internal.h (unquoted: vendor_sync reads quoted paths).
         "subsys/bluetooth/services/ras/ras_internal.h",
     ],
     config = "CONFIG_MPSL",
