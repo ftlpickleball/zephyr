@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import shutil
 import sys
 import argparse
+import hashlib
 import tempfile
 import re
 import subprocess
@@ -31,6 +33,7 @@ def parse_args():
     parser.add_argument("--modules", nargs="+", default=[])
     parser.add_argument("--board-dirs", nargs="+", default=[])
     parser.add_argument("--oot-dts-roots", nargs="+", default=[])
+    parser.add_argument("--build-files", nargs="+", default=[])
     parser.add_argument("--output", required=True)
     parser.add_argument("--jobs", "-j", type=int, default=None, help="Number of parallel processes to use for parsing")
     return parser.parse_args()
@@ -222,6 +225,7 @@ def discover_board_variants(board_dirs, soc_to_clusters, symbols, tracker):
                                         symbols[full_name] = "bool"
                 except Exception as e:
                     raise Exception("DEBUG: Failed to parse %s: %s" % (bpath, e))
+                break
 
 
 def setup_kconfig_environment(zephyr_base, tmp_dir, modules=None):
@@ -249,8 +253,7 @@ def setup_kconfig_environment(zephyr_base, tmp_dir, modules=None):
             for m in modules:
                 if os.path.isdir(m):
                     module_name = (
-                        os.path.basename(m.rstrip("/"))
-                        .split("+")[-1]
+                        kconfig_utils.module_name_from_dir(m)
                         .replace("-", "_")
                         .upper()
                     )
@@ -267,6 +270,10 @@ def generate_kconfig_scaffolding(
 
     If 'tracker' (a kconfig_utils.InputRecorder) is given, the inputs of the
     generated files are recorded.
+
+    Returns:
+        The binding files scanned to generate Kconfig.dts (see
+        kconfig_utils.generate_kconfig_dts()).
     """
     os.makedirs(tmp_dir, exist_ok=True)
 
@@ -316,9 +323,12 @@ def generate_kconfig_scaffolding(
         + [Path(m) for m in modules]
         + [Path(r) for r in oot_dts_roots]
     )
-    kconfig_utils.generate_kconfig_dts(
-        zephyr_base, os.path.join(tmp_dir, "Kconfig.dts"), dts_roots, tracker=tracker
+    kconfig_dts = os.path.join(tmp_dir, "Kconfig.dts")
+    binding_files = kconfig_utils.generate_kconfig_dts(
+        zephyr_base, kconfig_dts, dts_roots, tracker=tracker
     )
+    if not os.path.exists(kconfig_dts):
+        Path(kconfig_dts).touch()
 
     # Mock currently unsupported parts of the Kconfig tree
     for f_name in [
@@ -330,6 +340,43 @@ def generate_kconfig_scaffolding(
     ]:
         with open(os.path.join(tmp_dir, f_name), "w") as f:
             f.write("# Dummy\n")
+
+    return binding_files
+
+
+_SHARED_SCAFFOLDING_FILES = (
+    os.path.join("soc", "Kconfig.defconfig"),
+    os.path.join("soc", "Kconfig"),
+    os.path.join("soc", "Kconfig.soc"),
+    os.path.join("soc", "Kconfig.sysbuild"),
+    os.path.join("boards", "Kconfig.defconfig"),
+    os.path.join("boards", "Kconfig"),
+    os.path.join("boards", "Kconfig.sysbuild"),
+    "Kconfig.modules",
+    "Kconfig.dts",
+    "Kconfig.defconfig",
+    "Kconfig.board",
+    "Kconfig.sysbuild.modules",
+    "Kconfig.shield",
+    "Kconfig.shield.defconfig",
+)
+
+
+def _link_kconfig_scaffolding(src_dir, dst_dir):
+    """Hardlinks (or copies) pre-generated Kconfig scaffolding into dst_dir."""
+    for sub in ("soc", "boards", "arch"):
+        os.makedirs(os.path.join(dst_dir, sub), exist_ok=True)
+    for rel in _SHARED_SCAFFOLDING_FILES:
+        src = os.path.join(src_dir, rel)
+        dst = os.path.join(dst_dir, rel)
+        if not os.path.exists(src):
+            continue
+        if os.path.exists(dst):
+            os.unlink(dst)
+        try:
+            os.link(src, dst)
+        except OSError:
+            shutil.copyfile(src, dst)
 
 
 def parse_arch_symbols(
@@ -351,9 +398,18 @@ def parse_arch_symbols(
 
     # Scaffolding must be arch-specific to avoid conflicts during parallel execution
     setup_kconfig_environment(zephyr_base, arch_tmp_dir, modules)
-    generate_kconfig_scaffolding(
-        arch_tmp_dir, zephyr_base, soc_dirs, board_dirs, modules, oot_dts_roots, tracker=deps
-    )
+    if os.path.exists(os.path.join(global_tmp_dir, "Kconfig.modules")):
+        _link_kconfig_scaffolding(global_tmp_dir, arch_tmp_dir)
+    else:
+        generate_kconfig_scaffolding(
+            arch_tmp_dir,
+            zephyr_base,
+            soc_dirs,
+            board_dirs,
+            modules,
+            oot_dts_roots,
+            tracker=deps,
+        )
 
     symbols = {}
     warnings_list = []
@@ -438,12 +494,26 @@ def parse_kconfig_authoritative(
     kconfig_files,
     jobs=None,
     tracker=None,
+    binding_files=None,
 ):
     """Uses kconfiglib to perform an authoritative parse for each architecture in parallel.
 
     If 'tracker' (a kconfig_utils.InputRecorder) is given, the inputs of every
-    per-arch parse are merged into it.
+    per-arch parse are merged into it. If 'binding_files' (a set) is given, the
+    binding files scanned to generate Kconfig.dts are added to it.
     """
+    scanned_bindings = generate_kconfig_scaffolding(
+        tmp_dir,
+        zephyr_base,
+        soc_dirs,
+        board_dirs,
+        modules,
+        oot_dts_roots,
+        tracker=tracker,
+    )
+    if binding_files is not None:
+        binding_files.update(scanned_bindings)
+
     if jobs == 1:
         results = [
             parse_arch_symbols(
@@ -477,23 +547,122 @@ def parse_kconfig_authoritative(
     for arch, arch_symbols, arch_warnings, arch_kconfig_files, arch_inputs in results:
         warnings_list.extend(arch_warnings)
         kconfig_files.update(arch_kconfig_files)
-        tracker.update(arch_inputs)
+        if tracker is not None:
+            tracker.update(arch_inputs)
         for name, stype in arch_symbols.items():
             if name not in symbols or (stype != "bool" and symbols[name] == "bool"):
                 symbols[name] = stype
 
 
-def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, symbol_settings, kconfig_files, tracker):
+def _scan_build_or_bzl_content(
+    content,
+    symbols,
+    symbol_settings,
+    referenced_symbols=None,
+    untyped_symbols=None,
+):
+    """Extracts Kconfig symbol references and settings from BUILD/.bzl content."""
+    for match in re.finditer(
+        r"@zephyr_kconfig//:(CONFIG_[A-Za-z0-9_]+)(?:=([^\"\'\s,\]\)]+)|[\"\']\s*:\s*[\"\']([^\"\']*)[\"\'])?",
+        content,
+    ):
+        sym_name = match.group(1)
+        eq_val = match.group(2)
+        colon_val = match.group(3)
+        sym_val = eq_val if eq_val is not None else colon_val
+        if referenced_symbols is not None:
+            referenced_symbols.add(sym_name)
+        if eq_val == "%d":
+            symbols[sym_name] = "int"
+            if untyped_symbols is not None:
+                untyped_symbols.discard(sym_name)
+            for rng_match in re.finditer(
+                r"for\s+[A-Za-z_][A-Za-z0-9_]*\s+in\s+range\(\s*(\d+)\s*,\s*(\d+)\s*\)",
+                content[match.end() : match.end() + 250],
+            ):
+                for n in range(
+                    int(rng_match.group(1)),
+                    int(rng_match.group(2)),
+                ):
+                    symbol_settings[sym_name].add(str(n))
+                break
+            continue
+        if sym_name not in symbols:
+            if sym_val and (
+                sym_val.isdigit() or sym_val.startswith("0x")
+            ):
+                symbols[sym_name] = "int"
+            elif sym_val is not None and sym_val not in ["true", "false"]:
+                symbols[sym_name] = "string"
+            else:
+                symbols[sym_name] = "bool"
+                if sym_val is None and untyped_symbols is not None:
+                    untyped_symbols.add(sym_name)
+        elif (
+            untyped_symbols is not None
+            and sym_name in untyped_symbols
+            and sym_val
+            and (sym_val.isdigit() or sym_val.startswith("0x"))
+        ):
+            symbols[sym_name] = "int"
+            untyped_symbols.discard(sym_name)
+
+        if eq_val:
+            symbol_settings[sym_name].add(eq_val)
+
+    if referenced_symbols is not None:
+        for match in re.finditer(r"\b(CONFIG_[A-Za-z0-9_]+)\b", content):
+            sym_name = match.group(1)
+            referenced_symbols.add(sym_name)
+            if sym_name not in symbols:
+                symbols[sym_name] = "bool"
+                if untyped_symbols is not None:
+                    untyped_symbols.add(sym_name)
+
+
+def scan_files_for_dynamic_symbols(
+    zephyr_base,
+    board_dirs,
+    modules,
+    symbols,
+    symbol_settings,
+    kconfig_files,
+    tracker,
+    referenced_symbols=None,
+    extra_build_files=None,
+):
     """Scans files for symbols that might not be visible in the static Kconfig tree.
 
     Every directory walked, missing search dir and file read is recorded in 'tracker'.
     """
     untyped_symbols = set()
-    search_dirs = [zephyr_base] + list(board_dirs) + list(modules)
-    for d in search_dirs:
+    build_files_to_scan = []
+    raw_search_dirs = [zephyr_base] + list(board_dirs) + list(modules)
+    standalone_build_files = []
+    for fpath in extra_build_files or []:
+        if os.path.isdir(fpath):
+            raw_search_dirs.append(fpath)
+        elif os.path.basename(fpath) in ("BUILD", "BUILD.bazel") and os.path.dirname(fpath):
+            raw_search_dirs.append(os.path.dirname(fpath))
+        else:
+            standalone_build_files.append(fpath)
+
+    search_dirs = []
+    seen_real_dirs = []
+    for d in raw_search_dirs:
         if not os.path.isdir(d):
             tracker.add(d)
             continue
+        real_d = os.path.realpath(d)
+        if any(
+            real_d == seen or real_d.startswith(seen.rstrip(os.sep) + os.sep)
+            for seen in seen_real_dirs
+        ):
+            continue
+        seen_real_dirs.append(real_d)
+        search_dirs.append(d)
+
+    for d in search_dirs:
         for root, dirs, files in kconfig_utils.filtered_walk(d, tracker=tracker):
             for fname in files:
                 if fname == "Kconfig" or fname.startswith("Kconfig."):
@@ -586,53 +755,90 @@ def scan_files_for_dynamic_symbols(zephyr_base, board_dirs, modules, symbols, sy
                     except:
                         pass
                 elif fname in ["BUILD.bazel", "BUILD"] or fname.endswith(".bzl") or fname.endswith(".BUILD"):
-                    tracker.add(os.path.join(root, fname))
+                    fpath = os.path.join(root, fname)
+                    # Recorded whether or not it references a symbol yet, so that adding the
+                    # first CONFIG_ reference re-runs the rule.
+                    tracker.add(fpath)
+                    build_files_to_scan.append(fpath)
+                elif fname.endswith((".yaml", ".yml")) and (
+                    os.sep + "dts" + os.sep + "bindings" + os.sep
+                ) in (os.sep + root + os.sep):
+                    fpath = os.path.join(root, fname)
+                    tracker.add(fpath)
                     try:
-                        with open(os.path.join(root, fname), "r", errors="ignore") as f:
+                        with open(fpath, "r", errors="ignore") as f:
                             content = f.read()
-                            for match in re.finditer(
-                                r"@zephyr_kconfig//:(CONFIG_[A-Za-z0-9_]+)(?:=([^\"\s,\]\)]+))?",
-                                content,
+                        # Extract the devicetree binding's `compatible:` string
+                        # (e.g. `compatible: "vnd,foo-bar"`) so we can pre-register
+                        # the corresponding `CONFIG_DT_HAS_<COMPAT>_ENABLED` bool
+                        # flag generated in `Kconfig.dts`.
+                        for match in re.finditer(
+                            r"^\s*compatible\s*:\s*['\"]?([a-zA-Z0-9_,.\-@/+]+)['\"]?",
+                            content,
+                            re.MULTILINE,
+                        ):
+                            # Sanitize non-alphanumeric characters (such as `,` and
+                            # `-`) to `_` and uppercase to match Zephyr's DT-to-Kconfig
+                            # identifier conversion (e.g. `vnd,foo-bar` -> `VND_FOO_BAR`).
+                            compat_ident = re.sub(
+                                r"[^a-zA-Z0-9]", "_", match.group(1)
+                            ).upper()
+                            full_name = f"CONFIG_DT_HAS_{compat_ident}_ENABLED"
+                            if (
+                                full_name not in symbols
+                                or full_name in untyped_symbols
                             ):
-                                sym_name = match.group(1)
-                                sym_val = match.group(2)
-                                if sym_name not in symbols:
-                                    if sym_val and (
-                                        sym_val.isdigit() or sym_val.startswith("0x")
-                                    ):
-                                        symbols[sym_name] = "int"
-                                    elif sym_val and sym_val not in ["true", "false"]:
-                                        symbols[sym_name] = "string"
-                                    else:
-                                        symbols[sym_name] = "bool"
-                                elif sym_val and (
-                                    sym_val.isdigit() or sym_val.startswith("0x")
-                                ):
-                                    symbols[sym_name] = "int"
-
-                                if sym_val:
-                                    symbol_settings[sym_name].add(sym_val)
+                                symbols[full_name] = "bool"
+                                untyped_symbols.discard(full_name)
                     except:
                         pass
 
+    for fpath in standalone_build_files:
+        tracker.add(fpath)
+        build_files_to_scan.append(fpath)
 
-def write_bazel_build_file(output_file, symbols, symbol_settings):
+    for fpath in build_files_to_scan:
+        try:
+            with open(fpath, "r", errors="ignore") as f:
+                content = f.read()
+        except OSError:
+            continue
+        if "CONFIG_" in content:
+            _scan_build_or_bzl_content(
+                content,
+                symbols,
+                symbol_settings,
+                referenced_symbols,
+                untyped_symbols,
+            )
+
+
+def write_bazel_build_file(
+    output_file, symbols, symbol_settings, referenced_symbols=None
+):
     """Writes the discovered symbols into a BUILD.bazel file as Bazel flags."""
+    active_symbols = (
+        {k: v for k, v in symbols.items() if k in referenced_symbols}
+        if referenced_symbols is not None
+        else symbols
+    )
+    sorted_names = sorted(active_symbols.keys())
+
     with open(output_file, "w") as f:
         f.write(
             'load("@bazel_skylib//rules:common_settings.bzl", "bool_flag", "int_flag", "string_flag")\n'
         )
         f.write('load("@rules_cc//cc:defs.bzl", "cc_library")\n')
-        f.write('load("@zephyr//bazel:cc.bzl", "zephyr_cc_library")\n\n')
+        f.write('load("@zephyr//bazel:cc_library.bzl", "zephyr_cc_library")\n\n')
         f.write('package(default_visibility = ["//visibility:public"])\n\n')
-        f.write('exports_files(["local_modules.bzl"])\n\n')
+        f.write('exports_files(["symbols.txt", "Kconfig.dts"])\n\n')
         f.write("zephyr_cc_library(\n")
         f.write('    name = "kconfig_warnings",\n')
         f.write('    srcs = ["kconfig_warnings.c"],\n')
         f.write(")\n\n")
 
-        for name in sorted(symbols.keys()):
-            stype = symbols[name]
+        for name in sorted_names:
+            stype = active_symbols[name]
             if stype == "bool":
                 f.write(
                     'bool_flag(name = "%s", build_setting_default = False)\n' % name
@@ -651,6 +857,43 @@ def write_bazel_build_file(output_file, symbols, symbol_settings):
                     % (name, val, name, val)
                 )
 
+    output_dir = os.path.dirname(os.path.abspath(output_file))
+    symbols_file = os.path.join(output_dir, "symbols.txt")
+    with open(symbols_file, "w") as f:
+        if sorted_names:
+            f.write("\n".join(sorted_names) + "\n")
+
+
+def kconfig_inputs_digest(paths, zephyr_base, output_dir, tmp_dir):
+    """Returns the SHA-256 over the checkout-independent paths and contents of `paths`.
+
+    Files under `tmp_dir` (generated scaffolding) are skipped. Paths under
+    `zephyr_base` are named `zephyr/<relpath>`, others relative to `output_dir`
+    (see kconfig_utils.clean_output_path()), since the result is stored in
+    --repo_contents_cache.
+    """
+    abs_tmp_prefix = os.path.abspath(tmp_dir) + os.sep
+    real_tmp_prefix = os.path.realpath(tmp_dir) + os.sep
+    zephyr_real_prefix = os.path.realpath(zephyr_base) + os.sep
+    entries = {}
+    for path in paths:
+        if (os.path.abspath(path) + os.sep).startswith(abs_tmp_prefix):
+            continue
+        real = os.path.realpath(path)
+        if real in entries or real.startswith(real_tmp_prefix):
+            continue
+        if real.startswith(zephyr_real_prefix):
+            name = "zephyr/" + os.path.relpath(real, zephyr_real_prefix)
+        else:
+            name = kconfig_utils.clean_output_path(real, output_dir)
+        try:
+            with open(real, "rb") as fp:
+                content_digest = hashlib.file_digest(fp, "sha256").hexdigest()
+        except OSError:
+            content_digest = "missing"
+        entries[real] = f"{name.replace(os.sep, '/')} {content_digest}"
+    return hashlib.sha256("\n".join(sorted(entries.values())).encode("utf-8")).hexdigest()
+
 
 def main():
     args = parse_args()
@@ -658,7 +901,9 @@ def main():
     zephyr_base = os.path.abspath(args.zephyr_base)
     symbols = {}
     symbol_settings = collections.defaultdict(set)
+    referenced_symbols = set()
     kconfig_files = set()
+    binding_files = set()
     # Every input of this run, written to deps.txt and dep_dirs.txt.
     deps = kconfig_utils.InputRecorder()
 
@@ -695,18 +940,48 @@ def main():
             kconfig_files,
             jobs=args.jobs,
             tracker=deps,
+            binding_files=binding_files,
         )
 
-        # 4. Fallback: Scan files for dynamic symbols
+        # 4. Fallback: Scan files for dynamic symbols and BUILD/.bzl references
         scan_files_for_dynamic_symbols(
-            zephyr_base, args.board_dirs, args.modules, symbols, symbol_settings, kconfig_files, tracker=deps
+            zephyr_base,
+            args.board_dirs,
+            args.modules,
+            symbols,
+            symbol_settings,
+            kconfig_files,
+            tracker=deps,
+            referenced_symbols=referenced_symbols,
+            extra_build_files=args.build_files,
         )
 
-        # 5. Generate BUILD.bazel
-        write_bazel_build_file(args.output, symbols, symbol_settings)
+        # 5. Generate BUILD.bazel and symbols.txt
+        write_bazel_build_file(
+            args.output,
+            symbols,
+            symbol_settings,
+            referenced_symbols=referenced_symbols,
+        )
 
         # Python code that ran in this process; the per-arch parses reported theirs.
         output_dir = os.path.dirname(os.path.abspath(args.output))
+        kconfig_dts_src = os.path.join(tmp_dir, "Kconfig.dts")
+        kconfig_dts_dst = os.path.join(output_dir, "Kconfig.dts")
+        if os.path.exists(kconfig_dts_src):
+            shutil.copyfile(kconfig_dts_src, kconfig_dts_dst)
+        else:
+            Path(kconfig_dts_dst).touch()
+        # Digest of the paths and contents of every Kconfig file read and every binding scanned
+        # for Kconfig.dts, so that @zc_* (which watches Kconfig.dts) re-runs when a global Kconfig
+        # file or a binding is edited, added or removed, even if the generated DT_COMPAT_* symbols
+        # stay the same (e.g. a bus variant of an existing compatible, an out-of-tree binding
+        # overriding an in-tree compatible, or a shared base binding without `compatible:`).
+        kconfig_hash = kconfig_inputs_digest(
+            set(kconfig_files) | binding_files, zephyr_base, output_dir, tmp_dir
+        )
+        with open(kconfig_dts_dst, "a", encoding="utf-8") as f:
+            f.write(f"\n# kconfig_inputs_sha256: {kconfig_hash}\n")
         deps.add_python_modules(os.path.join(zephyr_base, "scripts"), os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         deps.add(*kconfig_files)
         deps.write(output_dir=output_dir, exclude_dirs=[tmp_dir])

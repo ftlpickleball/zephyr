@@ -8,12 +8,76 @@ load("//bazel/private:deps.bzl", "label_path", "new_tracker", "read_path_list", 
 load("//bazel/private:kconfig_args.bzl", "get_kconfig_args", "resolve_module_roots")
 load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
 
+# Suffixes of the @zephyr inputs recorded by kconfig_gen_values.py that zc_* watches per file: DTS,
+# conf, header and Python files, hardware and module metadata, the `version.h.in` template of
+# `app_version.h`, and sysbuild Kconfig files (`Kconfig.sysbuild` is not parsed by
+# kconfig_gen_symbols.py, so `kconfig_inputs_sha256` does not cover it).
+_ZC_ZEPHYR_DEP_SUFFIXES = (
+    ".dts",
+    ".dtsi",
+    ".overlay",
+    ".conf",
+    "_defconfig",
+    ".h",
+    ".py",
+    "/board.yml",
+    "/board.yaml",
+    "/soc.yml",
+    "/soc.yaml",
+    "/archs.yml",
+    "/module.yml",
+    "/module.yaml",
+    "/version.h.in",
+    "/Kconfig.sysbuild",
+)
+
+# Substrings of the @zephyr inputs that zc_* watches per file: matched bindings, and the sysbuild
+# Kconfig tree (`share/sysbuild/Kconfig` and the files it sources), which `@zephyr_kconfig` does not
+# parse either.
+_ZC_ZEPHYR_DEP_SUBSTRINGS = (
+    "/dts/bindings/",
+    "/share/sysbuild/",
+)
+
+def filter_zc_deps(raw_deps, zephyr_real_prefix, priority_prefixes):
+    """Returns the recorded inputs of a zc_* repository that it watches per file.
+
+    Inputs outside @zephyr, and @zephyr inputs under one of `priority_prefixes` (the application,
+    board and sysbuild application directories), are always kept. Other @zephyr inputs are only
+    kept when they match `_ZC_ZEPHYR_DEP_SUFFIXES` or `_ZC_ZEPHYR_DEP_SUBSTRINGS`: the contents and
+    the set of the global Kconfig files and bindings are covered by the `# kconfig_inputs_sha256:`
+    line of `@zephyr_kconfig//:Kconfig.dts`, which every zc_* repository watches.
+
+    Args:
+        raw_deps: Realpaths listed in the generator's `deps.txt`.
+        zephyr_real_prefix: Realpath of the @zephyr root, with a trailing `/`.
+        priority_prefixes: Realpaths of directories, each with a trailing `/`, whose inputs are
+            always kept.
+
+    Returns:
+        The kept realpaths, in their original order.
+    """
+    return [
+        d
+        for d in raw_deps
+        if (
+            not d.startswith(zephyr_real_prefix) or
+            any([d.startswith(pref) for pref in priority_prefixes]) or
+            d.endswith(_ZC_ZEPHYR_DEP_SUFFIXES) or
+            any([s in d for s in _ZC_ZEPHYR_DEP_SUBSTRINGS])
+        )
+    ]
+
 def _gen_zephyr_config_impl(rctx):
     # Inputs in other repositories are recorded first: they are the only ones that make
     # re-verification expensive (see deps.bzl). The context holds what all configurations share
     # (module roots, OOT DTS roots, pin files); per-configuration data comes from attributes, so
     # discovering a new app or board does not invalidate existing configurations.
     context = json.decode(rctx.read(rctx.attr._context))
+    rctx.watch(rctx.attr._kconfig_symbols)
+    rctx.watch(rctx.attr._kconfig_dts)
+    kconfig_symbols_path = str(rctx.path(rctx.attr._kconfig_symbols))
+    kconfig_dts_path = str(rctx.path(rctx.attr._kconfig_dts))
     tracker = new_tracker(rctx)
     zephyr_root = repo_root(tracker, Label("//:BUILD.bazel"))
     zephyr_root_path = str(zephyr_root)
@@ -32,6 +96,11 @@ def _gen_zephyr_config_impl(rctx):
         norm_app = normalize_app_label(rctx.attr.app_label)
         fail("App %s (normalized: %s) not found in discovery index." % (rctx.attr.app_label, norm_app))
     app_dir_path = str(label_path(tracker, rctx.attr.app_dir).dirname)
+    sysbuild_app_dir_path = (
+        str(label_path(tracker, rctx.attr.sysbuild_app_dir).dirname)
+        if rctx.attr.sysbuild_app_dir
+        else None
+    )
 
     if not rctx.attr.board_dir:
         fail("Board %s not found in discovery index" % rctx.attr.board_id)
@@ -63,22 +132,27 @@ def _gen_zephyr_config_impl(rctx):
             ov_path = rctx.path(ov)
         resolved_dtc_overlays.append(str(ov_path))
 
+    resolved_forced_conf_fragments = []
     if rctx.attr.extra_kconfig:
         rctx.file("sysbuild_generated.conf", rctx.attr.extra_kconfig)
-        resolved_conf_fragments.append(str(rctx.path("sysbuild_generated.conf")))
+        resolved_forced_conf_fragments.append(str(rctx.path("sysbuild_generated.conf")))
 
     args = get_kconfig_args(
         script = kconfig_gen_values_py,
         zephyr_root = zephyr_root_path,
         modules = resolved_modules,
         app_dir = app_dir_path,
+        sysbuild_app_dir = sysbuild_app_dir_path,
         board = rctx.attr.board_id,
         board_dir = board_dir_path,
         parent_platform = rctx.attr.parent_platform,
         output_dir = ".",
         app_name = rctx.attr.app_label.name,
         oot_dts_roots = resolved_oot_dts_roots,
+        kconfig_symbols_file = kconfig_symbols_path,
+        kconfig_dts_file = kconfig_dts_path,
         conf_fragments = resolved_conf_fragments,
+        forced_conf_fragments = resolved_forced_conf_fragments,
         dtc_overlays = resolved_dtc_overlays,
         toolchain_variant = rctx.attr.toolchain_variant,
     )
@@ -90,18 +164,30 @@ def _gen_zephyr_config_impl(rctx):
         fail("Zephyr config generation failed: %s" % result.stderr)
 
     # The generator lists every file it read (plus probed candidates that don't exist) and every
-    # directory whose listing matters, as realpaths. Only mutable locations get watched.
-    deps = (read_path_list(rctx, rctx.path("deps.txt")) or []) + [
+    # directory whose listing matters, as realpaths. Only mutable locations get watched, and
+    # @zephyr inputs are filtered by filter_zc_deps().
+    raw_deps = read_path_list(rctx, rctx.path("deps.txt")) or []
+    zephyr_real_prefix = str(zephyr_root.realpath) + "/"
+    priority_prefixes = [
+        realpath_of(rctx.path(p)) + "/"
+        for p in ([app_dir_path, board_dir_path] + ([sysbuild_app_dir_path] if sysbuild_app_dir_path else []))
+    ]
+    priority_deps = [
         realpath_of(p)
         for p in [kconfig_gen_values_py, kconfig_utils_py]
     ] + [
         realpath_of(rctx.path(f))
         for f in resolved_conf_fragments + resolved_dtc_overlays
+    ] + filter_zc_deps(raw_deps, zephyr_real_prefix, priority_prefixes)
+    raw_dirs = read_path_list(rctx, rctx.path("dep_dirs.txt")) or []
+    dep_dirs = [
+        d
+        for d in raw_dirs
+        if not d.startswith(zephyr_real_prefix) or any([d.startswith(pref) for pref in priority_prefixes])
     ]
-    dep_dirs = read_path_list(rctx, rctx.path("dep_dirs.txt")) or []
 
     watch_pins(tracker, context["pin_files"])
-    watch_deps(tracker, files = deps, dirs = dep_dirs)
+    watch_deps(tracker, priority_files = priority_deps, dirs = dep_dirs)
 
     rctx.delete("deps.txt")
     rctx.delete("dep_dirs.txt")
@@ -122,6 +208,10 @@ gen_zephyr_config = repository_rule(
             doc = "Canonical label of the BUILD file of the application's package, from discovery. " +
                   "Empty if the application was not discovered.",
         ),
+        "sysbuild_app_dir": attr.string(
+            doc = "Canonical label of the BUILD file of the parent sysbuild application's package " +
+                  "for companion images (e.g. mcuboot), if any.",
+        ),
         "board_id": attr.string(mandatory = True),
         "board_dir": attr.string(
             doc = "Canonical label of the BUILD file of the board's package, from discovery. " +
@@ -133,6 +223,8 @@ gen_zephyr_config = repository_rule(
         "extra_kconfig": attr.string(),
         "toolchain_variant": attr.string(default = ""),
         "_context": attr.label(default = "@zephyr_state//:context.json"),
+        "_kconfig_symbols": attr.label(default = "@zephyr_kconfig//:symbols.txt"),
+        "_kconfig_dts": attr.label(default = "@zephyr_kconfig//:Kconfig.dts"),
         "_kconfig_gen_values_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_values.py"),
         "_pip_deps": attr.label_list(
             default = [

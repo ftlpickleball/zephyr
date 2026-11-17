@@ -2,7 +2,7 @@
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("//bazel:cc.bzl", "zephyr_soc_library")
+load("//bazel:cc.bzl", "zephyr_cc_library", "zephyr_soc_library")
 load("//bazel:linker_fragment.bzl", "zephyr_linker_fragment")
 
 package(default_visibility = ["//:__subpackages__"])
@@ -52,7 +52,7 @@ zephyr_soc_library(
     }),
 )
 
-cc_library(
+zephyr_cc_library(
     name = "max32_config_riscv_deps",
     srcs = [
         "soc_irq_rv32.S",
@@ -68,10 +68,8 @@ cc_library(
     includes = ["."],
     visibility = ["//visibility:public"],
     deps = [
-        "//:autoconf_library",
         "//:hal_soc_headers_library",
         "//:offsets_header_lib",
-        "//include:zephyr",
     ],
 )
 

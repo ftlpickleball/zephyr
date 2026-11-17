@@ -220,5 +220,35 @@ class TestDiscoveryUtils(unittest.TestCase):
             [existing[1], existing[0]],
         )
 
+    def test_get_default_board_revision_boards_list_and_board_dict(self):
+        b1 = os.path.join(self.test_dir, "b_list")
+        os.makedirs(b1)
+        with open(os.path.join(b1, "board.yml"), "w") as f:
+            f.write(
+                "boards:\n"
+                "- name: other_board\n"
+                "  revision:\n"
+                "    default: revA\n"
+                "- name: target_board\n"
+                "  revision:\n"
+                "    default: revC\n"
+                "    revisions:\n"
+                "      - name: revA\n"
+                "      - name: revC\n"
+            )
+        self.assertEqual(
+            discovery_utils.get_default_board_revision(b1, "target_board"),
+            "revC",
+        )
+
+        b2 = os.path.join(self.test_dir, "b_single")
+        os.makedirs(b2)
+        with open(os.path.join(b2, "board.yaml"), "w") as f:
+            f.write("board:\n  name: single\n  revision:\n    default: 1.0.0\n")
+        self.assertEqual(
+            discovery_utils.get_default_board_revision(b2, "single"),
+            "1.0.0",
+        )
+
 if __name__ == '__main__':
     unittest.main()

@@ -46,13 +46,18 @@ def get_kconfig_args(
         output = None,
         output_dir = None,
         app_dir = None,
+        sysbuild_app_dir = None,
         board = None,
         board_dir = None,
         parent_platform = None,
         app_name = None,
         board_dirs = [],
         oot_dts_roots = [],
+        build_files = [],
+        kconfig_symbols_file = None,
+        kconfig_dts_file = None,
         conf_fragments = [],
+        forced_conf_fragments = [],
         dtc_overlays = [],
         toolchain_variant = None):
     args = [
@@ -66,6 +71,8 @@ def get_kconfig_args(
         args.extend(["--output-dir", output_dir])
     if app_dir:
         args.extend(["--app-dir", app_dir])
+    if sysbuild_app_dir:
+        args.extend(["--sysbuild-app-dir", sysbuild_app_dir])
     if board:
         args.extend(["--board", board])
     if board_dir:
@@ -87,9 +94,22 @@ def get_kconfig_args(
         args.append("--oot-dts-roots")
         args.extend(oot_dts_roots)
 
+    if build_files:
+        args.append("--build-files")
+        args.extend(build_files)
+
+    if kconfig_symbols_file:
+        args.extend(["--kconfig-symbols-file", str(kconfig_symbols_file)])
+
+    if kconfig_dts_file:
+        args.extend(["--kconfig-dts-file", str(kconfig_dts_file)])
+
     if conf_fragments:
         args.append("--conf-fragments")
         args.extend(conf_fragments)
+    if forced_conf_fragments:
+        args.append("--forced-conf-fragments")
+        args.extend(forced_conf_fragments)
 
     if dtc_overlays:
         args.append("--dtc-overlays")

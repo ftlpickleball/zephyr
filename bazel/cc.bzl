@@ -4,9 +4,22 @@
 load("@bazel_skylib//rules:copy_file.bzl", "copy_file")
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
-load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc/common:cc_common.bzl", "cc_common")
 load("@rules_cc//cc/common:cc_info.bzl", "CcInfo")
+load(
+    "//bazel:cc_library.bzl",
+    _if_compiler_is_clang = "if_compiler_is_clang",
+    _if_compiler_is_gcc = "if_compiler_is_gcc",
+    _if_linker_is_clang = "if_linker_is_clang",
+    _if_linker_is_gcc = "if_linker_is_gcc",
+    _if_zephyr_platform = "if_zephyr_platform",
+    _manual_tags = "manual_tags",
+    _with_zephyr_compatible = "with_zephyr_compatible",
+    _zephyr_cc_library = "zephyr_cc_library",
+    _zephyr_freestanding_library = "zephyr_freestanding_library",
+    _zephyr_module = "zephyr_module",
+    _zephyr_soc_library = "zephyr_soc_library",
+)
 load("//bazel:defs.bzl", "gen_kobject_placeholders", "userspace_gperf_hash_files")
 load("//bazel:linker_fragment.bzl", "generate_app_smem_aligned_linker")
 load("//bazel:rename_kobject_hash_sections.bzl", "rename_kobject_sections")
@@ -16,197 +29,79 @@ load("//bazel:elf_to_bin.bzl", "elf_to_bin")
 load("//bazel:runfiles.bzl", "resolve_runfiles_path")
 load("//bazel:runner.bzl", "zephyr_runners_yaml")
 load("//bazel/private:zephyr_transition.bzl", "zephyr_transition")
-load("@zephyr_index//:index.bzl", "LOCAL_MODULES")
-load("//bazel:compatibility.bzl", "zephyr")
 
-def if_compiler_is_clang(then, *, otherwise = []):
-    return select({
-        Label("//:compiler_is_clang"): then,
-        "//conditions:default": otherwise,
-    })
+if_compiler_is_clang = _if_compiler_is_clang
+if_compiler_is_gcc = _if_compiler_is_gcc
+if_linker_is_clang = _if_linker_is_clang
+if_linker_is_gcc = _if_linker_is_gcc
+with_zephyr_compatible = _with_zephyr_compatible
+zephyr_cc_library = _zephyr_cc_library
+zephyr_freestanding_library = _zephyr_freestanding_library
+zephyr_module = _zephyr_module
+zephyr_soc_library = _zephyr_soc_library
 
-def if_compiler_is_gcc(then, *, otherwise = []):
-    return select({
-        Label("//:compiler_is_gcc"): then,
-        "//conditions:default": otherwise,
-    })
+_RUST_TOOLCHAIN_TYPE = "@rules_rust//rust:toolchain_type"
 
-def if_linker_is_clang(then, *, otherwise = []):
-    return select({
-        Label("//:linker_is_clang"): then,
-        "//conditions:default": otherwise,
-    })
+def _rust_runtime_library_paths(ctx):
+    """Returns the paths of the Rust toolchain's runtime libraries.
 
-def if_linker_is_gcc(then, *, otherwise = []):
-    return select({
-        Label("//:linker_is_gcc"): then,
-        "//conditions:default": otherwise,
-    })
-
-def zephyr_soc_library(*, name, **kwargs):
-    """
-    A macro that builds a SOC with Zephyr-specific dependencies and options.
+    rules_rust adds the Rust runtime libraries (core, alloc,
+    compiler_builtins, ...) and the toolchain's allocator library to the
+    CcInfo of every rust_library (rlib), so C/C++ binaries can link rlibs.
+    Like libc and the compiler runtime, these must be linked lazily: forcing
+    them into --whole-archive pulls in every object, whose references (e.g.
+    alloc's references to the global allocator) must then all resolve, and
+    compiler_builtins' definitions would take precedence over the C
+    toolchain's runtime library.
 
     Args:
-        name: The name of the library
-        **kwargs: Keyword arguments to pass to the cc_library rule.
+        ctx: The rule context.
+
+    Returns:
+        A dict whose keys are the paths of the runtime library archives.
     """
-    srcs = kwargs.pop("srcs", []) + [
-        Label("//:hal_soc_extra_srcs"),
-    ]
-    user_deps = kwargs.pop("deps", [])
-    base_deps = user_deps + [
-        Label("//:internal_zephyr_soc_mandatory_deps"),
-        Label("//:arch_headers_library"),
-        Label("//:hal_soc_headers_library"),
-        Label("//:arch_specific_deps"),
-    ]
-    features = kwargs.pop("features", []) + ["zephyr_warning_suppressions"]
+    rust_toolchain = ctx.toolchains[_RUST_TOOLCHAIN_TYPE]
+    if not rust_toolchain:
+        return {}
+    paths = {}
+    for field in [
+        "libstd_and_allocator_ccinfo",
+        "libstd_and_global_allocator_ccinfo",
+        "nostd_and_global_allocator_ccinfo",
+    ]:
+        cc_info = getattr(rust_toolchain, field, None)
+        if not cc_info or not cc_info.linking_context:
+            continue
+        for linker_input in cc_info.linking_context.linker_inputs.to_list():
+            for lib in linker_input.libraries:
+                for f in [lib.static_library, lib.pic_static_library]:
+                    if f:
+                        paths[f.path] = True
+    return paths
 
-    implementation_deps = kwargs.pop("implementation_deps", [])
-    copts = kwargs.pop("copts", [])
-    cxxopts = kwargs.pop("cxxopts", [])
-    defines = kwargs.pop("defines", [])
-    additional_compiler_inputs = kwargs.pop("additional_compiler_inputs", [])
-    hdrs = kwargs.get("hdrs", [])
-    includes = kwargs.get("includes", [])
-    visibility = kwargs.get("visibility", None)
+def _toolchain_runtime_library_flags(cc_toolchain, feature_configuration):
+    """Returns the C toolchain's runtime library flags (e.g. -lc, -lm).
 
-    cc_library(
-        name = name + "_hdrs",
-        hdrs = hdrs,
-        includes = includes,
-        defines = defines,
-        deps = user_deps,
-        visibility = visibility,
-    )
-
-    cc_library(
-        name = name,
-        srcs = srcs,
-        deps = base_deps + [
-            ":" + name + "_hdrs",
-            Label("//:offsets_header_lib"),
-        ],
-        implementation_deps = implementation_deps,
-        copts = copts,
-        cxxopts = cxxopts,
-        defines = defines,
-        additional_compiler_inputs = additional_compiler_inputs,
-        features = features,
-        **kwargs
-    )
-
-def zephyr_freestanding_library(*, name, **kwargs):
-    """
-    Macro for building libc itself or low-level HALs.
-    """
-    deps = kwargs.pop("deps", []) + ["@zephyr"]
-    features = kwargs.pop("features", []) + [
-        "freestanding",
-        "zephyr_warning_suppressions",
-    ]
-
-    implementation_deps = kwargs.pop("implementation_deps", [])
-    copts = kwargs.pop("copts", [])
-    cxxopts = kwargs.pop("cxxopts", [])
-    defines = kwargs.pop("defines", [])
-    additional_compiler_inputs = kwargs.pop("additional_compiler_inputs", [])
-    cc_library(
-        name = name,
-        deps = deps,
-        implementation_deps = implementation_deps,
-        copts = copts,
-        cxxopts = cxxopts,
-        defines = defines,
-        additional_compiler_inputs = additional_compiler_inputs,
-        features = features,
-        **kwargs
-    )
-
-_LOCAL_MODULES_MAP = {Label(l).package + ":" + Label(l).name: True for l in LOCAL_MODULES}
-
-def zephyr_cc_library(*, name, **kwargs):
-    """
-    User-facing macro to declare a cc_library with zephyr dependencies.
-    """
-    _is_zephyr_module_call = kwargs.pop("_is_zephyr_module_call", False)
-
-    # Verify that targets registered as modules are defined using the 'zephyr_module' macro.
-    # This prevents users from accidentally using 'zephyr_cc_library' for modules, which
-    # would bypass Kconfig gating.
-    if not _is_zephyr_module_call:
-        pkg = native.package_name()
-        if (pkg + ":" + name) in _LOCAL_MODULES_MAP:
-            fail(("\nERROR: Target //%s:%s is registered as a Zephyr module.\n" +
-                  "You must define it using the 'zephyr_module' macro instead of 'zephyr_cc_library' " +
-                  "to ensure correct Kconfig gating.") % (pkg, name))
-
-    deps = kwargs.pop("deps", []) + ["@zephyr"]
-    features = kwargs.pop("features", []) + ["zephyr_warning_suppressions"]
-
-    implementation_deps = kwargs.pop("implementation_deps", [])
-    copts = kwargs.pop("copts", [])
-    cxxopts = kwargs.pop("cxxopts", [])
-    defines = kwargs.pop("defines", [])
-    additional_compiler_inputs = kwargs.pop("additional_compiler_inputs", [])
-    cc_library(
-        name = name,
-        deps = deps,
-        implementation_deps = implementation_deps,
-        copts = copts,
-        cxxopts = cxxopts,
-        defines = defines,
-        additional_compiler_inputs = additional_compiler_inputs,
-        features = features,
-        **kwargs
-    )
-
-def zephyr_module(*, name, config, srcs = [], deps = [], **kwargs):
-    """Defines a Zephyr module with Kconfig gating and a marker target.
+    These are the -l flags that the C/C++ toolchain adds to every link of an
+    executable, i.e. its C/C++ runtime libraries (libc, libm, the compiler
+    runtime, ...).
 
     Args:
-        name: The target name.
-        config: The Kconfig symbol that gates this module (e.g., CONFIG_FOO).
-        srcs: Source files, compiled only if config is enabled.
-        deps: Dependencies, linked only if config is enabled.
-        **kwargs: Other arguments passed to zephyr_cc_library.
+        cc_toolchain: The C/C++ toolchain.
+        feature_configuration: The feature configuration of the link.
+
+    Returns:
+        A list of flags.
     """
-    gated_args = {}
-    gated_attrs = [
-        "defines",
-        "linkopts",
-        "includes",
-        "hdrs",
-        "copts",
-        "local_defines",
-    ]
-
-    remaining_kwargs = {}
-    for k, v in kwargs.items():
-        if k in gated_attrs:
-            gated_args[k] = select({
-                "@zephyr_kconfig//:" + config + "=true": v,
-                "//conditions:default": [],
-            })
-        else:
-            remaining_kwargs[k] = v
-
-    remaining_kwargs.setdefault("visibility", ["//visibility:public"])
-
-    zephyr_cc_library(
-        name = name,
-        srcs = select({
-            "@zephyr_kconfig//:" + config + "=true": srcs,
-            "//conditions:default": [],
-        }),
-        deps = select({
-            "@zephyr_kconfig//:" + config + "=true": deps,
-            "//conditions:default": [],
-        }),
-        _is_zephyr_module_call = True,
-        **dict(remaining_kwargs, **gated_args)
+    command_line = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = "c++-link-executable",
+        variables = cc_common.create_link_variables(
+            cc_toolchain = cc_toolchain,
+            feature_configuration = feature_configuration,
+        ),
     )
+    return [arg for arg in command_line if arg.startswith("-l")]
 
 # Why transitive CcInfo transformation is used over grouped flags:
 # Passing archives inside a single -Wl,--whole-archive group on the
@@ -219,6 +114,16 @@ def zephyr_module(*, name, config, srcs = [], deps = [], **kwargs):
 # native C++ toolchain topological link ordering and deduplication.
 def _zephyr_inject_alwayslink_to_deps_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
+    rust_runtime_libs = _rust_runtime_library_paths(ctx)
+
+    def is_generated_static(lib):
+        static_library = lib.static_library or lib.pic_static_library
+        return bool(
+            static_library and
+            not static_library.is_source and
+            static_library.path not in rust_runtime_libs,
+        )
+
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
@@ -227,6 +132,7 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
     )
 
     new_linker_inputs = []
+    rust_runtime_files = []
     seen = {}
     comp_contexts = []
     for dep in ctx.attr.deps:
@@ -250,13 +156,36 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
                 continue
             seen[owner_key] = True
 
+            # Take out the Rust runtime libraries; they are linked at the end
+            # (see below).
+            rust_runtime_in_input = [
+                lib.static_library or lib.pic_static_library
+                for lib in linker_input.libraries
+                if (lib.static_library or lib.pic_static_library) and
+                   (lib.static_library or lib.pic_static_library).path in rust_runtime_libs
+            ]
+            if rust_runtime_in_input:
+                rust_runtime_files.extend(rust_runtime_in_input)
+                add_inputs = linker_input.additional_inputs
+                if type(add_inputs) != "depset":
+                    add_inputs = depset(add_inputs or [])
+                linker_input = cc_common.create_linker_input(
+                    owner = linker_input.owner,
+                    libraries = depset([
+                        lib
+                        for lib in linker_input.libraries
+                        if (lib.static_library or lib.pic_static_library) not in rust_runtime_in_input
+                    ], order = "topological"),
+                    user_link_flags = linker_input.user_link_flags,
+                    additional_inputs = add_inputs,
+                )
+
             # Pass through untouched if no library requires alwayslink.
             # Precompiled source archives (is_source == True) are external blobs
-            # and must not be forced into --whole-archive.
+            # and must not be forced into --whole-archive, nor must the Rust
+            # runtime libraries (see _rust_runtime_library_paths).
             needs_wrap = any([
-                not lib.alwayslink and
-                ((lib.static_library and not lib.static_library.is_source) or
-                 (lib.pic_static_library and not lib.pic_static_library.is_source))
+                not lib.alwayslink and is_generated_static(lib)
                 for lib in linker_input.libraries
             ])
             if not needs_wrap:
@@ -265,11 +194,7 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
 
             new_libraries = []
             for lib in linker_input.libraries:
-                is_generated_static = (
-                    (lib.static_library and not lib.static_library.is_source) or
-                    (lib.pic_static_library and not lib.pic_static_library.is_source)
-                )
-                if lib.alwayslink or not is_generated_static:
+                if lib.alwayslink or not is_generated_static(lib):
                     new_libraries.append(lib)
                     continue
                 new_libraries.append(cc_common.create_library_to_link(
@@ -295,6 +220,30 @@ def _zephyr_inject_alwayslink_to_deps_impl(ctx):
                 user_link_flags = linker_input.user_link_flags,
                 additional_inputs = add_inputs,
             ))
+
+    # Link the Rust runtime libraries after the C toolchain's runtime
+    # libraries. Rust's compiler_builtins defines many symbols that the C
+    # runtime also defines (C math functions, mem*, __aeabi_*, ...), as weak
+    # symbols. The linker resolves an undefined symbol from the first
+    # archive that defines it, so if the Rust runtime libraries came first,
+    # C code would use compiler_builtins' definitions instead of the C
+    # runtime's, e.g. a math function built for a different float ABI.
+    #
+    # The C runtime libraries are added by the toolchain at the end of the
+    # link, after all user link flags, so list them again here, after all
+    # other libraries of the binary and before the Rust runtime libraries.
+    # compiler_builtins still provides the symbols that only it defines
+    # (e.g. 128-bit integer intrinsics).
+    if rust_runtime_files:
+        rust_runtime_files = depset(rust_runtime_files).to_list()
+        new_linker_inputs.append(cc_common.create_linker_input(
+            owner = ctx.label,
+            user_link_flags = _toolchain_runtime_library_flags(
+                cc_toolchain,
+                feature_configuration,
+            ) + [f.path for f in rust_runtime_files],
+            additional_inputs = depset(rust_runtime_files),
+        ))
 
     if comp_contexts:
         comp_ctx = cc_common.merge_compilation_contexts(
@@ -327,7 +276,10 @@ _zephyr_inject_alwayslink_to_deps = rule(
             default = Label("@bazel_tools//tools/cpp:current_cc_toolchain"),
         ),
     },
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    toolchains = [
+        "@bazel_tools//tools/cpp:toolchain_type",
+        config_common.toolchain_type(_RUST_TOOLCHAIN_TYPE, mandatory = False),
+    ],
     fragments = ["cpp"],
 )
 
@@ -344,16 +296,28 @@ _zephyr_inject_alwayslink_to_deps = rule(
 #   files that were present in _pre1, altering memory layouts and
 #   invalidating kobject hash tables and section alignment offsets.
 def _zephyr_cc_binary_with_alwayslink_deps(*, name, deps, **kwargs):
+    _skip_zephyr_compatible = kwargs.pop("_skip_zephyr_compatible", False)
     testonly = kwargs.get("testonly", False)
+    tags = _manual_tags(kwargs.pop("tags", None))
+    caller_compatible_with = kwargs.pop("target_compatible_with", None)
+    target_compatible_with = (
+        caller_compatible_with
+        if _skip_zephyr_compatible
+        else _with_zephyr_compatible(caller_compatible_with)
+    )
     deps_name = name + "_alwayslink_deps"
     _zephyr_inject_alwayslink_to_deps(
         name = deps_name,
         deps = deps,
+        tags = tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
     cc_binary(
         name = name,
         deps = [":" + deps_name],
+        tags = tags,
+        target_compatible_with = target_compatible_with,
         **kwargs
     )
 
@@ -366,7 +330,15 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         deps: The dependencies for the app
         **kwargs: Keyword arguments to pass to the cc_binary rule.
     """
+    _skip_zephyr_compatible = kwargs.pop("_skip_zephyr_compatible", False)
     testonly = kwargs.get("testonly", False)
+    internal_tags = _manual_tags(kwargs.pop("tags", None))
+    caller_compatible_with = kwargs.pop("target_compatible_with", None)
+    target_compatible_with = (
+        caller_compatible_with
+        if _skip_zephyr_compatible
+        else _with_zephyr_compatible(caller_compatible_with)
+    )
     features = kwargs.pop("features", [])
     copts = kwargs.pop("copts", [])
     defines = kwargs.pop("defines", [])
@@ -383,6 +355,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         defines = defines,
         local_defines = local_defines,
         includes = includes,
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        _skip_zephyr_compatible = True,
     )
 
     deps = [
@@ -397,7 +372,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         Label("//lib"),
         Label("//:board_deps"),
         ":" + name + "_srcs_lib",
-    ] + LOCAL_MODULES + select({
+        Label("@zephyr_index//:local_modules"),
+    ] + select({
         "//conditions:default": [],
         # gen_device_deps.py reads _DEVICE_STRUCT_HANDLES_OFFSET and
         # _DEVICE_STRUCT_PM_OFFSET from the pass-1 ELF.
@@ -443,6 +419,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("//include:linker_includes"),
             Label("//soc:linker_includes"),
         ],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -479,6 +457,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("//include:zephyr"),
             Label("//soc:linker_includes"),
         ],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -513,6 +493,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("//include:zephyr"),
             Label("//soc:linker_includes"),
         ],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -553,6 +535,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("//include:zephyr"),
             Label("//soc:linker_includes"),
         ],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -576,6 +560,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         srcs = [],
         linkopts = linkopts,
         features = features,
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        _skip_zephyr_compatible = True,
         **kwargs
     )
 
@@ -588,6 +575,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("@zephyr_kconfig//:CONFIG_USERSPACE=true"): True,
             "//conditions:default": False,
         }),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -599,12 +588,17 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "-fno-function-sections",
             "-fno-data-sections",
         ],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
+        _skip_zephyr_compatible = True,
     )
 
     gen_kobject_placeholders(
         name = "kobject_placeholders_" + name,
         kobj_prebuilt_hash_lib = ":kobject_prebuilt_hash_" + name,
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -615,6 +609,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("@zephyr_kconfig//:CONFIG_USERSPACE=true"): True,
             "//conditions:default": False,
         }),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -665,7 +661,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         outs = no_sw_isr_no_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_no_sw_isr_no_vector", ""),
         tools = [gen_isr_tables_tool],
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
     native.genrule(
         name = name + "_isr_tables_no_sw_isr_vector",
@@ -673,7 +671,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         outs = no_sw_isr_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_no_sw_isr_vector", "--vector-table"),
         tools = [gen_isr_tables_tool],
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
     native.genrule(
         name = name + "_isr_tables_sw_isr_no_vector",
@@ -681,7 +681,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         outs = sw_isr_no_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_sw_isr_no_vector", "--sw-isr-table"),
         tools = [gen_isr_tables_tool],
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
     native.genrule(
         name = name + "_isr_tables_sw_isr_vector",
@@ -689,7 +691,9 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         outs = sw_isr_vector_outs,
         cmd = _get_gen_isr_tables_cmd("_sw_isr_vector", "--sw-isr-table --vector-table"),
         tools = [gen_isr_tables_tool],
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
 
     # Create the libraries to use the correct genrule outputs based on config values.
@@ -699,7 +703,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "//conditions:default": [":{}._sw_isr_no_vector/isr_table.c".format(name)],
             Label("@zephyr_kconfig//:CONFIG_GEN_IRQ_VECTOR_TABLE=true"): [":{}._sw_isr_vector/isr_table.c".format(name)],
         }),
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
+        _skip_zephyr_compatible = True,
     )
     zephyr_cc_library(
         name = name + "._isr_tables_no_sw_isr",
@@ -707,7 +714,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "//conditions:default": [":{}._no_sw_isr_no_vector/isr_table.c".format(name)],
             Label("@zephyr_kconfig//:CONFIG_GEN_IRQ_VECTOR_TABLE=true"): [":{}._no_sw_isr_vector/isr_table.c".format(name)],
         }),
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
+        _skip_zephyr_compatible = True,
     )
 
     zephyr_cc_library(
@@ -716,7 +726,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "//conditions:default": [":{}._isr_tables_no_sw_isr".format(name)],
             Label("@zephyr_kconfig//:CONFIG_GEN_SW_ISR_TABLE=true"): [":{}._isr_tables_sw_isr".format(name)],
         }),
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
+        _skip_zephyr_compatible = True,
     )
 
     gen_device_deps_tool = Label("//scripts/build:gen_device_deps")
@@ -741,13 +754,18 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             edt_pickle = Label("//:edt_pickle"),
         ),
         tools = [gen_device_deps_tool],
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
 
     zephyr_cc_library(
         name = name + "._device_deps",
         srcs = [":" + device_deps_out],
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
+        _skip_zephyr_compatible = True,
     )
 
     _zephyr_cc_binary_with_alwayslink_deps(
@@ -772,11 +790,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
         linkopts = linkopts + [
             "-Wl,--print-memory-usage",
         ],
-        data = kwargs.pop("data", []) + [
-            ":" + name + "_copy_autoconf",
-            ":" + name + "_copy_zephyr_dts",
-        ],
         features = features,
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        _skip_zephyr_compatible = True,
         **kwargs
     )
 
@@ -794,7 +811,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             name = name,
         ),
         tools = [gen_symtab_tool],
-        tags = ["manual"],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -804,8 +822,10 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("@zephyr_kconfig//:CONFIG_SYMTAB=true"): [":{}._symtab/symtab.c".format(name)],
             "//conditions:default": [],
         }),
-        tags = ["manual"],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
+        _skip_zephyr_compatible = True,
     )
 
     # This requires --strip=never on the bazel build command line.
@@ -818,6 +838,8 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             Label("@zephyr_kconfig//:CONFIG_USERSPACE=true"): True,
             "//conditions:default": False,
         }),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -829,12 +851,17 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "-fno-function-sections",
             "-fno-data-sections",
         ],
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
+        _skip_zephyr_compatible = True,
     )
 
     rename_kobject_sections(
         name = "kobject_hash_renamed_" + name,
         dep = ":kobject_hash_" + name,
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
         testonly = testonly,
     )
 
@@ -865,12 +892,17 @@ def _zephyr_cc_binary(*, name, deps = [], **kwargs):
             "-Wl,--print-memory-usage",
         ],
         features = features,
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        _skip_zephyr_compatible = True,
         **kwargs
     )
 
 def _zephyr_app_impl(ctx):
     # The transition has been applied to this target.
     # We depend on the actual binary, which will now be built in the transitioned configuration.
+    if not ctx.attr.binary:
+        fail("_zephyr_app_rule requires binary on a Zephyr platform")
     binary_files = ctx.attr.binary[DefaultInfo].files.to_list()
     if not binary_files:
         fail("Binary target %s produced no files" % ctx.attr.binary.label)
@@ -882,11 +914,11 @@ def _zephyr_app_impl(ctx):
         runners_yaml_path = resolve_runfiles_path(ctx, ctx.file.runners_yaml)
         binary_path = resolve_runfiles_path(ctx, in_file)
 
-        flash_bin = ctx.executable._flash_utils_bin
+        flash_bin = ctx.executable.flash_utils_bin
         flash_bin_path = resolve_runfiles_path(ctx, flash_bin)
 
         ctx.actions.expand_template(
-            template = ctx.file._bootstrapper_template,
+            template = ctx.file.bootstrapper_template,
             output = out_file,
             substitutions = {
                 "{app_name}": ctx.label.name,
@@ -906,8 +938,9 @@ def _zephyr_app_impl(ctx):
     # Gather runfiles
     runfiles_list = [
         ctx.attr.binary[DefaultInfo].default_runfiles,
-        ctx.attr._flash_utils_bin[DefaultInfo].default_runfiles,
     ]
+    if ctx.attr.flash_utils_bin:
+        runfiles_list.append(ctx.attr.flash_utils_bin[DefaultInfo].default_runfiles)
     if ctx.attr.runners_yaml:
         runfiles_list.append(ctx.attr.runners_yaml[DefaultInfo].default_runfiles)
 
@@ -932,15 +965,14 @@ _zephyr_app_rule = rule(
     implementation = _zephyr_app_impl,
     attrs = {
         "app_label": attr.string(mandatory = True),
-        "binary": attr.label(mandatory = True),
+        "binary": attr.label(),
+        "target": attr.label(),
         "runners_yaml": attr.label(allow_single_file = True),
         "config_file": attr.label(allow_single_file = True),
-        "_bootstrapper_template": attr.label(
-            default = Label("//bazel:bootstrapper.py.tpl"),
+        "bootstrapper_template": attr.label(
             allow_single_file = True,
         ),
-        "_flash_utils_bin": attr.label(
-            default = Label("//bazel/tools/runners:zephyr_flash_utils_bin"),
+        "flash_utils_bin": attr.label(
             executable = True,
             cfg = "exec",
         ),
@@ -953,6 +985,8 @@ _zephyr_app_rule = rule(
 )
 
 def _zephyr_app_elf_impl(ctx):
+    if not ctx.file.binary:
+        fail("_zephyr_app_elf requires binary on a Zephyr platform")
     in_file = ctx.file.binary
     out_file = ctx.actions.declare_file(ctx.label.name)
 
@@ -974,7 +1008,6 @@ _zephyr_app_elf = rule(
     attrs = {
         "app_label": attr.string(mandatory = True),
         "binary": attr.label(
-            mandatory = True,
             cfg = "target",
             allow_single_file = True,
         ),
@@ -987,6 +1020,8 @@ _zephyr_app_elf = rule(
 )
 
 def _zephyr_app_bin_impl(ctx):
+    if not ctx.file.bin:
+        fail("_zephyr_app_bin requires bin on a Zephyr platform")
     in_file = ctx.file.bin
     out_file = ctx.actions.declare_file(ctx.label.name)
 
@@ -1006,7 +1041,6 @@ _zephyr_app_bin = rule(
     attrs = {
         "app_label": attr.string(mandatory = True),
         "bin": attr.label(
-            mandatory = True,
             cfg = "target",
             allow_single_file = True,
         ),
@@ -1032,9 +1066,22 @@ def zephyr_app(*, name, app_label = None, **kwargs):
     else:
         app_label = str(app_label)
 
+    target_compatible_with = _with_zephyr_compatible(
+        kwargs.pop("target_compatible_with", None),
+    )
+
+    tags = kwargs.pop("tags", None)
+    visibility = kwargs.pop("visibility", None)
+    internal_tags = _manual_tags(tags)
+    testonly = kwargs.get("testonly", False)
+
     binary_name = name + "_bin.elf"
     _zephyr_cc_binary(
         name = binary_name,
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        visibility = ["//visibility:private"],
+        _skip_zephyr_compatible = True,
         **kwargs
     )
 
@@ -1042,54 +1089,78 @@ def zephyr_app(*, name, app_label = None, **kwargs):
     elf_to_bin(
         name = bin_target,
         src = ":" + binary_name,
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
 
     _zephyr_app_bin(
         name = name + ".bin",
         app_label = app_label,
-        bin = ":" + bin_target,
-        testonly = kwargs.get("testonly", False),
+        bin = _if_zephyr_platform(":" + bin_target),
+        tags = tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
+        visibility = visibility,
     )
 
     hex_target = name + "_hex_gen"
     elf_to_hex(
         name = hex_target,
         src = ":" + binary_name,
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
 
     runners_yaml_name = name + "_runners_yaml"
     zephyr_runners_yaml(
         name = runners_yaml_name,
-        runner_config = Label("//:board_runner_config"),
-        elf = ":" + binary_name,
-        hex = ":" + hex_target,
+        runner_config = _if_zephyr_platform(Label("//:board_runner_config")),
+        elf = _if_zephyr_platform(":" + binary_name),
+        hex = _if_zephyr_platform(":" + hex_target),
         app_label = app_label,
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
 
     _zephyr_app_rule(
         name = name,
         app_label = app_label,
-        binary = ":" + binary_name,
-        runners_yaml = ":" + runners_yaml_name,
-        config_file = ":" + name + "_copy_config",
-        testonly = kwargs.get("testonly", False),
+        binary = _if_zephyr_platform(":" + binary_name),
+        target = _if_zephyr_platform(":" + binary_name),
+        runners_yaml = _if_zephyr_platform(":" + runners_yaml_name),
+        config_file = _if_zephyr_platform(":" + name + "_copy_config"),
+        bootstrapper_template = _if_zephyr_platform(
+            Label("//bazel:bootstrapper.py.tpl"),
+        ),
+        flash_utils_bin = _if_zephyr_platform(
+            Label("//bazel/tools/runners:zephyr_flash_utils_bin"),
+        ),
+        tags = tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
+        visibility = visibility,
     )
 
     _zephyr_app_elf(
         name = name + ".elf",
         app_label = app_label,
-        binary = ":" + binary_name,
-        testonly = kwargs.get("testonly", False),
+        binary = _if_zephyr_platform(":" + binary_name),
+        tags = tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
+        visibility = visibility,
     )
 
     copy_file(
         name = name + "_copy_config",
         src = Label("//:kconfig_config_file"),
         out = "zephyr/" + name + ".config",
-        testonly = kwargs.get("testonly", False),
+        tags = internal_tags,
+        target_compatible_with = target_compatible_with,
+        testonly = testonly,
     )
 
 def zephyr_cc_binary(**kwargs):

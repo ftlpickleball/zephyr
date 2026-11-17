@@ -39,6 +39,24 @@ board:
         revs = parse_board_metadata.discover_revisions_for_board(board_dir, recorder)
         self.assertEqual(revs, ["1.0.0", "2.0.0"])
 
+    def test_discover_revisions_from_boards_list_yaml(self):
+        board_dir = os.path.join(self.tmp_dir.name, "sr_rdk")
+        os.makedirs(board_dir)
+        with open(os.path.join(board_dir, "board.yml"), "w") as f:
+            f.write(
+                "boards:\n"
+                "- name: sr_rdk\n"
+                "  revision:\n"
+                "    format: custom\n"
+                "    default: revC\n"
+                "    revisions:\n"
+                "      - name: revA\n"
+                "      - name: revC\n"
+            )
+        recorder = input_recorder.InputRecorder()
+        revs = parse_board_metadata.discover_revisions_for_board(board_dir, recorder)
+        self.assertEqual(revs, ["revA", "revC"])
+
     def test_discover_revisions_from_revisions_folder(self):
         board_dir = os.path.join(self.tmp_dir.name, "board2")
         rev_dir = os.path.join(board_dir, "revisions")

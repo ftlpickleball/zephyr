@@ -3,7 +3,7 @@
 
 """Repository rule for the global Zephyr Kconfig schema."""
 
-load("//bazel/private:deps.bzl", "label_path", "new_tracker", "read_path_list", "realpath_of", "repo_root", "watch_deps", "watch_pins")
+load("//bazel/private:deps.bzl", "label_path", "new_tracker", "read_path_list", "realpath_of", "repo_root", "watch_deps", "watch_pins", "watch_workspace_manifest")
 load("//bazel/private:kconfig_args.bzl", "get_kconfig_args", "resolve_module_roots")
 load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
 
@@ -11,7 +11,7 @@ def _zephyr_kconfig_schema_impl(rctx):
     # Inputs in other repositories are recorded first: they are the only ones that make
     # re-verification expensive (see deps.bzl).
     context = json.decode(rctx.attr.context)
-    tracker = new_tracker(rctx)
+    tracker = new_tracker(rctx, zephyr_manifest = "kconfig_done")
     zephyr_root = repo_root(tracker, Label("//:BUILD.bazel"))
     zephyr_root_path = str(zephyr_root)
 
@@ -40,6 +40,20 @@ def _zephyr_kconfig_schema_impl(rctx):
 
     resolved_modules = resolve_module_roots(tracker, context["modules"])
 
+    resolved_build_files = []
+    for b_label in rctx.attr.app_build_files:
+        b_path = label_path(tracker, b_label)
+        if not b_path.exists:
+            b_path = b_path.dirname
+        path_str = str(b_path)
+        if path_str not in resolved_build_files:
+            resolved_build_files.append(path_str)
+
+    # watch_deps() records no DIRENTS, so in a downstream workspace new Kconfig, binding, board
+    # metadata and BUILD/.bzl files in workspace modules and board roots are noticed through this
+    # digest of their names (zephyr_setup may re-run without changing this rule's attributes).
+    watch_workspace_manifest(tracker)
+
     args = get_kconfig_args(
         script = kconfig_gen_symbols_py,
         zephyr_root = zephyr_root_path,
@@ -47,6 +61,7 @@ def _zephyr_kconfig_schema_impl(rctx):
         output = "BUILD.bazel",
         board_dirs = resolved_board_dirs,
         oot_dts_roots = resolved_oot_dts_roots,
+        build_files = resolved_build_files,
     )
 
     result = python.execute(args)
@@ -70,22 +85,20 @@ def _zephyr_kconfig_schema_impl(rctx):
     rctx.delete("deps.txt")
     rctx.delete("dep_dirs.txt")
 
-    bzl_content = "LOCAL_MODULES = %r\n" % rctx.attr.local_modules
-    rctx.file("local_modules.bzl", bzl_content)
     return rctx.repo_metadata(reproducible = True)
 
 zephyr_kconfig_schema = repository_rule(
     implementation = _zephyr_kconfig_schema_impl,
     attrs = {
+        "app_build_files": attr.string_list(
+            doc = "Canonical labels of the BUILD files of out-of-tree application packages, from discovery.",
+        ),
         "board_dirs": attr.string_list(
             doc = "Canonical labels of the BUILD files of all board packages, from discovery.",
         ),
         "context": attr.string(
             mandatory = True,
             doc = "JSON with the module roots, OOT DTS roots and pin files (the zc repos' context.json).",
-        ),
-        "local_modules": attr.string_list(
-            doc = "Labels of the auto-linked zephyr_module targets, written to local_modules.bzl.",
         ),
         "_kconfig_gen_symbols_py": attr.label(default = "//bazel/tools/kconfig:kconfig_gen_symbols.py"),
         "_pip_deps": attr.label_list(

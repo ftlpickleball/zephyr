@@ -83,6 +83,14 @@ py_library(
     ],
 )
 
+# The runner of ztest()'s test targets, built for the exec platform.
+py_binary(
+    name = "ztest_runner_bin",
+    srcs = ["ztest_runner.py"],
+    main = "ztest_runner.py",
+    deps = [":ztest_runner"],
+)
+
 py_test(
     name = "ztest_runner_test",
     srcs = ["ztest_runner_test.py"],

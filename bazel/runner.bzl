@@ -48,6 +48,8 @@ zephyr_runner_config = rule(
 )
 
 def _zephyr_runners_yaml_impl(ctx):
+    if not ctx.attr.runner_config or not ctx.file.elf:
+        fail("zephyr_runners_yaml requires both runner_config and elf on a Zephyr platform")
     config_info = ctx.attr.runner_config[ZephyrRunnerConfigInfo]
     runner = config_info.runner
     runner_source = getattr(config_info, "runner_source", None)
@@ -134,7 +136,6 @@ zephyr_runners_yaml = rule(
             doc = "Optional BIN file to flash.",
         ),
         "elf": attr.label(
-            mandatory = True,
             allow_single_file = True,
             doc = "The ELF binary to flash.",
         ),
@@ -143,7 +144,6 @@ zephyr_runners_yaml = rule(
             doc = "Optional HEX file to flash.",
         ),
         "runner_config": attr.label(
-            mandatory = True,
             providers = [ZephyrRunnerConfigInfo],
             doc = "The runner configuration to use.",
         ),

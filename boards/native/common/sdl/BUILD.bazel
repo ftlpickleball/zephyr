@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+
+load("//bazel:cc_library.bzl", "zephyr_cc_library")
+load("//scripts/native_simulator:defs.bzl", "nsi_runner_cc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["sdl2.BUILD"])
+
+alias(
+    name = "sdl2_headers",
+    actual = "@sdl2//:sdl2_headers",
+)
+
+nsi_runner_cc_library(
+    name = "sdl_bottom",
+    srcs = ["sdl_events_bottom.c"],
+    hdrs = ["sdl_events_bottom.h"],
+    implementation_deps = [
+        ":sdl2_headers",
+        "@sdl2",
+    ],
+)
+
+zephyr_cc_library(
+    name = "sdl",
+    srcs = ["sdl_events.c"],
+    hdrs = ["sdl_events_bottom.h"],
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "//boards:sim",
+    ],
+    deps = [
+        ":sdl_bottom",
+        "//arch/posix:headers",
+        "//boards/native/common:common_headers",
+        "//scripts/native_simulator:native_simulator_headers",
+    ],
+)

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("//bazel:naming.bzl", "derive_module_label", "find_package_boards", "get_app_hash", "get_zc_repo_name_from_precomputed", "normalize_app_label", "parse_label", "resolve_board_id", "sanitize_board_id")
-load("//bazel/private:deps.bzl", "find_pin_files", "label_path", "new_tracker", "read_path_list", "readdir", "realpath_of", "repo_root", "watch_deps", "watch_pins", "workspace_relpath")
+load("//bazel/private:deps.bzl", "find_pin_files", "label_path", "new_tracker", "read_path_list", "readdir", "realpath_of", "repo_root", "watch_deps", "watch_pins", "watch_workspace_manifest", "workspace_relpath")
 load("//bazel/private:repo_rule_python.bzl", "get_python")
 load("//bazel/private:zephyr_kconfig_gen_symbols.bzl", "zephyr_kconfig_schema")
 load("//bazel/private:zephyr_kconfig_gen_values.bzl", "gen_zephyr_config")
@@ -318,9 +318,11 @@ def _find_app_dirs(tracker, root, deps_files):
     """Returns the directories below `root` (inclusive) that contain a prj.conf.
 
     Equivalent to `find <root> -name out -prune -o -name 'bazel-*' -prune -o -name '.*' -prune
-    -o -name prj.conf -print` (plus pruning `__pycache__`), in a deterministic order. The listing
-    of every directory visited is watched, so adding an application anywhere below `root` re-runs
-    the extension. Symlinked directories are not followed.
+    -o -name prj.conf -print` (plus pruning `__pycache__`), in a deterministic order. Every
+    directory visited is watched as a path (so creating or deleting it is noticed); adding an
+    application anywhere below `root` re-runs the extension through `@skyframe_warmer//:done`
+    (`root` in @zephyr) or `@zephyr_workspace_manifest//:done` (`root` in the main workspace).
+    Symlinked directories are not followed.
     """
     if not root.is_dir:
         deps_files.append(realpath_of(root))
@@ -357,7 +359,7 @@ def _zephyr_setup_core_impl(mctx):
     # find_pin_files(). Fetched repositories are covered by watching workspace pin files; mutable
     # workspace files and directory listings (including in-workspace overrides) are watched at the
     # end via watch_deps().
-    tracker = new_tracker(mctx)
+    tracker = new_tracker(mctx, zephyr_manifest = "done")
     zephyr_root = repo_root(tracker, Label("//:BUILD.bazel"))
     python = get_python(
         mctx,
@@ -397,6 +399,11 @@ def _zephyr_setup_core_impl(mctx):
     for l in modules_labels + boards_dir_labels + apps_dir_labels + pin_labels:
         repo_root(tracker, l)
 
+    # New applications, boards and override files in the main-workspace directories named by the
+    # tags above are noticed through this digest of their file names (module extensions cannot
+    # watch directory trees, and per-directory DIRENTS inputs would each cost a Skyframe batch).
+    watch_workspace_manifest(tracker)
+
     # Fetched repositories get no per-file watches. Their content can only change with their
     # definitions, which these files pin: MODULE.bazel (and those of in-workspace overrides), the
     # files they include, and the patches / BUILD overlays / lock files they reference.
@@ -407,7 +414,7 @@ def _zephyr_setup_core_impl(mctx):
             fail("zephyr_setup.env(pin_files) must be files in the main workspace: %s" % l)
         extra_pins.append(rel)
     override_relpaths = [workspace_relpath(tracker, r[:-1]) for r in tracker["local_roots"]]
-    pin_files = find_pin_files(tracker, [""] + override_relpaths, extra_pins)
+    pin_files = find_pin_files(tracker, python, [""] + override_relpaths, extra_pins)
     watch_pins(tracker, pin_files)
 
     # Realpaths reported by the discovery scripts, watched at the end.
@@ -418,15 +425,11 @@ def _zephyr_setup_core_impl(mctx):
     modules_dirs_map = {}
     for l in modules_labels:
         p = label_path(tracker, l)
+        pkg_dir = label_path(tracker, l.same_package_label("BUILD.bazel")).dirname
         if p.basename == "module.yml" and p.dirname.basename == "zephyr":
             mod_root = p.dirname.dirname
         else:
-            mod_root = p.dirname
-
-        if l.package:
-            pkg_dir = mod_root.get_child(l.package)
-        else:
-            pkg_dir = mod_root
+            mod_root = pkg_dir
 
         modules_dirs_map[str(l)] = {
             "root": str(mod_root),
@@ -525,7 +528,7 @@ def _zephyr_setup_core_impl(mctx):
     package_to_boards = {}
     path_str_dict = {}
 
-    for line in res.stdout.splitlines():
+    for line in sorted(res.stdout.splitlines()):
         if not line:
             continue
         parts = line.split(":")
@@ -645,15 +648,21 @@ def _zephyr_setup_core_impl(mctx):
                 package_to_boards[pkg_path].append(mb)
 
     # Discover Apps
+    zephyr_packages_prefix = zephyr_canonical + "//"
     discovered_apps = {}
     discovered_apps_labels = {}
+    oot_app_build_files = {}
     collision_registry = {}  # hash -> label
 
     for l in apps_dir_labels:
+        if not str(l).startswith(zephyr_packages_prefix):
+            oot_app_build_files[str(l)] = True
         dir_path = get_dir_from_label(mctx, l, tracker)
         for app_path in _find_app_dirs(tracker, dir_path, deps_files):
             app_pkg = get_package_for_path(mctx, app_path, apps_dir_labels, tracker, pkg_cache)
             if app_pkg:
+                if not app_pkg.startswith(zephyr_packages_prefix):
+                    oot_app_build_files[app_pkg] = True
                 norm_app = normalize_app_label(app_pkg)
 
                 build_dir = find_nearest_build_file(mctx, app_path)
@@ -704,85 +713,102 @@ def _zephyr_setup_core_impl(mctx):
     # repository, whose canonical name is zephyr_canonical ("@@" when Zephyr is the root module).
     zephyr_packages_prefix = zephyr_canonical + "//"
 
+    default_sim_names = {
+        "native_sim": True,
+        "native_sim_64": True,
+        "qemu_cortex_m3": True,
+        "qemu_x86": True,
+        "qemu_riscv32": True,
+    }
+    board_order = {}
+    oot_board_set = {}
+    manual_matched_set = {}
+    default_sim_set = {}
+    override_file_to_boards = {}
+
+    for idx, (board_id, board_path) in enumerate(board_index.items()):
+        board_order[board_id] = idx
+        if not board_path.startswith(zephyr_packages_prefix):
+            oot_board_set[board_id] = True
+
+        has_rev = "@" in board_id
+        board_base = board_id.split("/")[0]
+        for mb in manual_boards:
+            mb_has_rev = "@" in mb
+            if has_rev != mb_has_rev:
+                continue
+            if has_rev:
+                if board_id == mb:
+                    manual_matched_set[board_id] = True
+                    break
+            elif board_id == mb or board_base == mb:
+                manual_matched_set[board_id] = True
+                break
+
+        clean_b = board_base.split("@")[0]
+        if clean_b in default_sim_names:
+            default_sim_set[board_id] = True
+
+        b_name, b_quals, b_rev = _parse_board_id(board_id)
+        for ext in ("conf", "overlay", "sysbuild.yml"):
+            for cand in _get_override_candidates(b_name, b_quals, b_rev, ext):
+                override_file_to_boards.setdefault(cand, []).append(board_id)
+
     surviving_combinations = {}
+    boards_fs_matched_cache = {}
     for app_pkg, app_path in discovered_apps.items():
-        surviving_combinations[app_pkg] = []
         yaml_res = yaml_metadata.get(app_pkg, None)
         is_oot_app = not app_path.startswith(str(zephyr_root))
+        has_yaml_boards = yaml_res != None and len(yaml_res) > 0
 
-        # Entries of the app's boards/ directory (None if it does not exist), listed at most once
-        # per app. Its listing is watched, so adding or removing an override re-runs the filter.
-        boards_dir = mctx.path(app_path).get_child("boards")
-        boards_listed = False
-        boards_names = None
-
-        for board_id, board_path in board_index.items():
-            is_oot_board = not board_path.startswith(zephyr_packages_prefix)
-
-            # OOT Exemption
-            if is_oot_app and is_oot_board:
-                surviving_combinations[app_pkg].append(board_id)
-                continue
-
-            # Manual fallback
-            found_manual = False
-            has_rev = "@" in board_id
-            for mb in manual_boards:
-                mb_has_rev = "@" in mb
-                if has_rev != mb_has_rev:
+        # Entries of the app's boards/ directory, listed at most once per app_path when a board
+        # reaches the filesystem check. Adding or removing an override re-runs the filter through
+        # @skyframe_warmer//:done or @zephyr_workspace_manifest//:done (see _find_app_dirs()).
+        needs_boards_listing = False
+        if not has_yaml_boards:
+            for b in board_index.keys():
+                if is_oot_app and b in oot_board_set:
                     continue
-                if has_rev:
-                    if board_id == mb:
-                        found_manual = True
-                        break
-                elif board_id == mb or board_id.split("/")[0] == mb:
-                    found_manual = True
-                    break
+                if b in manual_matched_set:
+                    continue
+                needs_boards_listing = True
+                break
 
-            if found_manual:
-                surviving_combinations[app_pkg].append(board_id)
-                continue
-
-            # YAML
-            if yaml_res != None and len(yaml_res) > 0:
-                if board_id in yaml_res:
-                    surviving_combinations[app_pkg].append(board_id)
-                continue
-
-            # Filesystem
-            if not boards_listed:
-                boards_listed = True
+        fs_matched_boards = {}
+        if needs_boards_listing:
+            if app_path not in boards_fs_matched_cache:
+                boards_dir = mctx.path(app_path).get_child("boards")
+                app_fs_matched = {}
                 if boards_dir.is_dir:
-                    boards_names = {e.basename: True for e in readdir(tracker, boards_dir)}
+                    for e in readdir(tracker, boards_dir):
+                        c = e.basename
+                        if c in override_file_to_boards and boards_dir.get_child(c).exists:
+                            for b in override_file_to_boards[c]:
+                                app_fs_matched[b] = True
                 else:
                     # Recorded as a (missing) path, so that creating the directory is noticed.
                     deps_files.append(realpath_of(boards_dir))
-            if boards_names != None:
-                board_name, qualifiers, board_rev = _parse_board_id(board_id)
-                override_candidates = (
-                    _get_override_candidates(board_name, qualifiers, board_rev, "conf") +
-                    _get_override_candidates(board_name, qualifiers, board_rev, "overlay") +
-                    _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
-                )
+                boards_fs_matched_cache[app_path] = app_fs_matched
+            fs_matched_boards = boards_fs_matched_cache[app_path]
 
-                found = False
-                for c in override_candidates:
-                    if c in boards_names and boards_dir.get_child(c).exists:
-                        found = True
-                        break
-                if found:
-                    surviving_combinations[app_pkg].append(board_id)
-                    continue
-                elif yaml_res == None:
-                    clean_b = board_id.split("/")[0].split("@")[0]
-                    if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
-                        surviving_combinations[app_pkg].append(board_id)
-                    continue
-            elif yaml_res == None:
-                clean_b = board_id.split("/")[0].split("@")[0]
-                if clean_b in ["native_sim", "native_sim_64", "qemu_cortex_m3", "qemu_x86", "qemu_riscv32"]:
-                    surviving_combinations[app_pkg].append(board_id)
-                continue
+        matched_boards = {}
+        if is_oot_app:
+            for b in oot_board_set.keys():
+                matched_boards[b] = True
+        for b in manual_matched_set.keys():
+            matched_boards[b] = True
+        if has_yaml_boards:
+            for b in yaml_res:
+                if b in board_index:
+                    matched_boards[b] = True
+        else:
+            for b in fs_matched_boards.keys():
+                matched_boards[b] = True
+            if yaml_res == None:
+                for b in default_sim_set.keys():
+                    matched_boards[b] = True
+
+        surviving_combinations[app_pkg] = sorted(matched_boards.keys(), key = board_order.get)
 
     # Resolve custom_repos board_ids against package_to_boards and surviving_combinations,
     # and normalize conf_fragments and dtc_overlays relative to workspace root.
@@ -917,14 +943,14 @@ def _zephyr_setup_core_impl(mctx):
     index_content += "SYSBUILD_CUSTOM_REPOS = %r\n" % sysbuild_custom_repos
 
     local_modules = [
-        discovered_modules_labels[name]["target"]
+        discovered_modules_labels[name]["target"] + "._zephyr_module"
         for name in sorted(discovered_modules_labels.keys())
     ]
-    index_content += "LOCAL_MODULES = %r\n" % local_modules
 
     zephyr_index_repo(
         name = "zephyr_index",
         content = index_content,
+        local_modules = local_modules,
     )
 
     # The order the schema generator used to see these in, from state.json (sorted keys): board
@@ -932,9 +958,9 @@ def _zephyr_setup_core_impl(mctx):
     board_dirs = {board_index[b]: True for b in sorted(board_index.keys())}.keys()
     zephyr_kconfig_schema(
         name = "zephyr_kconfig",
+        app_build_files = sorted(oot_app_build_files.keys()),
         board_dirs = board_dirs,
         context = context_json,
-        local_modules = local_modules,
     )
 
     watch_deps(tracker, files = deps_files, dirs = deps_dirs)
@@ -973,6 +999,7 @@ def _zephyr_setup_apps_impl(mctx):
     repo_name_to_canonical = {}
     board_id_to_safe = {b: sanitize_board_id(b) for b in board_index.keys()}
     board_toolchains = state.get("board_toolchains", {})
+    board_overlay_keys_cache = {}
     surviving_combinations = state["surviving_combinations"]
     for app_pkg, boards in surviving_combinations.items():
         app_hash = get_app_hash(app_pkg)
@@ -988,13 +1015,15 @@ def _zephyr_setup_apps_impl(mctx):
             main_fragment = app_fragments.get("main", "")
             raw_meta = state.get("sysbuild_metadata", {}).get("raw_metadata", {}).get(app_pkg, {})
             safe_b = board_id_to_safe[board_id]
-            board_name, qualifiers, board_rev = _parse_board_id(board_id)
             board_overlays_map = raw_meta.get("board_overlays", {})
             dtc_overlays = list(raw_meta.get("overlays", []))
-            overlay_keys = [
-                c[:-len(".sysbuild.yml")]
-                for c in _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
-            ] + [safe_b, board_id]
+            if board_id not in board_overlay_keys_cache:
+                board_name, qualifiers, board_rev = _parse_board_id(board_id)
+                board_overlay_keys_cache[board_id] = [
+                    c[:-len(".sysbuild.yml")]
+                    for c in _get_override_candidates(board_name, qualifiers, board_rev, "sysbuild.yml")
+                ] + [safe_b, board_id]
+            overlay_keys = board_overlay_keys_cache[board_id]
             for k in overlay_keys:
                 for ov in board_overlays_map.get(k, []):
                     if ov not in dtc_overlays:
@@ -1033,6 +1062,7 @@ def _zephyr_setup_apps_impl(mctx):
             name = repo["name"],
             app_label = repo["app_label"],
             app_dir = discovered_apps.get(normalize_app_label(Label(repo["app_label"])), ""),
+            sysbuild_app_dir = discovered_apps.get(repo.get("parent_app", ""), ""),
             board_id = board_id,
             board_dir = board_index.get(board_id, ""),
             parent_platform = parent_platform,

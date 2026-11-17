@@ -126,11 +126,6 @@ zephyr_cc_library(
         ],
     }) + select({
         "//conditions:default": [],
-        "@zephyr_kconfig//:CONFIG_NET_MGMT_EVENT=true": [
-            "net_mgmt.c",
-        ],
-    }) + select({
-        "//conditions:default": [],
         "@zephyr_kconfig//:CONFIG_NET_PMTU=true": [
             "pmtu.c",
         ],

@@ -138,6 +138,51 @@ class TestKconfigGenValues(unittest.TestCase):
                 os.path.join(str(self.zephyr_base), "cmake", "toolchain", "host"),
             )
 
+    def test_setup_environment_default_board_revision(self):
+        output_dir = os.path.join(self.test_dir, "out")
+        board_dir = os.path.join(self.test_dir, "boards", "vendor", "target_board")
+        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(board_dir, exist_ok=True)
+        board_yml = os.path.join(board_dir, "board.yml")
+        with open(board_yml, "w", encoding="utf-8") as f:
+            f.write(
+                "boards:\n"
+                "- name: target_board\n"
+                "  revision:\n"
+                "    format: custom\n"
+                "    default: revC\n"
+                "    revisions:\n"
+                "      - name: revA\n"
+                "      - name: revC\n"
+            )
+
+        args = MagicMock()
+        args.board = "target_board/test_soc/cpu0"
+        args.toolchain_variant = None
+        args.app_dir = os.path.join(self.test_dir, "app")
+        tracker = kconfig_utils.InputRecorder()
+
+        kconfig_gen_values.setup_environment(
+            args, str(self.zephyr_base), output_dir, board_dir, tracker=tracker
+        )
+
+        self.assertEqual(os.environ["BOARD"], "target_board")
+        self.assertEqual(os.environ["BOARD_QUALIFIERS"], "test_soc/cpu0")
+        self.assertEqual(os.environ["BOARD_REVISION"], "revC")
+        self.assertIn(os.path.realpath(board_yml), tracker.files)
+
+        explicit_tracker = kconfig_utils.InputRecorder()
+        args.board = "target_board@revA/test_soc/cpu0"
+        kconfig_gen_values.setup_environment(
+            args,
+            str(self.zephyr_base),
+            output_dir,
+            board_dir,
+            tracker=explicit_tracker,
+        )
+        self.assertEqual(os.environ["BOARD_REVISION"], "revA")
+        self.assertNotIn(os.path.realpath(board_yml), explicit_tracker.files)
+
     @patch('subprocess.run')
     def test_main_success(self, mock_run):
         output_dir = os.path.join(self.test_dir, "out")
@@ -609,6 +654,22 @@ class TestKconfigGenValues(unittest.TestCase):
         content = Path(kconfig_env_file).read_text()
         self.assertIn(f"ZEPHYR_HAL_NORDIC_MODULE_DIR={os.path.abspath(module_dir)}", content)
 
+    def test_setup_environment_with_bazel_module_repo(self):
+        args = MagicMock()
+        args.board = "nrf52840dk"
+        args.toolchain_variant = None
+        # A bazel_dep module's repo is named "<module>+".
+        module_dir = os.path.join(self.test_dir, "external", "hal_nordic+")
+        os.makedirs(module_dir, exist_ok=True)
+        args.modules = [module_dir]
+
+        output_dir = os.path.join(self.test_dir, "out")
+        board_dir = os.path.join(self.test_dir, "board")
+
+        kconfig_gen_values.setup_environment(args, str(self.zephyr_base), output_dir, board_dir)
+
+        self.assertEqual(os.environ["ZEPHYR_HAL_NORDIC_MODULE_DIR"], os.path.abspath(module_dir))
+
     def test_generate_kconfig_aggregations_with_modules(self):
         output_dir = os.path.join(self.test_dir, "out")
         board_dir = os.path.join(self.test_dir, "board")
@@ -989,6 +1050,422 @@ class TestKconfigGenValues(unittest.TestCase):
             real(self.zephyr_base / "arch"),
         }, tracker.dirs)
         self.assertNotIn(real(self.zephyr_base), tracker.dirs)
+
+    def test_generate_bazel_build_filters_flags_by_kconfig_symbols_file(self):
+        out_dir = os.path.join(self.test_dir, "out_filtered_flags")
+        os.makedirs(out_dir, exist_ok=True)
+        symbols_file = os.path.join(self.test_dir, "symbols.txt")
+        Path(symbols_file).write_text("CONFIG_ALLOWED_SYM\n")
+
+        def make_bool_sym(name, val):
+            s = MagicMock()
+            s.name = name
+            s.str_value = val
+            s.type = self.kconfig_mock.BOOL
+            s.nodes = [MagicMock()]
+            return s
+
+        kconf = MagicMock()
+        kconf.syms = {
+            "ARCH_POSIX": MagicMock(str_value="y"),
+            "SOC": MagicMock(str_value="inf_clock"),
+        }
+        kconf.unique_defined_syms = [
+            make_bool_sym("ALLOWED_SYM", "y"),
+            make_bool_sym("UNREFERENCED_SYM", "y"),
+        ]
+
+        args = MagicMock()
+        args.app_dir = self.test_dir
+        args.zephyr_base = str(self.zephyr_base)
+        args.parent_platform = "@zephyr//boards/native/native_sim:native"
+        args.kconfig_symbols_file = symbols_file
+
+        kconfig_gen_values.generate_bazel_build(
+            args, kconf, out_dir, self.kconfig_mock
+        )
+
+        build_content = Path(out_dir, "BUILD.bazel").read_text()
+        self.assertIn(
+            '"--@zephyr_kconfig//:CONFIG_ALLOWED_SYM=true"', build_content
+        )
+        self.assertNotIn("CONFIG_UNREFERENCED_SYM", build_content)
+
+    def test_can_reuse_kconfig_dts(self):
+        kconfig_dts = os.path.join(self.test_dir, "Kconfig.dts")
+        Path(kconfig_dts).write_text("# Generated devicetree Kconfig\n")
+        app_dir = os.path.join(self.test_dir, "app_reuse")
+        board_dir = os.path.join(self.test_dir, "board_reuse")
+        os.makedirs(app_dir, exist_ok=True)
+        os.makedirs(board_dir, exist_ok=True)
+        (self.zephyr_base / "dts" / "bindings").mkdir(parents=True, exist_ok=True)
+
+        args = MagicMock()
+        args.kconfig_dts_file = kconfig_dts
+        args.app_dir = app_dir
+        args.modules = []
+        args.oot_dts_roots = []
+
+        self.assertTrue(
+            kconfig_gen_values._can_reuse_kconfig_dts(
+                args, str(self.zephyr_base), board_dir
+            )
+        )
+
+        # App with its own unshared dts/bindings cannot reuse shared Kconfig.dts
+        os.makedirs(os.path.join(app_dir, "dts", "bindings"), exist_ok=True)
+        self.assertFalse(
+            kconfig_gen_values._can_reuse_kconfig_dts(
+                args, str(self.zephyr_base), board_dir
+            )
+        )
+
+        # If app_dir is also in oot_dts_roots, its bindings are already in shared Kconfig.dts
+        args.oot_dts_roots = [app_dir]
+        self.assertTrue(
+            kconfig_gen_values._can_reuse_kconfig_dts(
+                args, str(self.zephyr_base), board_dir
+            )
+        )
+
+    def test_run_kconfig_in_process_evaluates_and_records_inputs(self):
+        kconfigfunctions_mock = MagicMock()
+        sys.modules["kconfigfunctions"] = kconfigfunctions_mock
+
+        kconfig_root = str(self.zephyr_base / "Kconfig")
+        conf_a = os.path.join(self.test_dir, "board_defconfig")
+        conf_b = os.path.join(self.test_dir, "prj.conf")
+        Path(conf_a).write_text("CONFIG_FOO=y\n")
+        Path(conf_b).write_text("CONFIG_BAR=y\n")
+
+        out_dir = os.path.join(self.test_dir, "out_in_proc")
+        config_out = os.path.join(out_dir, ".config")
+        autoconf_out = os.path.join(out_dir, "zephyr", "autoconf.h")
+
+        mock_kconf = MagicMock()
+        mock_kconf.srctree = str(self.zephyr_base)
+        mock_kconf.kconfig_filenames = ["Kconfig", "arch/arm/Kconfig"]
+        mock_kconf.warnings = []
+        mock_kconf.y = MagicMock(tri_value=2)
+        mock_kconf.syms = {}
+        observed_edt = []
+
+        def make_kconf(*_args, **_kwargs):
+            observed_edt.append(kconfigfunctions_mock.edt)
+            return mock_kconf
+
+        self.kconfig_mock.Kconfig.side_effect = make_kconf
+
+        def write_cfg(path):
+            if path != os.devnull:
+                Path(path).write_text("CONFIG_FOO=y\nCONFIG_BAR=y\n")
+
+        def write_hdr(path):
+            Path(path).write_text("#define CONFIG_FOO 1\n#define CONFIG_BAR 1\n")
+
+        mock_kconf.write_config.side_effect = write_cfg
+        mock_kconf.write_autoconf.side_effect = write_hdr
+
+        dummy_edt = MagicMock()
+        tracker = kconfig_utils.InputRecorder()
+        kconf, _ = kconfig_gen_values.run_kconfig_in_process(
+            str(self.zephyr_base),
+            kconfig_root,
+            [conf_a, conf_b],
+            config_out,
+            autoconf_out,
+            tracker=tracker,
+            edt=dummy_edt,
+        )
+
+        self.assertIs(kconf, mock_kconf)
+        self.assertEqual(observed_edt, [dummy_edt])
+        self.assertIsNone(kconfigfunctions_mock.edt)
+        self.assertIsNone(kconfigfunctions_mock.edtlib)
+        mock_kconf.load_config.assert_any_call(conf_a)
+        mock_kconf.load_config.assert_any_call(conf_b, replace=False)
+        self.kconfig_wrapper_mock.check_no_promptless_assign.assert_called_once_with(
+            mock_kconf
+        )
+        self.kconfig_wrapper_mock.check_assigned_sym_values.assert_called_once_with(
+            mock_kconf
+        )
+        self.kconfig_wrapper_mock.check_assigned_choice_values.assert_called_once_with(
+            mock_kconf
+        )
+        self.assertTrue(os.path.isfile(config_out))
+        self.assertTrue(os.path.isfile(autoconf_out))
+        self.assertIn(os.path.realpath(kconfig_root), tracker.files)
+
+        # Verify forced_input_configs ignores "set more than once" warnings
+        self.kconfig_wrapper_mock.err.reset_mock()
+        mock_kconf.warnings = ['warning: FOO (defined at Kconfig:1) was set more than once.']
+        kconfig_gen_values.run_kconfig_in_process(
+            str(self.zephyr_base),
+            kconfig_root,
+            [conf_a, conf_b],
+            config_out,
+            autoconf_out,
+            tracker=tracker,
+            edt=dummy_edt,
+            forced_input_configs=True,
+        )
+        self.kconfig_wrapper_mock.err.assert_not_called()
+
+    def test_generate_dts_headers_in_process_does_not_mutate_stdlib_pickle(self):
+        import pickle as stdlib_pickle
+        import types
+
+        dts_dir = self.zephyr_base / "scripts" / "dts"
+        dts_dir.mkdir(parents=True, exist_ok=True)
+        gen_defines_py = dts_dir / "gen_defines.py"
+        gen_defines_py.write_text("# stub\n")
+
+        out_dir = os.path.join(self.test_dir, "out_dts_hdr")
+        os.makedirs(out_dir, exist_ok=True)
+        non_existent_pickle = os.path.join(out_dir, "missing_edt.pickle")
+
+        orig_stdlib_load = stdlib_pickle.load
+        dummy_edt = MagicMock()
+        observed = {}
+
+        fake_gen_defines = types.ModuleType("gen_defines")
+        fake_gen_defines.pickle = stdlib_pickle
+
+        def fake_main():
+            observed["stdlib_load_during_main"] = stdlib_pickle.load
+            observed["argv_during_main"] = list(sys.argv)
+            with open(sys.argv[sys.argv.index("--edt-pickle") + 1], "rb") as f:
+                observed["loaded_edt"] = fake_gen_defines.pickle.load(f)
+            hdr_out = sys.argv[sys.argv.index("--header-out") + 1]
+            Path(hdr_out).parent.mkdir(parents=True, exist_ok=True)
+            Path(hdr_out).write_text("/* generated */\n")
+
+        fake_gen_defines.main = fake_main
+
+        tracker = kconfig_utils.InputRecorder()
+        with patch.dict(sys.modules, {"gen_defines": fake_gen_defines}):
+            kconfig_gen_values.generate_dts_headers(
+                str(self.zephyr_base),
+                out_dir,
+                non_existent_pickle,
+                tracker=tracker,
+                edt=dummy_edt,
+            )
+
+        self.assertIs(observed["stdlib_load_during_main"], orig_stdlib_load)
+        self.assertIs(observed["loaded_edt"], dummy_edt)
+        self.assertIs(fake_gen_defines.pickle, stdlib_pickle)
+        self.assertTrue(
+            os.path.isfile(os.path.join(out_dir, "zephyr", "devicetree_generated.h"))
+        )
+
+    def _make_sb_kconf(self, values, user_values=None):
+        user_values = user_values or {}
+        syms = {}
+        for name, val in values.items():
+            sym = MagicMock()
+            sym.str_value = val
+            sym.user_value = user_values.get(name)
+            syms[name] = sym
+        sb_kconf = MagicMock()
+        sb_kconf.syms = syms
+        return sb_kconf
+
+    def test_translate_sysbuild_kconfig_to_domain_bootloader_ram_load(self):
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT": "n",
+            "BOOT_SIGNATURE_TYPE_RSA": "y",
+        })
+        lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(sb_kconf, "BOOTLOADER")
+        self.assertIn("CONFIG_BOOT_RAM_LOAD=y", lines)
+        self.assertIn("# CONFIG_BOOT_RAM_LOAD_REVERT is not set", lines)
+        self.assertIn("# CONFIG_BOOT_SWAP_USING_MOVE is not set", lines)
+        self.assertIn("CONFIG_BOOT_SIGNATURE_TYPE_RSA=y", lines)
+        self.assertNotIn("CONFIG_BOOTLOADER_MCUBOOT=y", lines)
+
+    def test_translate_sysbuild_kconfig_to_domain_main_ram_load(self):
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT": "n",
+            "MCUBOOT_RAMLOAD_ALLOW_XIP": "y",
+        })
+        lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(sb_kconf, "MAIN")
+        self.assertIn("CONFIG_BOOTLOADER_MCUBOOT=y", lines)
+        self.assertIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD=y", lines)
+        self.assertNotIn("CONFIG_MCUBOOT_BOOTLOADER_MODE_RAM_LOAD_WITH_REVERT=y", lines)
+        self.assertNotIn("# CONFIG_XIP is not set", lines)
+
+        # When MCUBOOT_RAMLOAD_ALLOW_XIP is n, XIP is disabled
+        sb_kconf_no_xip = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_RAMLOAD_ALLOW_XIP": "n",
+        })
+        lines_no_xip = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(sb_kconf_no_xip, "MAIN")
+        self.assertIn("# CONFIG_XIP is not set", lines_no_xip)
+        self.assertIn("CONFIG_FLASH_SIZE=0", lines_no_xip)
+
+    def test_boot_signature_key_file_kconfig_default_and_multi_key(self):
+        # Default value from Kconfig.sysbuild (user_value is None) with comma-separated keys
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "BOOT_SIGNATURE_KEY_FILE": "key1.pem,key2.pem",
+            "BOOT_ENCRYPTION": "y",
+            "BOOT_ENCRYPTION_KEY_FILE": "enc.pem",
+        })
+        main_lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(
+            sb_kconf, "MAIN"
+        )
+        self.assertIn('CONFIG_MCUBOOT_SIGNATURE_KEY_FILE="key1.pem"', main_lines)
+        self.assertIn('CONFIG_MCUBOOT_ENCRYPTION_KEY_FILE="enc.pem"', main_lines)
+
+        boot_lines = kconfig_gen_values.translate_sysbuild_kconfig_to_domain(
+            sb_kconf, "BOOTLOADER"
+        )
+        self.assertIn(
+            'CONFIG_BOOT_SIGNATURE_KEY_FILE="key1.pem,key2.pem"', boot_lines
+        )
+        self.assertIn('CONFIG_BOOT_ENCRYPTION_KEY_FILE="enc.pem"', boot_lines)
+
+    def test_generate_sysbuild_forced_config_bootloader_board_kconfig_sysbuild(self):
+        sysbuild_dir = self.zephyr_base / "share" / "sysbuild"
+        sysbuild_dir.mkdir(parents=True)
+        (sysbuild_dir / "Kconfig").write_text("# dummy sysbuild Kconfig\n")
+
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        (board_dir / "Kconfig.sysbuild").write_text("choice MCUBOOT_MODE\n\tdefault MCUBOOT_MODE_RAM_LOAD\nendchoice\n")
+
+        app_dir = os.path.join(self.test_dir, "mcuboot")
+        os.makedirs(app_dir)
+        output_dir = os.path.join(self.test_dir, "out")
+        os.makedirs(output_dir)
+
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "MCUBOOT_MODE_RAM_LOAD": "y",
+            "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT": "n",
+            "BOOT_SIGNATURE_TYPE_RSA": "y",
+        })
+        sb_kconf.kconfig_filenames = [str(sysbuild_dir / "Kconfig"), str(board_dir / "Kconfig.sysbuild")]
+        self.kconfig_mock.Kconfig.return_value = sb_kconf
+
+        args = MagicMock()
+        args.app_dir = app_dir
+        args.sysbuild_app_dir = None
+        args.app_name = "mcuboot"
+        args.forced_conf_fragments = []
+        tracker = kconfig_utils.InputRecorder()
+
+        with patch.dict(os.environ, {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""}):
+            forced_path = kconfig_gen_values.generate_sysbuild_forced_config(
+                str(self.zephyr_base), args, output_dir, str(board_dir), tracker=tracker
+            )
+
+        self.assertEqual(forced_path, os.path.join(output_dir, ".config.sysbuild"))
+        self.assertTrue(os.path.exists(forced_path))
+        content = Path(forced_path).read_text()
+        self.assertIn("CONFIG_BOOT_RAM_LOAD=y", content)
+        self.assertIn("# CONFIG_BOOT_RAM_LOAD_REVERT is not set", content)
+        sb_kconf.syms["BOOTLOADER_MCUBOOT"].set_value.assert_called_once_with("y")
+
+    def test_generate_sysbuild_forced_config_bootloader_uses_parent_sysbuild_app_dir(self):
+        sysbuild_dir = self.zephyr_base / "share" / "sysbuild"
+        sysbuild_dir.mkdir(parents=True)
+        (sysbuild_dir / "Kconfig").write_text("# dummy sysbuild Kconfig\n")
+
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        mcuboot_dir = os.path.join(self.test_dir, "mcuboot_repo")
+        parent_app_dir = os.path.join(self.test_dir, "parent_app")
+        os.makedirs(mcuboot_dir)
+        os.makedirs(parent_app_dir)
+        parent_kconfig_sb = os.path.join(parent_app_dir, "Kconfig.sysbuild")
+        Path(parent_kconfig_sb).write_text(
+            'source "share/sysbuild/Kconfig"\nconfig BOOT_SIGNATURE_KEY_FILE\n\tdefault "parent_key.pem"\n'
+        )
+        output_dir = os.path.join(self.test_dir, "out_parent_sb")
+        os.makedirs(output_dir)
+
+        sb_kconf = self._make_sb_kconf({
+            "BOOTLOADER_MCUBOOT": "y",
+            "BOOT_SIGNATURE_KEY_FILE": "parent_key.pem",
+        })
+        sb_kconf.srctree = str(self.zephyr_base)
+        sb_kconf.kconfig_filenames = [parent_kconfig_sb]
+        self.kconfig_mock.Kconfig.return_value = sb_kconf
+
+        args = MagicMock()
+        args.app_dir = mcuboot_dir
+        args.sysbuild_app_dir = parent_app_dir
+        args.app_name = "mcuboot"
+        args.forced_conf_fragments = []
+        tracker = kconfig_utils.InputRecorder()
+
+        with patch.dict(
+            os.environ,
+            {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""},
+        ):
+            forced_path = kconfig_gen_values.generate_sysbuild_forced_config(
+                str(self.zephyr_base),
+                args,
+                output_dir,
+                str(board_dir),
+                tracker=tracker,
+            )
+
+        self.kconfig_mock.Kconfig.assert_called_with(
+            parent_kconfig_sb, warn_to_stderr=False
+        )
+        content = Path(forced_path).read_text()
+        self.assertIn('CONFIG_BOOT_SIGNATURE_KEY_FILE="parent_key.pem"', content)
+
+    def test_generate_sysbuild_forced_config_in_tree_mcuboot_test_not_bootloader(self):
+        sysbuild_dir = self.zephyr_base / "share" / "sysbuild"
+        sysbuild_dir.mkdir(parents=True)
+        (sysbuild_dir / "Kconfig").write_text("# dummy sysbuild Kconfig\n")
+
+        board_dir = self.zephyr_base / "boards" / "arm" / "nrf52840dk"
+        (board_dir / "Kconfig.sysbuild").write_text(
+            "choice MCUBOOT_MODE\n\tdefault MCUBOOT_MODE_RAM_LOAD\nendchoice\n"
+        )
+
+        # An in-tree test under <zephyr_base>/tests/subsys/dfu/mcuboot has
+        # app_name="mcuboot" and basename="mcuboot" but is a normal test app
+        # (MAIN), not the MCUboot bootloader image.
+        test_app_dir = self.zephyr_base / "tests" / "subsys" / "dfu" / "mcuboot"
+        test_app_dir.mkdir(parents=True)
+        output_dir = os.path.join(self.test_dir, "out_dfu_test")
+        os.makedirs(output_dir)
+        soc_out_dir = os.path.join(output_dir, "soc")
+        os.makedirs(soc_out_dir)
+        Path(os.path.join(soc_out_dir, "Kconfig.sysbuild")).write_text(
+            'osource "/some/soc/Kconfig.sysbuild"\n'
+        )
+
+        args = MagicMock()
+        args.app_dir = str(test_app_dir)
+        args.sysbuild_app_dir = None
+        args.app_name = "mcuboot"
+        args.forced_conf_fragments = []
+        tracker = kconfig_utils.InputRecorder()
+
+        with patch.dict(
+            os.environ,
+            {"BOARD": "nrf52840dk", "BOARD_QUALIFIERS": "", "BOARD_REVISION": ""},
+        ):
+            forced_path = kconfig_gen_values.generate_sysbuild_forced_config(
+                str(self.zephyr_base),
+                args,
+                output_dir,
+                str(board_dir),
+                tracker=tracker,
+            )
+
+        self.assertIsNone(forced_path)
+
 
 if __name__ == '__main__':
     unittest.main()

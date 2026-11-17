@@ -426,6 +426,79 @@ class TestScanModulesDeps(unittest.TestCase):
             self.assertIn(self.real("missing") + "\n", f.read())
         self.assertEqual(os.listdir(self.out_dir), ["deps.txt"])
 
+    def test_check_zephyr_module_target_rejects_cc_library(self):
+        build_file = os.path.join(self.test_dir, "BUILD.bazel")
+        self.write(
+            "BUILD.bazel",
+            'load("@zephyr//bazel:cc.bzl", "zephyr_app", "zephyr_cc_library", "zephyr_module")\n'
+            'zephyr_module(name = "other_mod", config = "CONFIG_OTHER")\n'
+            'zephyr_cc_library(name = "my_mod", srcs = ["a.c"])\n'
+            'cc_library(name = "plain_cc", srcs = ["b.c"])\n'
+            'zephyr_app(name = "mcuboot")\n'
+            'alias(name = "aliased_mod", actual = ":other_mod")\n',
+        )
+        for non_mod in ("my_mod", "plain_cc", "mcuboot", "aliased_mod"):
+            self.assertFalse(
+                scan_modules.check_zephyr_module_target_in_build(
+                    build_file, non_mod
+                ),
+                f"Expected {non_mod} to be rejected as scan-only",
+            )
+        self.assertTrue(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "other_mod"
+            )
+        )
+
+    def test_check_zephyr_module_target_accepts_wrapper_macros_and_respects_scan_only_tag(
+        self,
+    ):
+        build_file = os.path.join(self.test_dir, "BUILD.bazel")
+        self.write(
+            "BUILD.bazel",
+            'load("//src/rust:defs.bzl", "rust_zephyr_module")\n'
+            'load(":defs.bzl", "custom_service_bundle", "helper_macros")\n'
+            'rust_zephyr_module(name = "bt_service", config = "CONFIG_BT")\n'
+            'custom_service_bundle(name = "proj_server", config = "CONFIG_PROJ")\n'
+            'helper_macros.wrapped_mod(name = "attr_mod", config = "CONFIG_ATTR")\n'
+            'custom_service_bundle(name = "opted_out", tags = ["zephyr_scan_only"])\n',
+        )
+        for wrapped in ("bt_service", "proj_server", "attr_mod"):
+            self.assertTrue(
+                scan_modules.check_zephyr_module_target_in_build(
+                    build_file, wrapped
+                ),
+                f"Expected wrapper macro {wrapped} to be autolinked",
+            )
+        self.assertFalse(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "opted_out"
+            )
+        )
+
+    def test_check_zephyr_module_target_with_helper_call_before_name(self):
+        build_file = os.path.join(self.test_dir, "BUILD.bazel")
+        self.write(
+            "BUILD.bazel",
+            'load("@zephyr//bazel:cc.bzl", "if_compiler_is_clang", "zephyr_module")\n'
+            '# zephyr_module(name = "commented_out", config = "CONFIG_MY_MOD")\n'
+            "zephyr_module(\n"
+            '    copts = if_compiler_is_clang(["-Wno-foo"]),\n'
+            '    name = "my_mod",\n'
+            '    config = "CONFIG_MY_MOD",\n'
+            ")\n",
+        )
+        self.assertTrue(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "my_mod"
+            )
+        )
+        self.assertFalse(
+            scan_modules.check_zephyr_module_target_in_build(
+                build_file, "commented_out"
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

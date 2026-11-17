@@ -702,15 +702,33 @@ cc_args(
     actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
     args = [
         "-Wl,--gc-sections",
-        "-Wl,--allow-multiple-definition",
         "-nodefaultlibs",
         "-lc++",
         "-lc++abi",
         "-lunwind",
-        "-l:libclang_rt.builtins.a",
         "-lc",
         "-lm",
+        "-l:libclang_rt.builtins.a",
     ],
+)
+
+# Opt-in feature that lets a binary link duplicate symbol definitions.
+#
+# Duplicate definitions usually mean that the same code is linked twice, or
+# that two different definitions of a symbol are linked and one of them is
+# silently dropped, so fix the duplicates rather than enabling this. Binaries
+# (or packages, or whole builds through --features) that still link duplicate
+# definitions can enable it until they are fixed.
+cc_args(
+    name = "allow_multiple_definition_args",
+    actions = ["@rules_cc//cc/toolchains/actions:link_actions"],
+    args = ["-Wl,--allow-multiple-definition"],
+)
+
+cc_feature(
+    name = "allow_multiple_definition",
+    args = [":allow_multiple_definition_args"],
+    feature_name = "allow_multiple_definition",
 )
 
 cc_feature(
@@ -1137,6 +1155,7 @@ cc_toolchain(
         ":llvm_cortex_libc",
     ],
     known_features = [
+        ":allow_multiple_definition",
         "//toolchain/capability:known_toolchain_types",
         "//toolchain/args:zephyr_warning_suppressions",
         "//toolchain/args:freestanding",
