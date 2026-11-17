@@ -2,3 +2,4 @@ build
 twister_out
 west
 bazel/tests/downstream_project
+repository_overrides

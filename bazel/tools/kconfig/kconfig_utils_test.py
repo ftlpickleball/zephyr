@@ -152,6 +152,39 @@ class TestKconfigUtils(unittest.TestCase):
             # Verify config name is parsed correctly: '+_repo_rules+hal_nordic' -> 'HAL_NORDIC'
             self.assertIn('config ZEPHYR_HAL_NORDIC_MODULE', content)
 
+    def test_generate_kconfig_modules_with_bazel_dep_name(self):
+        zephyr_base = os.path.join(self.test_dir, "zephyr")
+        os.makedirs(os.path.join(zephyr_base, "modules"), exist_ok=True)
+
+        # A bazel_dep module's repo is named "<module>+".
+        extra_dir = os.path.join(self.test_dir, "hal_nordic+")
+        os.makedirs(extra_dir)
+        with open(os.path.join(extra_dir, "Kconfig"), 'w') as f:
+            f.write("hal_nordic kconfig")
+
+        output_file = os.path.join(self.test_dir, "Kconfig.modules")
+
+        kconfig_utils.generate_kconfig_modules(zephyr_base, [extra_dir], output_file)
+
+        with open(output_file, 'r') as f:
+            content = f.read()
+            self.assertIn('config ZEPHYR_HAL_NORDIC_MODULE', content)
+            self.assertNotIn('config ZEPHYR__MODULE', content)
+
+    def test_module_name_from_dir(self):
+        cases = {
+            "hal_foo+": "hal_foo",
+            "hal_foo+1.2.3": "hal_foo",
+            "+_repo_rules+hal_foo": "hal_foo",
+            "owner++ext+hal_foo": "hal_foo",
+            "hal_foo": "hal_foo",
+        }
+        for dirname, name in cases.items():
+            with self.subTest(dirname=dirname):
+                self.assertEqual(
+                    kconfig_utils.module_name_from_dir(f"/ext/{dirname}/"), name
+                )
+
     def test_generate_kconfig_modules_precedence(self):
         zephyr_base = os.path.join(self.test_dir, "zephyr")
         os.makedirs(os.path.join(zephyr_base, "modules"), exist_ok=True)
@@ -208,6 +241,31 @@ class TestKconfigUtils(unittest.TestCase):
             self.assertIn('config ZEPHYR_EXISTING_NO_KCONFIG_MODULE', content)
             self.assertIn('bool', content)
             self.assertIn('default y', content)
+
+    def test_generate_kconfig_sysbuild_modules(self):
+        zephyr_base = os.path.join(self.test_dir, "zephyr")
+        os.makedirs(os.path.join(zephyr_base, "modules", "mod_in_tree"))
+
+        extra_with_sb = os.path.join(self.test_dir, "extra_sb")
+        os.makedirs(os.path.join(extra_with_sb, "zephyr"))
+        with open(os.path.join(extra_with_sb, "zephyr", "module.yml"), "w") as f:
+            f.write("build:\n  kconfig: zephyr/Kconfig\n  sysbuild-kconfig: zephyr/Kconfig.sysbuild\n")
+        with open(os.path.join(extra_with_sb, "zephyr", "Kconfig"), "w") as f:
+            f.write("config REGULAR_ONLY\n")
+        with open(os.path.join(extra_with_sb, "zephyr", "Kconfig.sysbuild"), "w") as f:
+            f.write("config SYSBUILD_MOD\n")
+
+        output_file = os.path.join(self.test_dir, "Kconfig.sysbuild.modules")
+        tracker = kconfig_utils.InputRecorder()
+        kconfig_utils.generate_kconfig_sysbuild_modules(
+            zephyr_base, [extra_with_sb], output_file, tracker=tracker
+        )
+
+        content = Path(output_file).read_text()
+        self.assertIn("config ZEPHYR_MOD_IN_TREE_MODULE", content)
+        self.assertIn("config ZEPHYR_EXTRA_SB_MODULE", content)
+        self.assertIn("extra_sb/zephyr/Kconfig.sysbuild", content)
+        self.assertNotIn("extra_sb/zephyr/Kconfig\"", content)
 
     @patch('subprocess.run')
     def test_generate_kconfig_dts(self, mock_run):
@@ -458,12 +516,14 @@ class TestInputTracking(unittest.TestCase):
         os.makedirs(root2)
 
         tracker = kconfig_utils.InputRecorder()
-        kconfig_utils.generate_kconfig_dts(
+        scanned = kconfig_utils.generate_kconfig_dts(
             zephyr_base, os.path.join(self.test_dir, "Kconfig.dts"), [root1, root2], tracker=tracker
         )
 
         cmd = mock_run.call_args[0][0]
         self.assertEqual(cmd[cmd.index("--bindings-dirs") + 1:], [bindings])
+        # Every binding file below the bindings dirs, for kconfig_inputs_sha256.
+        self.assertEqual(scanned, sorted([x, y]))
         self.assertEqual(tracker.files, {
             os.path.join(zephyr_base, "scripts", "dts", "gen_driver_kconfig_dts.py"),
             x,

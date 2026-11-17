@@ -146,6 +146,20 @@ def sanitize_name_for_target(name):
     """Consistently sanitize for Bazel target names."""
     return name.replace("-", "_").replace(".", "_").replace("(", "_").replace(")", "_").replace("$", "_").replace('"', "").replace("'", "")
 
+def module_name_from_dir(module_dir):
+    """Returns the name of the Zephyr module in module_dir.
+
+    The name is the apparent name of the module's repository, as in
+    scan_modules.extract_apparent_name(): "hal_foo+" (a bazel_dep module)
+    and "hal_foo+1.2.3" give "hal_foo"; "+_repo_rules+hal_foo" and
+    "owner++ext+hal_foo" give the last part; a plain directory name is
+    kept as is.
+    """
+    parts = os.path.basename(str(module_dir).rstrip("/")).split("+")
+    if len(parts) == 2 and parts[0]:
+        return parts[0]
+    return parts[-1]
+
 def generate_aggregation_file(output_file, dirs, comment, include_wildcard = False, tracker = None):
     """Generates a Kconfig file that sources other Kconfig files in the given directories.
 
@@ -203,7 +217,7 @@ def generate_kconfig_modules(zephyr_base, extra_modules, output_file, tracker = 
                 if tracker is not None:
                     tracker.add(m)
                 continue
-            module_name = os.path.basename(m.rstrip('/')).split('+')[-1].replace('-', '_').upper()
+            module_name = module_name_from_dir(m).replace('-', '_').upper()
             k_candidates = []
             module_yml = os.path.join(m, "zephyr", "module.yml")
             if tracker is not None:
@@ -236,6 +250,74 @@ def generate_kconfig_modules(zephyr_base, extra_modules, output_file, tracker = 
     default y
 """)
 
+
+def _extract_module_sysbuild_kconfig(module_dir, module_yml):
+    """Returns the module's sysbuild-kconfig path from module.yml if specified."""
+    if not os.path.exists(module_yml):
+        return None
+    try:
+        import yaml
+
+        with open(module_yml, "r", encoding="utf-8") as yf:
+            ydata = yaml.safe_load(yf)
+    except Exception:
+        return None
+    if not isinstance(ydata, dict):
+        return None
+    build_cfg = ydata.get("build")
+    if not isinstance(build_cfg, dict):
+        return None
+    rel_kconfig = build_cfg.get("sysbuild-kconfig")
+    if not rel_kconfig:
+        return None
+    return os.path.join(module_dir, rel_kconfig)
+
+
+def generate_kconfig_sysbuild_modules(zephyr_base, extra_modules, output_file, tracker = None):
+    """Generates Kconfig.sysbuild.modules for share/sysbuild/Kconfig evaluation.
+
+    Mirrors scripts/zephyr_module.py's process_sysbuildkconfig(): sources a
+    module's 'build.sysbuild-kconfig' when declared in zephyr/module.yml and
+    defines config ZEPHYR_<MODULE>_MODULE for each module.
+    """
+    modules_dir = os.path.join(zephyr_base, "modules")
+    with open(output_file, "w") as f:
+        if os.path.isdir(modules_dir):
+            if tracker is not None:
+                tracker.add_dir(modules_dir)
+            for entry in sorted(os.listdir(modules_dir)):
+                d = os.path.join(modules_dir, entry)
+                if not os.path.isdir(d):
+                    continue
+                module_name = entry.replace('-', '_').upper()
+                f.write(f"""config ZEPHYR_{module_name}_MODULE
+    bool
+    default y
+""")
+        elif tracker is not None:
+            tracker.add(modules_dir)
+
+        for m in sorted(extra_modules):
+            if not os.path.isdir(m):
+                if tracker is not None:
+                    tracker.add(m)
+                continue
+            module_name = os.path.basename(m.rstrip('/')).split('+')[-1].replace('-', '_').upper()
+            module_yml = os.path.join(m, "zephyr", "module.yml")
+            if tracker is not None:
+                tracker.add(module_yml)
+            sb_kpath = _extract_module_sysbuild_kconfig(m, module_yml)
+            if sb_kpath is not None:
+                if tracker is not None:
+                    tracker.add(sb_kpath)
+                if os.path.exists(sb_kpath):
+                    f.write(f'osource "{os.path.abspath(sb_kpath)}"\n')
+            f.write(f"""config ZEPHYR_{module_name}_MODULE
+    bool
+    default y
+""")
+
+
 def sanitize_host_env(env=None):
     """Strips host Kconfig/Zephyr/Python environment variables and pins UTF-8/hash seed."""
     target = os.environ if env is None else env
@@ -257,6 +339,11 @@ def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
 
     Records the script, every binding file and directory it walks, and missing
     bindings dir candidates into 'tracker'.
+
+    Returns:
+        The sorted paths of the binding files below the bindings dirs passed to
+        gen_driver_kconfig_dts.py (including ones that add no new
+        `compatible:`, such as bus variants or shared base bindings).
     """
     bindings_dirs = []
     for dts_root in dts_roots:
@@ -267,6 +354,13 @@ def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
                 break # Only use the first one found
             elif tracker is not None:
                 tracker.add(str(bdir))
+
+    binding_files = set()
+    for bdir in bindings_dirs:
+        for root, _, filenames in os.walk(bdir):
+            binding_files.update(
+                os.path.join(root, f) for f in filenames if f.endswith(BINDING_SUFFIXES)
+            )
 
     gen_driver_kconfig_dts_py = os.path.join(zephyr_base, "scripts", "dts", "gen_driver_kconfig_dts.py")
     cmd = [
@@ -290,6 +384,7 @@ def generate_kconfig_dts(zephyr_base, output_file, dts_roots, tracker = None):
             tracker.add_tree(bdir, BINDING_SUFFIXES)
 
     subprocess.run(cmd, env=env, check=True)
+    return sorted(binding_files)
 
 
 def filtered_walk(top, tracker = None, followlinks=False):

@@ -53,6 +53,20 @@ def zephyr_sysbuild(name, main, **kwargs):
         **kwargs: Additional arguments passed to the underlying rule.
     """
     testonly = kwargs.get("testonly", False)
+    tags = kwargs.pop("tags", None)
+    internal_tags = (list(tags) if tags else []) + (
+        [] if (tags and "manual" in tags) else ["manual"]
+    )
+    caller_compatible_with = kwargs.pop("target_compatible_with", None)
+    base_compatible_with = select({
+        Label("//bazel:no_sysbuild_board"): [Label("@platforms//:incompatible")],
+        "//conditions:default": [],
+    })
+    target_compatible_with = (
+        base_compatible_with + caller_compatible_with
+        if caller_compatible_with != None
+        else base_compatible_with
+    )
     kwargs.pop("app_label", None)
 
     # Normalize main label to match index keys
@@ -84,6 +98,8 @@ def zephyr_sysbuild(name, main, **kwargs):
             dep = helper_target,
             platform = helper_config.get("platform"),
             sysbuild_context = "%s:%s" % (norm_main, helper_name),
+            tags = internal_tags,
+            target_compatible_with = target_compatible_with,
             testonly = testonly,
         )
         all_helpers_targets[helper_name] = ":" + t_name
@@ -103,6 +119,8 @@ def zephyr_sysbuild(name, main, **kwargs):
                 dep = helper_target,
                 platform = helper_config.get("platform"),
                 sysbuild_context = "%s:%s" % (norm_main, helper_name),
+                tags = internal_tags,
+                target_compatible_with = target_compatible_with,
                 testonly = testonly,
             )
             all_helpers_targets["%s:%s" % (board_id, helper_name)] = ":" + t_name
@@ -115,6 +133,7 @@ def zephyr_sysbuild(name, main, **kwargs):
             base_helpers_map[helper_name] = target
 
     board_select_dict = {
+        Label("//bazel:no_sysbuild_board"): [],
         "//conditions:default": list(base_helpers_map.values()),
     }
 
@@ -151,8 +170,13 @@ def zephyr_sysbuild(name, main, **kwargs):
     _zephyr_sysbuild_rule(
         name = name,
         board_helper_keys = board_helper_keys,
-        main = main,
+        main = select({
+            Label("//bazel:no_sysbuild_board"): None,
+            "//conditions:default": main,
+        }),
         helpers = select(board_select_dict),
+        tags = tags,
+        target_compatible_with = target_compatible_with,
         **kwargs
     )
 
@@ -169,6 +193,8 @@ def _add_domain_symlinks(ctx, domain_id, exec_file, domain_rf, root_symlinks):
             root_symlinks[prefix + entry.path] = entry.target_file
 
 def _zephyr_sysbuild_rule_impl(ctx):
+    if not ctx.attr.main:
+        fail("_zephyr_sysbuild_rule requires main on a Zephyr platform")
     all_files = []
     all_files.extend(ctx.attr.main[DefaultInfo].files.to_list())
     for helper in ctx.attr.helpers:
@@ -281,7 +307,7 @@ _zephyr_sysbuild_rule = rule(
     executable = True,
     attrs = {
         "board_helper_keys": attr.string_list(),
-        "main": attr.label(mandatory = True),
+        "main": attr.label(),
         "helpers": attr.label_list(),
         "_allowlist_function_transition": attr.label(
             default = "@bazel_tools//tools/allowlists/function_transition_allowlist",

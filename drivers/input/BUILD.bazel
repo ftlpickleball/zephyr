@@ -5,6 +5,7 @@
 
 load("@bazel_skylib//lib:selects.bzl", "selects")
 load("//bazel:cc.bzl", "zephyr_cc_library")
+load("//scripts/native_simulator:defs.bzl", "nsi_runner_cc_library")
 
 package(default_visibility = ["//:__subpackages__"])
 
@@ -251,6 +252,16 @@ zephyr_cc_library(
     }),
 )
 
+nsi_runner_cc_library(
+    name = "input_sdl_touch_bottom",
+    srcs = ["input_sdl_touch_bottom.c"],
+    hdrs = ["input_sdl_touch_bottom.h"],
+    implementation_deps = [
+        "//boards/native/common/sdl:sdl2_headers",
+        "@sdl2",
+    ],
+)
+
 zephyr_cc_library(
     name = "input_config_input_sdl_touch_deps",
     srcs = [
@@ -260,6 +271,13 @@ zephyr_cc_library(
         ["*.h"],
         allow_empty = True,
     ),
+    target_compatible_with = [
+        "@platforms//os:linux",
+        "//boards:sim",
+    ],
+    deps = [
+        ":input_sdl_touch_bottom",
+    ],
 )
 
 zephyr_cc_library(

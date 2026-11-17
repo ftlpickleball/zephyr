@@ -85,7 +85,31 @@ class BatchTest(unittest.TestCase):
         problems = audit.check_entry(entry, max_batches=1)
         self.assertEqual(len(problems), 2)
         self.assertTrue(any("DIRTREE" in p for p in problems))
-        self.assertTrue(any("2 batches" in p for p in problems))
+        self.assertTrue(any("3 batches" in p for p in problems))
+
+    def test_dirtree_allowed_only_in_tree_trackers(self):
+        inputs = _inputs("DIRTREE:@@//tree 3")
+        for name in (
+            "@+skyframe_warmer+skyframe_warmer",
+            "@zephyr++zephyr_workspace_manifest+zephyr_workspace_manifest",
+        ):
+            self.assertEqual(
+                audit.check_entry(audit.Entry(name, inputs), max_batches=10), [], name
+            )
+        for name in ("@my_skyframe_warmer_copy", "@+skyframe_warmer+skyframe_warmer_v2"):
+            problems = audit.check_entry(audit.Entry(name, inputs), max_batches=10)
+            self.assertEqual(len(problems), 1, name)
+            self.assertIn("DIRTREE", problems[0])
+    def test_dirents_starts_batch(self):
+        inputs = _inputs(
+            "FILE:@@//d1 DIR",
+            "FILE:@@//d2 DIR",
+            "FILE:@@bazel_tools//tools/BUILD abc",
+            "DIRENTS:@@//d1 123",
+            "DIRENTS:@@//d2 456",
+        )
+        batches = audit.split_into_batches(inputs)
+        self.assertEqual([len(b) for b in batches], [2, 1, 1, 1])
 
     def test_external_dirents_fails(self):
         entry = audit.Entry(
@@ -99,6 +123,19 @@ class BatchTest(unittest.TestCase):
         problems = audit.check_entry(entry, max_batches=10)
         self.assertEqual(len(problems), 1)
         self.assertIn("external DIRENTS", problems[0])
+
+    def test_input_limit_fails(self):
+        entry = audit.Entry(
+            "e",
+            _inputs(
+                "FILE:@@//a 1",
+                "FILE:@@//b 2",
+                "FILE:@@//c 3",
+            ),
+        )
+        self.assertEqual(audit.check_entry(entry, max_batches=10, max_inputs=3), [])
+        problems = audit.check_entry(entry, max_batches=10, max_inputs=2)
+        self.assertEqual(problems, ["3 inputs (max 2)"])
 
 
 class CollectTest(unittest.TestCase):
@@ -193,6 +230,16 @@ class CollectTest(unittest.TestCase):
         self.assertEqual(audit.main([self.ob]), 1)
         self._write("external/@zephyr+.marker", "deadbeef\nFILE:@@//t 00\n")
         self.assertEqual(audit.main([self.ob]), 0)
+
+    def test_main_default_max_batches_is_20(self):
+        def marker(n):
+            lines = "".join("FILE:@@r%d+//x %d\n" % (i, i) for i in range(n))
+            self._write("external/@zephyr+.marker", "deadbeef\n" + lines)
+
+        marker(20)
+        self.assertEqual(audit.main([self.ob]), 0)
+        marker(21)
+        self.assertEqual(audit.main([self.ob]), 1)
 
 
 if __name__ == "__main__":

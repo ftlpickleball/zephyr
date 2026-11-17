@@ -74,8 +74,47 @@ def _parse_sysbuild_dict(content, app_pkg):
     return overlays, helpers
 
 
+_MCUBOOT_MODE_BOOTLOADER_MAP = {
+    "MCUBOOT_MODE_SINGLE_APP": ("CONFIG_SINGLE_APPLICATION_SLOT",),
+    "MCUBOOT_MODE_SWAP_SCRATCH": ("CONFIG_BOOT_SWAP_USING_SCRATCH",),
+    "MCUBOOT_MODE_SWAP_USING_OFFSET": ("CONFIG_BOOT_SWAP_USING_OFFSET",),
+    "MCUBOOT_MODE_SWAP_USING_MOVE": ("CONFIG_BOOT_SWAP_USING_MOVE",),
+    "MCUBOOT_MODE_OVERWRITE_ONLY": ("CONFIG_BOOT_UPGRADE_ONLY",),
+    "MCUBOOT_MODE_UPGRADE_ONLY": ("CONFIG_BOOT_UPGRADE_ONLY",),
+    "MCUBOOT_MODE_DIRECT_XIP": ("CONFIG_BOOT_DIRECT_XIP",),
+    "MCUBOOT_MODE_DIRECT_XIP_WITH_REVERT": (
+        "CONFIG_BOOT_DIRECT_XIP",
+        "CONFIG_BOOT_DIRECT_XIP_REVERT",
+    ),
+    "MCUBOOT_MODE_RAM_LOAD": ("CONFIG_BOOT_RAM_LOAD",),
+    "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT": (
+        "CONFIG_BOOT_RAM_LOAD",
+        "CONFIG_BOOT_RAM_LOAD_REVERT",
+    ),
+    "MCUBOOT_MODE_SINGLE_APP_RAM_LOAD": (
+        "CONFIG_SINGLE_APPLICATION_SLOT_RAM_LOAD",
+    ),
+    "MCUBOOT_MODE_FIRMWARE_UPDATER": ("CONFIG_BOOT_FIRMWARE_LOADER",),
+}
+
+_RAM_LOAD_MODES = frozenset({
+    "MCUBOOT_MODE_RAM_LOAD",
+    "MCUBOOT_MODE_RAM_LOAD_WITH_REVERT",
+    "MCUBOOT_MODE_SINGLE_APP_RAM_LOAD",
+})
+
+_BOOT_SIGNATURE_OPTIONS = frozenset({
+    "BOOT_SIGNATURE_TYPE_RSA",
+    "BOOT_SIGNATURE_TYPE_ECDSA_P256",
+    "BOOT_SIGNATURE_TYPE_ED25519",
+    "BOOT_SIGNATURE_TYPE_NONE",
+})
+
+
 def process_sysbuild_conf(file_path):
     fragments = collections.defaultdict(list)
+    sb_options = []
+    sb_dict = {}
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -88,25 +127,8 @@ def process_sysbuild_conf(file_path):
                 if match:
                     option = match.group(1)
                     value = match.group(2)
-
-                    # Global SB_CONFIG_ options are generally for Sysbuild itself and
-                    # ignored, except for specific settings that have hardcoded side-effects
-                    # on the Kconfig of target images (like enabling MCUboot or its mode).
-                    if option == "BOOTLOADER_MCUBOOT" and value == "y":
-                        fragments["main"].append("CONFIG_BOOTLOADER_MCUBOOT=y")
-                        fragments["mcuboot"].append(
-                            "CONFIG_BOOTLOADER_MCUBOOT=y"
-                        )
-                    elif option.startswith("MCUBOOT_MODE_"):
-                        translated_option = option.replace(
-                            "MCUBOOT_MODE_", "CONFIG_MCUBOOT_BOOTLOADER_MODE_"
-                        )
-                        fragments["main"].append(
-                            f"{translated_option}={value}"
-                        )
-                        fragments["mcuboot"].append(
-                            f"{translated_option}={value}"
-                        )
+                    sb_options.append((option, value))
+                    sb_dict[option] = value
                     continue
 
                 # Match namespaced settings: domain_CONFIG_OPTION=value
@@ -120,6 +142,127 @@ def process_sysbuild_conf(file_path):
                     continue
     except Exception as e:
         print(f"Error reading {file_path}: {e}", file=sys.stderr)
+
+    # Mirror share/sysbuild/image_configurations/MAIN_image_default.cmake and
+    # BOOTLOADER_image_default.cmake so main and mcuboot images receive only
+    # their own valid Kconfig symbols.
+    swap_using_offset = sb_dict.get("MCUBOOT_SWAP_USING_OFFSET") == "y"
+    ramload_allow_xip = sb_dict.get("MCUBOOT_RAMLOAD_ALLOW_XIP") == "y"
+    fw_updater_boot_mode = (
+        sb_dict.get("MCUBOOT_MODE_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE") == "y"
+        or sb_dict.get("MCUBOOT_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE") == "y"
+    )
+
+    def _mcuboot_mode_main_option(opt):
+        if opt == "MCUBOOT_MODE_UPGRADE_ONLY":
+            return "CONFIG_MCUBOOT_BOOTLOADER_MODE_OVERWRITE_ONLY"
+        if opt == "MCUBOOT_MODE_SWAP_WITHOUT_SCRATCH" and swap_using_offset:
+            return "CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_OFFSET"
+        if opt == "MCUBOOT_MODE_SWAP_WITHOUT_SCRATCH":
+            return "CONFIG_MCUBOOT_BOOTLOADER_MODE_SWAP_USING_MOVE"
+        return opt.replace("MCUBOOT_MODE_", "CONFIG_MCUBOOT_BOOTLOADER_MODE_")
+
+    def _mcuboot_mode_boot_syms(opt):
+        if opt == "MCUBOOT_MODE_SWAP_WITHOUT_SCRATCH":
+            return (
+                "CONFIG_BOOT_SWAP_USING_OFFSET"
+                if swap_using_offset
+                else "CONFIG_BOOT_SWAP_USING_MOVE",
+            )
+        return _MCUBOOT_MODE_BOOTLOADER_MAP.get(opt, ())
+
+    enabled_main_mode_syms = set()
+    enabled_boot_mode_syms = set()
+    for opt, val in sb_dict.items():
+        if (
+            val == "y"
+            and opt.startswith("MCUBOOT_MODE_")
+            and opt != "MCUBOOT_MODE_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE"
+        ):
+            enabled_main_mode_syms.add(_mcuboot_mode_main_option(opt))
+            enabled_boot_mode_syms.update(_mcuboot_mode_boot_syms(opt))
+
+    for option, value in sb_options:
+        if option == "BOOTLOADER_MCUBOOT":
+            if value == "y":
+                fragments["main"].append("CONFIG_BOOTLOADER_MCUBOOT=y")
+            elif value == "n":
+                fragments["main"].append("# CONFIG_BOOTLOADER_MCUBOOT is not set")
+        elif option.startswith("MCUBOOT_MODE_"):
+            if option == "MCUBOOT_MODE_FIRMWARE_UPDATER_BOOT_MODE_ENTRANCE":
+                continue
+            main_option = _mcuboot_mode_main_option(option)
+            if not (value == "n" and main_option in enabled_main_mode_syms):
+                fragments["main"].append(f"{main_option}={value}")
+            if (
+                value == "y"
+                and option in _RAM_LOAD_MODES
+                and not ramload_allow_xip
+            ):
+                fragments["main"].append("CONFIG_XIP=n")
+                fragments["main"].append("CONFIG_FLASH_SIZE=0")
+            if (
+                value == "y"
+                and option == "MCUBOOT_MODE_FIRMWARE_UPDATER"
+                and fw_updater_boot_mode
+            ):
+                fragments["main"].extend([
+                    "CONFIG_RETAINED_MEM=y",
+                    "CONFIG_RETENTION=y",
+                    "CONFIG_RETENTION_BOOT_MODE=y",
+                    "CONFIG_REBOOT=y",
+                ])
+
+            for boot_sym in _mcuboot_mode_boot_syms(option):
+                if not (value == "n" and boot_sym in enabled_boot_mode_syms):
+                    fragments["mcuboot"].append(f"{boot_sym}={value}")
+            if value == "y":
+                if "CONFIG_BOOT_DIRECT_XIP_REVERT" not in enabled_boot_mode_syms:
+                    fragments["mcuboot"].append(
+                        "# CONFIG_BOOT_DIRECT_XIP_REVERT is not set"
+                    )
+                if "CONFIG_BOOT_RAM_LOAD_REVERT" not in enabled_boot_mode_syms:
+                    fragments["mcuboot"].append(
+                        "# CONFIG_BOOT_RAM_LOAD_REVERT is not set"
+                    )
+            if (
+                value == "y"
+                and option == "MCUBOOT_MODE_FIRMWARE_UPDATER"
+                and fw_updater_boot_mode
+            ):
+                fragments["mcuboot"].extend([
+                    "CONFIG_RETAINED_MEM=y",
+                    "CONFIG_RETENTION=y",
+                    "CONFIG_RETENTION_BOOT_MODE=y",
+                    "CONFIG_BOOT_FIRMWARE_LOADER_BOOT_MODE=y",
+                ])
+        elif option in _BOOT_SIGNATURE_OPTIONS or option.startswith("BOOT_SIGNATURE_TYPE_"):
+            fragments["mcuboot"].append(f"CONFIG_{option}={value}")
+        elif option == "BOOT_SIGNATURE_KEY_FILE":
+            raw_key = value.strip().strip('"')
+            first_key = raw_key.split(",")[0].strip()
+            fragments["main"].append(
+                f'CONFIG_MCUBOOT_SIGNATURE_KEY_FILE="{first_key}"'
+            )
+            fragments["mcuboot"].append(
+                f"CONFIG_BOOT_SIGNATURE_KEY_FILE={value}"
+            )
+        elif option == "MCUBOOT_NO_DOWNGRADE":
+            if value == "y":
+                fragments["main"].append(
+                    "CONFIG_MCUBOOT_BOOTLOADER_NO_DOWNGRADE=y"
+                )
+            elif value == "n":
+                fragments["main"].append(
+                    "# CONFIG_MCUBOOT_BOOTLOADER_NO_DOWNGRADE is not set"
+                )
+        elif option == "COMPILER_WARNINGS_AS_ERRORS":
+            if value == "y":
+                fragments["main"].append("CONFIG_COMPILER_WARNINGS_AS_ERRORS=y")
+                fragments["mcuboot"].append("CONFIG_COMPILER_WARNINGS_AS_ERRORS=y")
+            elif value == "n":
+                fragments["main"].append("# CONFIG_COMPILER_WARNINGS_AS_ERRORS is not set")
+                fragments["mcuboot"].append("# CONFIG_COMPILER_WARNINGS_AS_ERRORS is not set")
 
     return {
         domain: "\n".join(settings) + "\n"
@@ -206,6 +349,12 @@ def main(argv=None):
 
         app_graph = raw_metadata[app_pkg]
         app_fragments = translated_confs.get(app_pkg, {})
+        kconfig_sysbuild = os.path.join(app_path, "Kconfig.sysbuild")
+        deps.add_file(kconfig_sysbuild)
+        has_kconfig_sysbuild = os.path.exists(kconfig_sysbuild)
+        has_sysbuild_conf = os.path.exists(
+            os.path.join(app_path, "sysbuild.conf")
+        )
 
         def _helper_image_names(h_name, h_cfg):
             h_target = h_cfg.get("target", "")
@@ -341,7 +490,19 @@ def main(argv=None):
                 if not helper_fragment and target_app_name:
                     helper_fragment = app_fragments.get(target_app_name, "")
 
-                if conf_fragments or dtc_overlays or helper_fragment:
+                if (
+                    conf_fragments
+                    or dtc_overlays
+                    or helper_fragment
+                    or has_kconfig_sysbuild
+                    or (
+                        has_sysbuild_conf
+                        and (
+                            helper_name in ("mcuboot", "firmware_loader")
+                            or target_app_name in ("mcuboot", "firmware_loader")
+                        )
+                    )
+                ):
                     path_str = f"{app_pkg}->{helper_name}"
                     path_hash = hashlib.md5(
                         path_str.encode("utf-8")

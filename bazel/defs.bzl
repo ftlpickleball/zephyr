@@ -579,7 +579,7 @@ userspace_gperf_hash_files = rule(
         ),
         "prebuilt": attr.bool(default = True),
         "_gperf": attr.label(
-            default = "@gperf//:gperf",
+            default = "//bazel/tools/gperf:gperf",
             executable = True,
             cfg = "exec",
         ),

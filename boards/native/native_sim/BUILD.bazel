@@ -11,6 +11,7 @@ package(default_visibility = ["//visibility:public"])
 platform(
     name = "native",
     constraint_values = [
+        "@platforms//cpu:x86_32",
         "@zephyr//boards:sim",
         "@pigweed//pw_build/constraints/rtos:zephyr",
         "@pigweed//pw_build/constraints/rust:no_std",
@@ -30,6 +31,7 @@ platform(
 platform(
     name = "native_64",
     constraint_values = [
+        "@platforms//cpu:x86_64",
         "@zephyr//boards:sim",
         "@pigweed//pw_build/constraints/rtos:zephyr",
         "@pigweed//pw_build/constraints/rust:no_std",
@@ -114,5 +116,10 @@ zephyr_cc_library(
         "//arch/posix:headers",
         "//kernel",
         "//scripts/native_simulator",
-    ],
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_HAS_SDL=true": [
+            "//boards/native/common/sdl",
+        ],
+        "//conditions:default": [],
+    }),
 )

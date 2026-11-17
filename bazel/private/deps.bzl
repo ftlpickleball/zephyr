@@ -5,9 +5,9 @@
 
 When Bazel re-verifies a repository rule or a module extension (for example after a server
 restart or a lockfile change), every recorded input that lives in *another external repository*
-starts a new Skyframe batch, and each batch re-checks every input recorded before it. The cost
-grows quadratically with the number of such inputs. Inputs in the main repository (and absolute
-paths) are batched together and verified in parallel.
+or is a directory listing (`DIRENTS`/`DIRTREE`) starts a new Skyframe batch, and each batch
+re-checks every input recorded before it. Inputs in the main repository (`FILE:@@//...`) are
+batched together and verified in parallel.
 
 deps.bzl classifies reported inputs by their realpath:
 
@@ -19,17 +19,18 @@ deps.bzl classifies reported inputs by their realpath:
       (MODULE.bazel, patches, overlays) that define them (see find_pin_files()).
 2. Main workspace content:
    These are mutable and actively edited by developers.
-   -> deps.bzl watches them through their workspace-relative path (@@//...), so they are verified
-      in parallel in batch 0 with zero restarts.
+   -> deps.bzl watches them through their workspace-relative path (@@//...) as `FILE` inputs, so
+      they are verified in parallel in batch 0 with zero extra batches.
 3. External repo overrides (repo_root):
    To detect if an external repository transitions between a fetched repo and a local git checkout
    override, it watches <root>/.git once per repository.
 
-Record inputs in this order: repository roots first (the only batch-starting inputs), then other
-files, then (in a single watch_deps() call at the end) directory listings and generator-reported
-files. watch_deps() watches each listed directory as a path before recording a barrier and the
-listing: in Bazel, requesting the listing of a deleted directory fails the build instead of
-re-running the rule, so the deletion must be noticed in an earlier batch.
+Record inputs in this order: repository roots first (the only batch-starting inputs), then pin
+files and generator-reported inputs via watch_deps(). Directories are watched as `FILE` inputs
+(`DIR` or missing) rather than `DIRENTS`, avoiding per-directory Skyframe/RBE batches in Bazel 9+
+and `InconsistentFilesystemException` when directories are deleted. Files added to or removed from
+directories are noticed through the digests written by the skyframe_warmer and
+zephyr_workspace_manifest repository rules, the only rules that record `DIRTREE` inputs.
 
 Limitations:
 *   Overrides must be git checkouts (or worktrees/submodules) for the probe to notice them being
@@ -41,9 +42,11 @@ Limitations:
     includes `repository_overrides/`. Do not combine `--watchfs` with overrides.
 """
 
+load("//bazel/private:repo_rule_python.bzl", "COMMON_PY_REPO_RULE_ATTRS", "get_python")
+
 visibility(["//..."])
 
-def new_tracker(ctx, workspace_root = None):
+def new_tracker(ctx, workspace_root = None, zephyr_manifest = None):
     """Creates the tracking state for one repository rule or module extension invocation.
 
     Args:
@@ -51,6 +54,10 @@ def new_tracker(ctx, workspace_root = None):
         workspace_root: Path of the main workspace. Defaults to `rctx.workspace_root` for
             repository rules; module extensions resolve `@@//:MODULE.bazel`, which records a
             main-repository input.
+        zephyr_manifest: Name of the digest to watch: "done" (for `zephyr_setup`), "kconfig_done"
+            (for `@zephyr_kconfig`), or None to not watch one. It is read from `@skyframe_warmer`
+            when @zephyr is a mutable checkout, and from `@zephyr_workspace_manifest` by
+            watch_workspace_manifest() when @zephyr is not the main repository.
 
     Returns:
         A mutable dict to pass to the other functions in this file.
@@ -61,13 +68,20 @@ def new_tracker(ctx, workspace_root = None):
             workspace_root = ctx.workspace_root
         else:
             workspace_root = ctx.path(Label("@@//:MODULE.bazel")).dirname
+    ws_real = str(workspace_root.realpath)
+    zephyr_canon = Label("//:BUILD.bazel").workspace_name
     return {
         "ctx": ctx,
         # Paths are classified by realpath but watched through the workspace path, since Bazel
         # classifies watched paths lexically.
         "ws_path": workspace_root,
         "ws": str(workspace_root),
-        "ws_real": str(workspace_root.realpath),
+        "ws_real": ws_real,
+        # Canonical repository name and realpath (with a trailing "/") of @zephyr.
+        "zephyr_canon": zephyr_canon,
+        "zephyr_real": (ws_real + "/") if zephyr_canon == "" else None,
+        "zephyr_manifest": zephyr_manifest,
+        "zephyr_prewarmed": zephyr_manifest == None,
         # Realpaths (with a trailing "/") of fetched external repositories.
         "fetched_roots": [],
         # Canonical repository name -> root path; "" is the main repository.
@@ -78,12 +92,46 @@ def new_tracker(ctx, workspace_root = None):
         # may not exist yet in module extensions.
         "wd_real": realpath_of(ctx.path(".")) + "/",
         "watched": {},
-        # Realpaths of directories listed by readdir(), whose listings watch_deps() records.
+        # Realpaths of directories listed by readdir(), whose paths watch_deps() records.
         "pending_dirs": [],
-        "barrier_recorded": False,
         # Only repository rules may watch paths outside the workspace.
         "watch_absolute": is_repo_rule,
     }
+
+def _maybe_prewarm_zephyr(tracker):
+    """Watches `@skyframe_warmer//:<zephyr_manifest>` once, when @zephyr is mutable.
+
+    Resolving it first makes the warmer `watch_tree()` @zephyr, which computes every FileValue in
+    the tree in parallel before the per-file watches of watch_deps() request them one at a time.
+    """
+    if tracker["zephyr_prewarmed"]:
+        return
+    zephyr_real = tracker["zephyr_real"]
+    if zephyr_real == None or zephyr_real in tracker["fetched_roots"]:
+        return
+    tracker["zephyr_prewarmed"] = True
+    tracker["ctx"].watch(Label("@skyframe_warmer//:" + tracker["zephyr_manifest"]))
+
+def watch_workspace_manifest(tracker):
+    """Watches `@zephyr_workspace_manifest//:<zephyr_manifest>` when @zephyr is not the main repo.
+
+    Its content changes whenever a relevant file is added to or removed from the main-workspace
+    directories named by the root module's `zephyr_setup.env()` tags (see
+    zephyr_workspace_manifest), without recording a `DIRENTS` input (and Skyframe batch) per
+    directory: `done` makes `zephyr_setup` notice new applications, boards and override files,
+    and `kconfig_done` makes `@zephyr_kconfig` notice new Kconfig, binding, board metadata and
+    `BUILD`/`.bzl` files in workspace modules and board roots.
+
+    Args:
+        tracker: The dict returned by new_tracker(), with `zephyr_manifest` set.
+    """
+    if tracker["zephyr_canon"] == "":
+        # Zephyr is the main repository: its directories are covered by @skyframe_warmer.
+        return
+    manifest = tracker["zephyr_manifest"]
+    if manifest == None:
+        fail("watch_workspace_manifest() requires new_tracker(zephyr_manifest = ...)")
+    tracker["ctx"].watch(Label("@zephyr_workspace_manifest//:" + manifest))
 
 def repo_root(tracker, anchor):
     """Returns the root directory of the repository that contains `anchor`.
@@ -106,6 +154,8 @@ def repo_root(tracker, anchor):
     roots = tracker["roots"]
     root = roots.get(canon)
     if root != None:
+        if canon == tracker["zephyr_canon"]:
+            _maybe_prewarm_zephyr(tracker)
         return root
 
     ctx = tracker["ctx"]
@@ -122,10 +172,14 @@ def repo_root(tracker, anchor):
     roots[canon] = root
 
     real = str(root.realpath)
+    if canon == tracker["zephyr_canon"]:
+        tracker["zephyr_real"] = real + "/"
     if (real + "/").startswith(tracker["ws_real"] + "/"):
         tracker["local_roots"].append(real + "/")
     elif not git.exists:
         tracker["fetched_roots"].append(real + "/")
+    if canon == tracker["zephyr_canon"]:
+        _maybe_prewarm_zephyr(tracker)
     return root
 
 def label_path(tracker, label):
@@ -198,66 +252,65 @@ def _file_watch_path(tracker, real):
         return real
     return None
 
-def _dirents_watch_path(tracker, real):
-    """Returns the workspace path whose listing to watch for the realpath `real`, or None."""
+def _dir_watch_path(tracker, real):
+    """Returns the workspace path to watch (as a `FILE` input) for the directory `real`, or None."""
     rel = workspace_relpath(tracker, real)
     if rel == None or (real + "/").startswith(tracker["wd_real"]):
         return None
     return tracker["ws"] + "/" + rel if rel else tracker["ws"]
 
-def _record_barrier(tracker):
-    """Records an input in another repository, so that Bazel verifies earlier inputs first.
-
-    When re-verifying recorded inputs, Bazel requests all inputs between two inputs from other
-    repositories together. Requesting the listing of a directory that no longer exists fails the
-    build (InconsistentFilesystemException) instead of marking the rule outdated, so the path
-    watches of listed directories must be verified in an earlier batch than their listings.
-    """
-    if tracker["barrier_recorded"]:
-        fail("watch_deps() may only record directory listings once per invocation")
-    tracker["barrier_recorded"] = True
-    ctx = tracker["ctx"]
-    ctx.watch(ctx.path(Label("@bazel_tools//tools:BUILD")))
-
-def watch_deps(tracker, files = [], dirs = []):
+def watch_deps(tracker, files = [], dirs = [], priority_files = []):
     """Watches the inputs a generator reported, according to where they live.
 
-    Call it once, after all other inputs were recorded. Directory listings (including those of
-    readdir()) are only watched for directories inside the workspace (including in-workspace
-    overrides). Each listed directory is first watched as a path, then a barrier is recorded (see
-    _record_barrier()), then the listings, then the files. A missing directory is only watched as a
-    path, so that creating it is noticed.
+    Call it once, after all other inputs were recorded. Directories (including those of readdir())
+    and files are watched via ctx.watch() as FILE inputs rather than DIRENTS: in Bazel 9+, every
+    DIRENTS input starts a new Skyframe/RBE batch, and requesting the listing of a deleted
+    directory fails with InconsistentFilesystemException. Watching directories as FILE inputs
+    records their existence (DIR vs missing) in batch 0 with zero extra batches.
+
+    Inside @zephyr, existing directory paths and speculative missing-file probes in `files` are
+    skipped (watching an existing directory via ctx.watch() only records `DIR`, which never changes
+    when entries inside are modified, while speculative per-board/per-app missing-file probes
+    account for ~14,000 non-existent paths across the upstream tree). Out-of-tree workspace files
+    and directories, existing @zephyr files, and all `priority_files` (including missing optional
+    files for the active app/board) are watched in full.
 
     Args:
         tracker: The dict returned by new_tracker().
         files: Realpath strings of input files, including probed candidates that do not exist.
-        dirs: Realpath strings of directories whose listing affects the result.
+        dirs: Realpath strings of directories whose existence affects the result.
+        priority_files: Realpath strings of high-priority input files (e.g. per-board/per-app
+            DTS, binding, header, and conf inputs) that are always watched, including missing
+            optional candidate paths.
     """
     ctx = tracker["ctx"]
     watched = tracker["watched"]
-    listings = []
-    for real in tracker["pending_dirs"] + dirs:
-        w = _dirents_watch_path(tracker, real)
-        if w == None or ("dir:" + w) in watched:
-            continue
-        watched["dir:" + w] = True
-        p = ctx.path(w)
-        if w not in watched:
-            watched[w] = True
-            ctx.watch(p)
-        if p.is_dir:
-            listings.append(p)
-    tracker["pending_dirs"] = []
-    if listings:
-        _record_barrier(tracker)
-        for p in listings:
-            p.readdir(watch = "yes")
-    for real in files:
+    zephyr_real = tracker["zephyr_real"]
+    for real in priority_files:
         w = _file_watch_path(tracker, real)
         if w == None or w in watched:
             continue
         watched[w] = True
         ctx.watch(w)
+    for real in files:
+        w = _file_watch_path(tracker, real)
+        if w == None or w in watched:
+            continue
+        if zephyr_real != None and (real + "/").startswith(zephyr_real):
+            if not ctx.path(w).exists:
+                watched[w] = False
+                continue
+        watched[w] = True
+        ctx.watch(w)
+    for real in tracker["pending_dirs"] + dirs:
+        if zephyr_real != None and (real + "/").startswith(zephyr_real):
+            continue
+        w = _dir_watch_path(tracker, real)
+        if w == None or w in watched:
+            continue
+        watched[w] = True
+        ctx.watch(w)
+    tracker["pending_dirs"] = []
 
 def watch_paths(tracker, paths):
     """Like watch_deps(files = ...) for path objects that may not exist or may be symlinks.
@@ -269,7 +322,7 @@ def watch_paths(tracker, paths):
     watch_deps(tracker, files = [realpath_of(p) for p in paths])
 
 def readdir(tracker, path):
-    """Lists a directory. Its listing is watched by the next watch_deps() call, where allowed.
+    """Lists a directory. Its path is watched by the next watch_deps() call, where allowed.
 
     Args:
         tracker: The dict returned by new_tracker().
@@ -278,8 +331,6 @@ def readdir(tracker, path):
     Returns:
         The entries, as path objects under `path`.
     """
-    if tracker["barrier_recorded"]:
-        fail("readdir() must be called before watch_deps()")
     tracker["pending_dirs"].append(str(path.realpath))
     return path.readdir(watch = "no")
 
@@ -295,8 +346,9 @@ def watch_pins(tracker, pin_files):
     watched = tracker["watched"]
     for rel in pin_files:
         p = ws.get_child(rel)
-        if str(p) not in watched:
-            watched[str(p)] = True
+        w = str(p)
+        if w not in watched:
+            watched[w] = True
             ctx.watch(p)
 
 def read_path_list(ctx, path):
@@ -313,123 +365,22 @@ def read_path_list(ctx, path):
         return None
     return [line for line in ctx.read(path).splitlines() if line.strip()]
 
-def string_literals(content):
-    """Returns the single-line string literals in Starlark source, ignoring comments.
-
-    Args:
-        content: Starlark source code, e.g. the contents of a MODULE.bazel file.
-
-    Returns:
-        A list of the literal strings, without quotes. Escape sequences are not decoded.
-    """
-    literals = []
-    for line in content.splitlines():
-        if "\"" not in line and "'" not in line:
-            continue
-        quote = ""
-        escaped = False
-        buf = []
-        for c in line.elems():
-            if quote:
-                if escaped:
-                    escaped = False
-                    buf.append(c)
-                elif c == "\\":
-                    escaped = True
-                    buf.append(c)
-                elif c == quote:
-                    literals.append("".join(buf))
-                    quote = ""
-                    buf = []
-                else:
-                    buf.append(c)
-            elif c == "#":
-                break
-            elif c == "\"" or c == "'":
-                quote = c
-    return literals
-
-def label_literal_to_relpath(literal, repo_relpath, repo_relpaths_by_name = {}):
-    """Maps a label literal from a MODULE.bazel or .bzl file to a workspace-relative path.
-
-    Args:
-        literal: The string literal, e.g. "//patches/openair:0001-fix.patch".
-        repo_relpath: Workspace-relative path of the repository the literal appears in ("" for
-            the main repository). `//` labels are relative to it; `@//` and `@@//` labels always
-            refer to the main repository.
-        repo_relpaths_by_name: Module name -> workspace-relative root of in-workspace overrides,
-            for `@name//` labels.
-
-    Returns:
-        A struct(relpath, explicit_name, repo_relpath) or None if the literal is not a label of a
-        local file. `repo_relpath` is the root of the repository the label refers to.
-    """
-    if literal.startswith("@@//"):
-        rest, base = literal[4:], ""
-    elif literal.startswith("@//"):
-        rest, base = literal[3:], ""
-    elif literal.startswith("//"):
-        rest, base = literal[2:], repo_relpath
-    elif literal.startswith("@") and not literal.startswith("@@") and "//" in literal:
-        name, _, rest = literal[1:].partition("//")
-        if name not in repo_relpaths_by_name:
-            return None
-        base = repo_relpaths_by_name[name]
-    else:
-        return None
-    for c in [" ", "\t", "%", "{", "}", "$", "*", "\\", "..", "//"]:
-        if c in rest:
-            return None
-    explicit_name = ":" in rest
-    if explicit_name:
-        pkg, name = rest.split(":", 1)
-    else:
-        pkg, name = rest, rest.rpartition("/")[2]
-    if not name or name.startswith("/") or name.endswith("/"):
-        return None
-    parts = [p for p in [base, pkg, name] if p]
-    return struct(relpath = "/".join(parts), explicit_name = explicit_name, repo_relpath = base)
-
-def module_name(content):
-    """Returns the `name` of the module() call in MODULE.bazel content.
-
-    Args:
-        content: The contents of a MODULE.bazel file.
-
-    Returns:
-        The module name, or None if there is no module() call with a literal name.
-    """
-    in_module = False
-    for line in content.splitlines():
-        s = line.strip()
-        if not in_module:
-            if not s.startswith("module("):
-                continue
-            in_module = True
-            s = s[len("module("):]
-        for part in s.split(","):
-            key, eq, value = part.partition("=")
-            if eq and key.strip() == "name":
-                literals = string_literals(value)
-                return literals[0] if literals else None
-        if ")" in s:
-            return None
-    return None
-
-def find_pin_files(tracker, repo_relpaths = [""], extra_relpaths = []):
+def find_pin_files(tracker, python, repo_relpaths = [""], extra_relpaths = []):
     """Returns the workspace files that pin fetched content.
 
-    Scans the MODULE.bazel of each given repository for labels of local files: patches, BUILD
-    overlays, lock files, included `*.MODULE.bazel` files and (in the main repository) `.bzl`
-    files, which are scanned in turn. Reading the files watches them, as main-repository inputs.
-    `@name//` labels are followed when `name` is the module name of one of the given in-workspace
-    overrides.
+    Runs `//bazel/tools/deps:find_pin_files.py`, which parses the Starlark AST of the
+    `MODULE.bazel` of each given repository for labels of local files: patches, BUILD overlays,
+    lock files, included `*.MODULE.bazel` files, and (in the main repository) `.bzl` files, which
+    are scanned in turn. `@name//` labels are followed when `name` is the module name of the main
+    repository or one of the given in-workspace overrides. Pass the returned list to `watch_pins()`
+    to watch them as main-repository inputs.
 
     A label is a pin if it names an existing file, or has an explicit target name with an
     extension (so that a missing patch is watched too).
 
     Args:
         tracker: The dict returned by new_tracker().
+        python: The Python runner struct returned by get_python().
         repo_relpaths: Workspace-relative roots of the repositories to scan: "" for the main
             repository, plus in-workspace overrides (whose MODULE.bazel may pin other repos).
         extra_relpaths: Additional workspace-relative pin files.
@@ -437,51 +388,170 @@ def find_pin_files(tracker, repo_relpaths = [""], extra_relpaths = []):
     Returns:
         A sorted list of workspace-relative paths.
     """
-    ctx = tracker["ctx"]
-    ws = tracker["ws_path"]
-    pins = {}
-    queue = []
-    by_name = {}
-    for repo_rel in repo_relpaths:
-        module_rel = repo_rel + "/MODULE.bazel" if repo_rel else "MODULE.bazel"
-        queue.append((module_rel, repo_rel))
-        p = ws.get_child(module_rel)
-        if repo_rel and p.exists and not p.is_dir:
-            name = module_name(ctx.read(p))
-            if name:
-                by_name[name] = repo_rel
-    for rel in extra_relpaths:
-        pins[rel] = True
+    script = label_path(tracker, Label("//bazel/tools/deps:find_pin_files.py"))
+    script_rel = workspace_relpath(tracker, realpath_of(script))
+    extras = list(extra_relpaths)
+    if script_rel != None and script_rel not in extras:
+        extras.append(script_rel)
+    res = python.execute([
+        str(script),
+        "--workspace-root",
+        tracker["ws"],
+        "--repo-relpaths-json",
+        json.encode(repo_relpaths),
+        "--extra-relpaths-json",
+        json.encode(extras),
+    ])
+    if res.return_code != 0:
+        fail("Failed to find pin files:\n" + res.stderr)
+    return json.decode(res.stdout)
 
-    # Breadth-first search (BFS) to find the transitive closure of pin files:
-    # Starlark disallows 'while' loops, so range(1000) bounds the queue traversal.
-    # Discovers MODULE.bazel, included *.MODULE.bazel segments, and referenced .bzl
-    # files, tracking visited paths in `scanned` to prevent cycles.
-    scanned = {}
-    for _ in range(1000):
-        if not queue:
-            break
-        rel, repo_rel = queue.pop(0)
-        if rel in scanned:
-            continue
-        scanned[rel] = True
-        p = ws.get_child(rel)
-        pins[rel] = True
-        if not p.exists or p.is_dir:
-            ctx.watch(p)
-            continue
-        for literal in string_literals(ctx.read(p)):
-            pin = label_literal_to_relpath(literal, repo_rel, by_name)
-            if pin == None:
-                continue
-            pin_path = ws.get_child(pin.relpath)
-            is_file = pin_path.exists and not pin_path.is_dir
-            if not is_file and not (pin.explicit_name and "." in pin.relpath.rpartition("/")[2]):
-                continue
-            pins[pin.relpath] = True
-            if not is_file:
-                continue
-            pin_repo = pin.repo_relpath
-            if pin.relpath.endswith(".MODULE.bazel") or (pin.relpath.endswith(".bzl") and pin_repo == ""):
-                queue.append((pin.relpath, pin_repo))
-    return sorted(pins.keys())
+# Top-level @zephyr directories that skyframe_warmer watches with `watch_tree()`. Each one is a
+# `DIRTREE` input, which starts its own Skyframe batch (RepoRecordedInput.DirTree is never
+# requested unconditionally), so the list is capped to keep @skyframe_warmer within the 20 batches
+# that audit_recorded_inputs.py allows (16 trees + the @zephyr root probe + 2 inputs of
+# get_python()). Directories left out (doc, kernel, misc, platforms, share, constraints,
+# submanifests) hold no wildcard-sourced Kconfig files, bindings, boards or applications: their
+# Kconfig files are sourced by name from watched files, so a new one is noticed through the edit
+# that sources it.
+_ZEPHYR_WARMER_SUBDIRS = [
+    "arch",
+    "bazel",
+    "boards",
+    "cmake",
+    "drivers",
+    "dts",
+    "include",
+    "lib",
+    "modules",
+    "samples",
+    "scripts",
+    "snippets",
+    "soc",
+    "subsys",
+    "tests",
+    "toolchain",
+]
+
+_MANIFEST_SCRIPT = "bazel/tools/deps/tree_manifest.py"
+
+def _write_manifests(rctx, python, script, root, subdirs, outputs):
+    """Runs tree_manifest.py to hash the discovery-relevant file names below `root/<subdirs>`."""
+    args = [str(script), "hash", "--root", root, "--out-dir", str(rctx.path("."))]
+    for sub in subdirs:
+        args.extend(["--subdir", sub])
+    res = python.execute(args)
+    if res.return_code != 0:
+        fail("%s failed (%d):\n%s" % (_MANIFEST_SCRIPT, res.return_code, res.stderr))
+    for name in ["done", "kconfig_done"]:
+        if name not in outputs:
+            rctx.delete(name)
+    rctx.file("BUILD.bazel", "exports_files(%s)\n" % json.encode(outputs))
+
+def _skyframe_warmer_impl(rctx):
+    tracker = new_tracker(rctx)
+    zephyr_canon = tracker["zephyr_canon"]
+    if zephyr_canon == "":
+        zephyr_root = tracker["ws_path"]
+    else:
+        zephyr_root = rctx.path(Label("@@%s//:.git" % zephyr_canon)).dirname
+    zephyr_real = str(zephyr_root.realpath)
+    watch_root_str = _file_watch_path(tracker, zephyr_real)
+    watch_root = rctx.path(watch_root_str) if watch_root_str != None else zephyr_root
+    python = get_python(rctx)
+
+    existing_subdirs = []
+    for sub in _ZEPHYR_WARMER_SUBDIRS:
+        d = watch_root.get_child(sub)
+        if d.is_dir:
+            rctx.watch_tree(d)
+            existing_subdirs.append(sub)
+
+    # The script itself lives under bazel/, which is watched above.
+    _write_manifests(
+        rctx,
+        python,
+        zephyr_root.get_child(_MANIFEST_SCRIPT),
+        zephyr_real,
+        existing_subdirs,
+        ["done", "kconfig_done"],
+    )
+
+    # Not reproducible: the result depends on where @zephyr lives (e.g. different
+    # --override_repository paths), which is not an attribute, and the rule is cheap to re-run.
+    return None
+
+skyframe_warmer = repository_rule(
+    implementation = _skyframe_warmer_impl,
+    attrs = COMMON_PY_REPO_RULE_ATTRS,
+    doc = """Pre-warms Skyframe FileValues and tracks file additions and removals in @zephyr.
+
+Only used when @zephyr is a mutable checkout (the main repository or a local git checkout
+override), through new_tracker(zephyr_manifest = ...). It calls `watch_tree()` on the top-level
+directories of @zephyr, so Bazel's DirectoryTreeDigestFunction computes all their FileValues in
+parallel before the consumers watch thousands of files one at a time, and so this rule re-runs
+whenever a file below them is added, removed or edited. It writes two digests of sorted relative
+file names (see tree_manifest.py):
+
+*   `done`: Kconfig, DTS, YAML, conf, CMake and Bazel files, watched by `zephyr_setup`.
+*   `kconfig_done`: Kconfig, BUILD/.bzl, board/SoC/arch/module metadata and binding files, watched
+    by `@zephyr_kconfig`.
+
+Editing an existing file (e.g. a `.c` source) re-runs this rule but leaves both digests unchanged,
+so the consumers are not re-run. `@zc_*` repositories do not watch it: they watch
+`@zephyr_kconfig//:Kconfig.dts`, which embeds a digest of all Kconfig file paths and contents.
+""",
+)
+
+def _zephyr_workspace_manifest_impl(rctx):
+    ws = rctx.workspace_root
+    python = get_python(rctx)
+    script = rctx.path(Label("//bazel/tools/deps:tree_manifest.py"))
+    res = python.execute([str(script), "setup-dirs", "--workspace-root", str(ws)])
+    if res.return_code != 0:
+        fail("%s setup-dirs failed (%d):\n%s" % (_MANIFEST_SCRIPT, res.return_code, res.stderr))
+    info = json.decode(res.stdout)
+    for warning in info["warnings"]:
+        # buildifier: disable=print
+        print("WARNING: zephyr_workspace_manifest: " + warning)
+    for rel in info["module_files"]:
+        rctx.watch(ws.get_child(rel))
+
+    existing = []
+    for rel in info["dirs"]:
+        d = ws.get_child(rel)
+        if d.is_dir:
+            rctx.watch_tree(d)
+            existing.append(rel)
+        else:
+            # Recorded as a (missing) path, so that creating the directory is noticed.
+            rctx.watch(d)
+
+    _write_manifests(rctx, python, script, str(ws.realpath), existing, ["done", "kconfig_done"])
+    return None
+
+zephyr_workspace_manifest = repository_rule(
+    implementation = _zephyr_workspace_manifest_impl,
+    attrs = COMMON_PY_REPO_RULE_ATTRS,
+    doc = """Tracks file additions and removals in the main-workspace directories of zephyr_setup.
+
+Module extensions cannot watch directory trees, and every `DIRENTS` input starts its own Skyframe
+batch, so `zephyr_setup` and `@zephyr_kconfig` watch digests written by this rule instead (see
+watch_workspace_manifest()). This rule parses the root module's MODULE.bazel (and its includes)
+for `zephyr_setup.env()` tags, calls `watch_tree()` on the main-workspace directories they name
+(apps_dirs trees, the boards/, dts/, soc/, snippets/ and zephyr/dts/ trees of boards_dirs, and
+modules trees), and writes digests of the sorted names of the relevant files below them (see
+tree_manifest.py), like skyframe_warmer:
+
+*   `done`, watched by `zephyr_setup`: adding an application, a board, or an app
+    `boards/<board>.conf` override re-runs it.
+*   `kconfig_done`, watched by `@zephyr_kconfig`: adding or removing a Kconfig, binding, board/SoC
+    metadata or `BUILD`/`.bzl` file in a workspace module or board root re-runs it (and, through
+    `Kconfig.dts`, the `zc_*` repositories).
+
+Editing existing files leaves both digests unchanged.
+
+Only literal labels in the root module are understood; directories named by non-root modules
+that are checked out inside the workspace are not tracked.
+""",
+)

@@ -31,6 +31,44 @@ cc_args(
     ],
 )
 
+cc_args(
+    name = "posix_arch_compile_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:compile_actions",
+    ],
+    args = select({
+        "@zephyr_kconfig//:CONFIG_64BIT=true": [
+            "-m64",
+            "-fPIC",
+        ],
+        "//conditions:default": [
+            "-m32",
+            "-fno-pic",
+            "-fno-pie",
+            "-msse2",
+            "-mfpmath=sse",
+        ],
+    }),
+)
+
+cc_args(
+    name = "posix_arch_link_flags",
+    actions = [
+        "@rules_cc//cc/toolchains/actions:link_actions",
+    ],
+    args = [
+        "-Wl,--gc-sections",
+        "-no-pie",
+    ] + select({
+        "@zephyr_kconfig//:CONFIG_64BIT=true": [
+            "-m64",
+        ],
+        "//conditions:default": [
+            "-m32",
+        ],
+    }),
+)
+
 cc_feature(
     name = "supports_pic",
     feature_name = "supports_pic",
@@ -46,7 +84,10 @@ cc_toolchain(
         ],
         "//conditions:default": [],
     }) + [
+        "//toolchain/args:reduced_size",
         "//toolchain/args:no_canonical_prefixes",
+        ":posix_arch_compile_flags",
+        ":posix_arch_link_flags",
         ":posix_norelro_args",
         "@pigweed//pw_toolchain/host_clang:link_with_lld",
         "//toolchain/args:zephyr_mode_defines",
@@ -54,8 +95,10 @@ cc_toolchain(
         "//toolchain/args:common_warnings",
         "//toolchain/args:extra_toolchain_args",
     ],
-    enabled_features = [
-        ":supports_pic",
+    enabled_features = select({
+        "@zephyr_kconfig//:CONFIG_64BIT=true": [":supports_pic"],
+        "//conditions:default": [],
+    }) + [
         "@pigweed//pw_toolchain/cc/feature:rules_rust_unsupported_feature",
         "//toolchain/capability:compiler_is_clang",
         "//toolchain/capability:linker_is_clang",
