@@ -26,33 +26,34 @@ cc_library(
 )
 
 # Kconfig symbol -> sources, one filegroup each (zephyr_module allows one select level).
+# Keys stay literal CONFIG_* tokens: @zephyr_kconfig only declares symbols it finds spelled out.
 _GATED_SRCS = {
-    "CLOCK_CONTROL_MPSL": [
+    "CONFIG_CLOCK_CONTROL_MPSL": [
         "drivers/mpsl/clock_control/nrfx_clock_mpsl.c",
         "drivers/mpsl/clock_control/nrfx_power_clock.h",
     ],
-    "SOC_FLASH_NRF_RADIO_SYNC_MPSL": ["drivers/mpsl/flash_sync/flash_sync_mpsl.c"],
-    "TEMP_NRF5_MPSL": ["drivers/mpsl/temp_nrf5/temp_nrf5_mpsl.c"],
-    "BT_LL_SOFTDEVICE": [
+    "CONFIG_SOC_FLASH_NRF_RADIO_SYNC_MPSL": ["drivers/mpsl/flash_sync/flash_sync_mpsl.c"],
+    "CONFIG_TEMP_NRF5_MPSL": ["drivers/mpsl/temp_nrf5/temp_nrf5_mpsl.c"],
+    "CONFIG_BT_LL_SOFTDEVICE": [
         "subsys/bluetooth/controller/hci_driver.c",
         "subsys/bluetooth/controller/hci_internal.c",
         "subsys/bluetooth/controller/hci_internal_wrappers.c",
     ],
-    "BT_CTLR_CRYPTO": ["subsys/bluetooth/controller/crypto.c"],
-    "BT_CTLR_SDC_CS_MULTIPLE_ANTENNA_SUPPORT": ["subsys/bluetooth/controller/cs_antenna_switch.c"],
-    "BT_RAS_RRSP": [
+    "CONFIG_BT_CTLR_CRYPTO": ["subsys/bluetooth/controller/crypto.c"],
+    "CONFIG_BT_CTLR_SDC_CS_MULTIPLE_ANTENNA_SUPPORT": ["subsys/bluetooth/controller/cs_antenna_switch.c"],
+    "CONFIG_BT_RAS_RRSP": [
         "subsys/bluetooth/services/ras/rrsp/ras_rd_buffer.c",
         "subsys/bluetooth/services/ras/rrsp/ras_rrsp.c",
     ],
-    "BT_RAS_RREQ": ["subsys/bluetooth/services/ras/rreq/ras_rreq.c"],
-    "BT_GATT_DM": ["subsys/bluetooth/gatt_dm.c"],
+    "CONFIG_BT_RAS_RREQ": ["subsys/bluetooth/services/ras/rreq/ras_rreq.c"],
+    "CONFIG_BT_GATT_DM": ["subsys/bluetooth/gatt_dm.c"],
 }
 
 [
     filegroup(
-        name = "srcs_" + sym.lower(),
+        name = "srcs_" + sym.removeprefix("CONFIG_").lower(),
         srcs = select({
-            "@zephyr_kconfig//:CONFIG_{}=true".format(sym): files,
+            "@zephyr_kconfig//:{}=true".format(sym): files,
             "//conditions:default": [],
         }),
     )
@@ -66,7 +67,7 @@ zephyr_module(
         "subsys/mpsl/init/mpsl_init.c",
         "subsys/mpsl/hwres/mpsl_hwres.c",
         "lib/multithreading_lock/multithreading_lock.c",
-    ] + [":srcs_" + sym.lower() for sym in _GATED_SRCS],
+    ] + [":srcs_" + sym.removeprefix("CONFIG_").lower() for sym in _GATED_SRCS],
     hdrs = glob([
         "include/mpsl/*.h",
         "lib/multithreading_lock/*.h",
