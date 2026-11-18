@@ -4,8 +4,8 @@
 """Rule to transition a dependency to a specific platform."""
 
 SysbuildHelperInfo = provider(
-    doc = "Carries executable and runfiles from a transitioned sysbuild helper target.",
-    fields = ["executable", "runfiles"],
+    doc = "Carries helper name and underlying target from a transitioned sysbuild helper target.",
+    fields = ["helper_name", "target"],
 )
 
 def _transition_impl(settings, attr):
@@ -31,17 +31,23 @@ platform_transition = transition(
 )
 
 def _transitioned_dep_impl(ctx):
-    # Forward DefaultInfo files, executable, and runfiles from the actual target
+    # Forward DefaultInfo files and runfiles from the actual target, plus the
+    # underlying Target via SysbuildHelperInfo so sysbuild consumers retain all
+    # providers and executables.
     target = ctx.attr.dep[0] if type(ctx.attr.dep) == "list" else ctx.attr.dep
-    exec_file = target[DefaultInfo].files_to_run.executable if target[DefaultInfo].files_to_run else None
+    helper_name = (
+        ctx.attr.sysbuild_context.rsplit(":", 1)[-1]
+        if ":" in ctx.attr.sysbuild_context
+        else ctx.attr.sysbuild_context
+    )
     providers = [
         DefaultInfo(
             files = target[DefaultInfo].files,
             runfiles = target[DefaultInfo].default_runfiles,
         ),
         SysbuildHelperInfo(
-            executable = exec_file,
-            runfiles = target[DefaultInfo].default_runfiles,
+            helper_name = helper_name,
+            target = target,
         ),
     ]
     if OutputGroupInfo in target:

@@ -3,12 +3,15 @@
 
 load("//bazel/private:linker_fragment_test.bzl", "linker_fragment_test_suite")
 load("//bazel/private:repo_rule_python_test.bzl", "repo_rule_python_test_suite")
+load("//bazel/private:sysbuild_test.bzl", "sysbuild_test_suite")
 load("//bazel/private:zephyr_kconfig_gen_values_test.bzl", "zephyr_kconfig_gen_values_test_suite")
 load("//bazel/private:zephyr_transition_test.bzl", "zephyr_transition_test_suite")
 
 exports_files(["zephyr_kconfig_gen_values.bzl"])
 
 zephyr_transition_test_suite()
+
+sysbuild_test_suite()
 
 linker_fragment_test_suite()
 
