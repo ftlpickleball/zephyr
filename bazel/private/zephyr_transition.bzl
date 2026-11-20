@@ -99,6 +99,7 @@ To fix this, you can either:
     return {
         "//command_line_option:platforms": ["%s//:%s_platform_%s" % (canonical_repo, repo_clean, toolchain_variant)],
         "//command_line_option:compilation_mode": target_mode,
+        "//bazel:sysbuild_board": "",
         "//bazel:sysbuild_context": "",
     }
 
@@ -113,6 +114,7 @@ zephyr_transition = transition(
     outputs = [
         "//command_line_option:platforms",
         "//command_line_option:compilation_mode",
+        "//bazel:sysbuild_board",
         "//bazel:sysbuild_context",
     ],
 )

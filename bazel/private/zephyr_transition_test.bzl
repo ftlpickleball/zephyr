@@ -141,6 +141,8 @@ def _zephyr_transition_board_toolchains_test_impl(ctx):
         ["%s//:%s_platform_xt-clang" % (canonical_repo, canonical_repo.lstrip("@"))],
         res_top["//command_line_option:platforms"],
     )
+    asserts.equals(env, "", res_top["//bazel:sysbuild_board"])
+    asserts.equals(env, "", res_top["//bazel:sysbuild_context"])
 
     parent_repo_name = get_zc_repo_name("//samples/sysbuild/main_app:main_app", "esp32s3_devkitc/esp32s3/procpu")
     zc_settings = {
@@ -149,6 +151,7 @@ def _zephyr_transition_board_toolchains_test_impl(ctx):
         ],
         "//command_line_option:compilation_mode": "fastbuild",
         "//toolchain:zephyr_toolchain_variant": "gcc",
+        "//bazel:sysbuild_board": "esp32s3_devkitc_esp32s3_procpu",
         "//bazel:sysbuild_context": "samples/sysbuild/main_app:helper_app",
     }
     res_zc = zephyr_transition_impl(
@@ -164,6 +167,8 @@ def _zephyr_transition_board_toolchains_test_impl(ctx):
         ["%s//:%s_platform_xt-clang" % (canonical_repo, canonical_repo.lstrip("@"))],
         res_zc["//command_line_option:platforms"],
     )
+    asserts.equals(env, "", res_zc["//bazel:sysbuild_board"])
+    asserts.equals(env, "", res_zc["//bazel:sysbuild_context"])
     return unittest.end(env)
 
 parse_cand_board_test = unittest.make(_parse_cand_board_test_impl)
