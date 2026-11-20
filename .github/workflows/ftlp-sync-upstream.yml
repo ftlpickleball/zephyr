@@ -13,6 +13,8 @@ on:
 
 permissions:
   contents: read
+  # Gate steps disable workflows and cancel runs with GITHUB_TOKEN.
+  actions: write
 
 concurrency:
   group: ftlp-sync-upstream
@@ -30,16 +32,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Mint ftlp-creds installation token
-        # App token, not GITHUB_TOKEN: pushing upstream .github/workflows edits
-        # needs Workflows: write, and disabling workflows needs Actions: write.
+        # Checkout + push only: pushing upstream .github/workflows edits needs
+        # Workflows: write. The installation lacks Actions: write (403 on disable).
         id: app
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3
         with:
           app-id: ${{ secrets.FTLP_CREDS_APP_ID }}
           private-key: ${{ secrets.FTLP_CREDS_APP_KEY }}
           repositories: zephyr
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ env.FTLP_BRANCH }}
           fetch-depth: 0
@@ -48,7 +50,7 @@ jobs:
       - name: Gate inherited upstream workflows
         # Before the push, so a merge cannot trigger an already-known workflow.
         env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh workflow list --all --json id,path,state \
@@ -71,7 +73,7 @@ jobs:
         # A workflow file new in this merge fires on the push above before it
         # has an id to disable; disable it now and cancel what it queued.
         env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           gh workflow list --all --json id,path,state \

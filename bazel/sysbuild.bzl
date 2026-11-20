@@ -13,6 +13,14 @@ load(
     "resolve_platform_board_id",
 )
 
+SysbuildInfo = provider(
+    doc = "Exposes main and helper domain targets built by zephyr_sysbuild.",
+    fields = {
+        "helpers": "dict[string, Target]: Helper domain targets keyed by helper name.",
+        "main": "Target: Main Zephyr application target.",
+    },
+)
+
 # NOTE: _zephyr_sysbuild_transition intentionally only sets //bazel:sysbuild_board
 # and does NOT transition //command_line_option:platforms to the main app's @zc_
 # platform. In Bazel, platform flags (--@zephyr_kconfig//:CONFIG_*=true) are
@@ -218,14 +226,18 @@ def _zephyr_sysbuild_rule_impl(ctx):
         "done",
     ]
 
+    helpers_by_name = {}
     for idx, helper in enumerate(ctx.attr.helpers):
         domain_id = str(idx)
         exec_file = None
         domain_rf = helper[DefaultInfo].default_runfiles
         if SysbuildHelperInfo in helper:
-            exec_file = helper[SysbuildHelperInfo].executable
-            if helper[SysbuildHelperInfo].runfiles:
-                domain_rf = helper[SysbuildHelperInfo].runfiles
+            underlying = helper[SysbuildHelperInfo].target
+            domain_rf = underlying[DefaultInfo].default_runfiles
+            if underlying[DefaultInfo].files_to_run:
+                exec_file = underlying[DefaultInfo].files_to_run.executable
+            if helper[SysbuildHelperInfo].helper_name:
+                helpers_by_name[helper[SysbuildHelperInfo].helper_name] = underlying
         elif helper[DefaultInfo].files_to_run and helper[DefaultInfo].files_to_run.executable:
             exec_file = helper[DefaultInfo].files_to_run.executable
 
@@ -292,11 +304,17 @@ def _zephyr_sysbuild_rule_impl(ctx):
         is_executable = True,
     )
 
-    providers = [DefaultInfo(
-        executable = runner_script,
-        files = depset([runner_script] + all_files),
-        runfiles = runfiles,
-    )]
+    providers = [
+        DefaultInfo(
+            executable = runner_script,
+            files = depset([runner_script] + all_files),
+            runfiles = runfiles,
+        ),
+        SysbuildInfo(
+            main = ctx.attr.main,
+            helpers = helpers_by_name,
+        ),
+    ]
     if output_groups:
         merged_groups = {k: depset(transitive = v) for k, v in output_groups.items()}
         providers.append(OutputGroupInfo(**merged_groups))
@@ -315,3 +333,5 @@ _zephyr_sysbuild_rule = rule(
     },
     cfg = _zephyr_sysbuild_transition,
 )
+
+zephyr_sysbuild_rule = _zephyr_sysbuild_rule
