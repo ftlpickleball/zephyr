@@ -35,13 +35,13 @@ jobs:
         # Checkout + push only: pushing upstream .github/workflows edits needs
         # Workflows: write. The installation lacks Actions: write (403 on disable).
         id: app
-        uses: actions/create-github-app-token@v3
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3
         with:
           app-id: ${{ secrets.FTLP_CREDS_APP_ID }}
           private-key: ${{ secrets.FTLP_CREDS_APP_KEY }}
           repositories: zephyr
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ env.FTLP_BRANCH }}
           fetch-depth: 0
