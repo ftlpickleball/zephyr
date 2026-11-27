@@ -3,7 +3,9 @@
 
 """Tests for zephyr_flash_utils."""
 
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 import sys
 
@@ -120,6 +122,42 @@ class TestZephyrFlashUtils(unittest.TestCase):
 
         self.assertEqual(result, 0)
         mock_execv.assert_called_once_with("/resolved/zephyr.elf", ["/resolved/zephyr.elf", "--foo"])
+
+class TestRunnerBuildDir(unittest.TestCase):
+    """zephyr_app ships zephyr/<app>.config; runners read <build_dir>/zephyr/.config."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.out = self.root / "bin" / "puck"
+        (self.out / "zephyr").mkdir(parents=True)
+        self.yaml = self.out / "puck_runners_yaml.yaml"
+        self.yaml.write_text("config: {}\n")
+        self.scratch = self.root / "scratch"
+        self.scratch.mkdir()
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_app_config_exposed_as_dot_config(self):
+        (self.out / "zephyr" / "puck.config").write_text("CONFIG_BIG_ENDIAN=n\n")
+        build_dir = Path(zephyr_flash_utils.runner_build_dir(self.yaml, self.scratch))
+        self.assertEqual((build_dir / "zephyr" / ".config").read_text(), "CONFIG_BIG_ENDIAN=n\n")
+        self.assertFalse((self.out / "zephyr" / ".config").exists())
+
+    def test_picks_this_apps_config_among_several(self):
+        (self.out / "zephyr" / "puck.config").write_text("puck\n")
+        (self.out / "zephyr" / "other.config").write_text("other\n")
+        build_dir = Path(zephyr_flash_utils.runner_build_dir(self.yaml, self.scratch))
+        self.assertEqual((build_dir / "zephyr" / ".config").read_text(), "puck\n")
+
+    def test_existing_dot_config_keeps_yaml_dir(self):
+        (self.out / "zephyr" / ".config").write_text("x\n")
+        self.assertEqual(zephyr_flash_utils.runner_build_dir(self.yaml, self.scratch), str(self.out))
+
+    def test_no_config_keeps_yaml_dir(self):
+        self.assertEqual(zephyr_flash_utils.runner_build_dir(self.yaml, self.scratch), str(self.out))
+
 
 if __name__ == '__main__':
     unittest.main()
