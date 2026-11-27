@@ -8,6 +8,7 @@ import logging
 import os
 from pathlib import Path
 import sys
+import tempfile
 import yaml
 import serial
 import serial.tools.list_ports
@@ -70,6 +71,27 @@ def setup_tool_paths(r):
         os.environ["PATH"] = os.pathsep.join(
             extra_paths + [path_env] if path_env else extra_paths
         )
+
+
+_RUNNERS_YAML_SUFFIX = "_runners_yaml"
+
+
+def runner_build_dir(yaml_file, scratch):
+    """Returns a build dir whose zephyr/.config is this app's Kconfig output.
+
+    zephyr_app ships zephyr/<app>.config beside <app>_runners_yaml.yaml; runners
+    read <build_dir>/zephyr/.config. Links it under `scratch` when needed.
+    """
+    yaml_file = Path(yaml_file)
+    out_dir = yaml_file.parent
+    app = yaml_file.stem.removesuffix(_RUNNERS_YAML_SUFFIX)
+    app_config = out_dir / "zephyr" / (app + ".config")
+    if (out_dir / "zephyr" / ".config").exists() or not app_config.exists():
+        return str(out_dir)
+    build_dir = Path(scratch)
+    (build_dir / "zephyr").mkdir(parents=True, exist_ok=True)
+    (build_dir / "zephyr" / ".config").symlink_to(app_config.resolve())
+    return str(build_dir)
 
 
 def auto_detect_device(serial_port=None, serial_number=None):
@@ -346,7 +368,8 @@ def flash_main(
 
     runner_cls = runners.get_runner_cls(flash_runner)
 
-    build_dir = str(yaml_file.parent)
+    build_dir_tmp = tempfile.TemporaryDirectory(prefix="zephyr_flash_")
+    build_dir = runner_build_dir(yaml_file, build_dir_tmp.name)
     runner_config = runners.core.RunnerConfig(
         build_dir=build_dir,
         board_dir=cfg.get("board_dir"),
@@ -372,6 +395,8 @@ def flash_main(
     except Exception as e:
         print(f"Flashing failed: {e}")
         return 1
+    finally:
+        build_dir_tmp.cleanup()
 
     if monitor:
         if not serial_port or not serial_number:
